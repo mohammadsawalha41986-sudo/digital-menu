@@ -1,0 +1,226 @@
+// Digital Profile OS — core schema foundation (Phase 0).
+//
+// Scope note: this is deliberately the minimum relational core required by the
+// Phase 0 acceptance criteria (tenancy, public identifiers, menu publication,
+// bilingual content, brand tokens). Branches, categories, items, offers, files,
+// QR records, analytics and import batches arrive in later phases — see
+// docs/GOALS.md §6.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Platform-level role. The platform is a managed service: staff operate it,
+/// clients do not receive accounts in v1 (GOALS I10, master spec §17).
+enum PlatformRole {
+  SUPER_ADMIN
+  STAFF
+}
+
+/// A user's role *within* one business. Tenant authorization is derived from
+/// membership rows, never from a client-supplied business id (GOALS I8).
+enum BusinessRole {
+  OWNER
+  MANAGER
+  EDITOR
+  VIEWER
+}
+
+enum BusinessStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum BusinessType {
+  RESTAURANT
+  CAFE
+  BAKERY
+  DESSERT
+  SALON
+  BEAUTY_CENTER
+  SPA
+  BARBER
+  GYM
+  HOTEL
+  RETAIL
+  OTHER
+}
+
+/// Supported content and interface locales. Arabic is the primary authored
+/// language; English is a first-class peer, never machine-filled (GOALS I3).
+enum Locale {
+  ar
+  en
+}
+
+enum MenuStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String?
+  role         PlatformRole @default(STAFF)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  memberships     BusinessMembership[]
+  publishedMenues MenuVersion[]        @relation("MenuVersionPublisher")
+
+  @@index([role])
+  @@map("users")
+}
+
+/// The tenant. Every tenant-scoped row reaches this model through a
+/// `businessId` foreign key, which is what server-side isolation filters on.
+model Business {
+  /// Internal identifier. Never appears in a public URL.
+  id String @id @default(cuid())
+
+  /// Opaque, stable, public-facing identifier used by the permanent QR:
+  /// `/m/{publicId}` (e.g. 7XK92A). Immutable for the life of the business —
+  /// changing it would invalidate printed QR codes (GOALS I1, I2).
+  publicId String @unique
+
+  /// Human-readable admin-facing handle. Not the public URL key.
+  slug String @unique
+
+  type          BusinessType   @default(OTHER)
+  status        BusinessStatus @default(DRAFT)
+  /// Locale a visitor gets when they express no preference.
+  defaultLocale Locale         @default(ar)
+
+  nameAr        String
+  nameEn        String?
+  descriptionAr String?
+  descriptionEn String?
+
+  /// Structure. Validated against the in-code template registry
+  /// (src/templates/registry.ts) — templates are code, not database rows.
+  templateKey String @default("editorial")
+  /// Layout variant within the template family.
+  variantKey  String @default("a")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships BusinessMembership[]
+  brandTheme  BrandTheme?
+  menus       Menu[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("businesses")
+}
+
+/// Join table carrying the tenant grant. Authorization asks: does this user
+/// hold a membership for this business, and does that role permit the action?
+model BusinessMembership {
+  id         String       @id @default(cuid())
+  userId     String
+  businessId String
+  role       BusinessRole @default(VIEWER)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+  @@map("business_memberships")
+}
+
+/// Visual identity — the *theme* half of template/theme separation (GOALS I6).
+/// These values are emitted as CSS custom properties at render time; no
+/// component hard-codes a business colour.
+model BrandTheme {
+  id         String @id @default(cuid())
+  businessId String @unique
+
+  colorPrimary    String @default("#1F2421")
+  colorSecondary  String @default("#49A078")
+  colorAccent     String @default("#C9A227")
+  colorBackground String @default("#FBF9F5")
+  colorSurface    String @default("#FFFFFF")
+  colorText       String @default("#16181A")
+  colorMuted      String @default("#6B7280")
+  colorBorder     String @default("#E5E1D8")
+
+  /// Font family stack keys resolved by the typography layer.
+  fontHeading String @default("system-serif")
+  fontBody    String @default("system-sans")
+
+  radiusScale String @default("md")
+  logoMediaId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("brand_themes")
+}
+
+/// A menu (or service catalogue). Categories and items land in Phase 1; the
+/// publication mechanism is established here because the permanent-QR
+/// invariant depends on it: the QR resolves to a business, the business
+/// resolves to a *currently published* menu version.
+model Menu {
+  id         String     @id @default(cuid())
+  businessId String
+  /// Tenant-scoped key, e.g. "main", "breakfast", "drinks".
+  key        String
+  status     MenuStatus @default(DRAFT)
+  titleAr    String
+  titleEn    String?
+  sortOrder  Int        @default(0)
+
+  currentVersionId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business       Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  versions       MenuVersion[] @relation("MenuVersions")
+  currentVersion MenuVersion?  @relation("MenuCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, key])
+  @@index([businessId, status])
+  @@map("menus")
+}
+
+/// An immutable publication record. Content changes create a new version and
+/// repoint `Menu.currentVersion`; the public URL and QR never change (GOALS I2).
+model MenuVersion {
+  id      String @id @default(cuid())
+  menuId  String
+  /// Monotonic per menu.
+  version Int
+
+  publishedAt   DateTime?
+  publishedById String?
+  notes         String?
+
+  createdAt DateTime @default(now())
+
+  menu        Menu  @relation("MenuVersions", fields: [menuId], references: [id], onDelete: Cascade)
+  currentOf   Menu? @relation("MenuCurrentVersion")
+  publishedBy User? @relation("MenuVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@unique([menuId, version])
+  @@index([menuId, publishedAt])
+  @@map("menu_versions")
+}

@@ -1,0 +1,24 @@
+{
+  "common": {
+    "languageSwitcher": "اللغة",
+    "backToTop": "العودة إلى الأعلى"
+  },
+  "profile": {
+    "viewMenu": "تصفح المنيو",
+    "downloadMenu": "تحميل المنيو",
+    "contact": "تواصل معنا",
+    "call": "اتصل بنا",
+    "whatsapp": "واتساب",
+    "location": "الموقع",
+    "offers": "العروض",
+    "categories": "الأقسام",
+    "downloads": "الملفات",
+    "menuComingSoon": "لم يتم نشر المنيو بعد"
+  },
+  "errors": {
+    "profileNotFoundTitle": "الصفحة غير متاحة",
+    "profileNotFoundBody": "لم نتمكن من العثور على هذا الملف. تأكد من الرابط أو أعد مسح رمز الاستجابة السريعة.",
+    "genericTitle": "حدث خطأ غير متوقع",
+    "genericBody": "يرجى المحاولة مرة أخرى بعد قليل."
+  }
+}

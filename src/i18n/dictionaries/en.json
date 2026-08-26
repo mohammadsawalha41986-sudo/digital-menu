@@ -1,0 +1,24 @@
+{
+  "common": {
+    "languageSwitcher": "Language",
+    "backToTop": "Back to top"
+  },
+  "profile": {
+    "viewMenu": "View menu",
+    "downloadMenu": "Download menu",
+    "contact": "Contact",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "location": "Location",
+    "offers": "Offers",
+    "categories": "Categories",
+    "downloads": "Downloads",
+    "menuComingSoon": "The menu has not been published yet"
+  },
+  "errors": {
+    "profileNotFoundTitle": "This profile is unavailable",
+    "profileNotFoundBody": "We could not find this profile. Check the link, or scan the QR code again.",
+    "genericTitle": "Something went wrong",
+    "genericBody": "Please try again in a moment."
+  }
+}

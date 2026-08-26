@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+env:
+  DATABASE_URL: postgresql://dpos:dpos@localhost:5432/digital_profile_os?schema=public
+  SHADOW_DATABASE_URL: postgresql://dpos:dpos@localhost:5432/digital_profile_os_shadow?schema=public
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dpos
+          POSTGRES_PASSWORD: dpos
+          POSTGRES_DB: digital_profile_os
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dpos"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Create shadow database
+        run: PGPASSWORD=dpos createdb -h localhost -U dpos digital_profile_os_shadow
+
+      - run: npm run db:validate
+      - run: npm run db:deploy
+      - name: Verify migrations leave no schema drift
+        run: npm run db:status
+      - run: npm run db:seed
+
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

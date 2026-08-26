@@ -1,0 +1,54 @@
+# Development environment.
+#
+# Postgres runs in Docker; the application runs on the host via `npm run dev`.
+# That is deliberate — containerising the dev server costs fast refresh and
+# adds a bind-mount performance problem on macOS for no benefit. Use the
+# `app` profile when you specifically want to exercise the production image.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dpos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dpos
+      POSTGRES_PASSWORD: dpos
+      POSTGRES_DB: digital_profile_os
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Creates the shadow database `prisma migrate dev` needs.
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dpos -d digital_profile_os']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ['app']
+    build:
+      context: .
+      target: runtime
+    container_name: dpos-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://dpos:dpos@postgres:5432/digital_profile_os?schema=public
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      STORAGE_PROVIDER: local
+      # Supply a real secret; the app refuses to serve without one.
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET before starting the app profile}
+    ports:
+      - '3000:3000'
+    volumes:
+      - app-storage:/app/storage
+
+volumes:
+  postgres-data:
+  app-storage:

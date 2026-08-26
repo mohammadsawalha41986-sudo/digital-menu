@@ -1,0 +1,197 @@
+/*
+ * SYSTEM TOKENS — master spec §27, GOALS I6.
+ *
+ * Two token layers exist, and they must not be merged:
+ *
+ *   1. System tokens (this file)  — the platform's spacing rhythm, type scale,
+ *      radius and elevation ramps, motion timings. Stable across every
+ *      business. Prefixed `--sys-`.
+ *
+ *   2. Brand tokens (src/design/brand.ts) — one business's colours,
+ *      typography choice and radius scale, emitted per profile as inline
+ *      custom properties on the profile root. Prefixed `--brand-`.
+ *
+ * Components read only `--brand-*` and `--sys-*`. No component hard-codes a
+ * business colour, which is what lets a template be re-themed and a theme be
+ * re-templated independently.
+ *
+ * All spacing here is direction-neutral; layout code uses logical properties
+ * (margin-inline, padding-inline, inset-inline, text-align: start/end) so that
+ * RTL is a native direction rather than a mirrored afterthought (GOALS I4).
+ */
+
+:root {
+  /* --- Type scale (1.200 minor third, 16px base) ------------------------- */
+  --sys-font-size-2xs: 0.694rem;
+  --sys-font-size-xs: 0.833rem;
+  --sys-font-size-sm: 0.9rem;
+  --sys-font-size-base: 1rem;
+  --sys-font-size-lg: 1.2rem;
+  --sys-font-size-xl: 1.44rem;
+  --sys-font-size-2xl: 1.728rem;
+  --sys-font-size-3xl: 2.074rem;
+  --sys-font-size-4xl: 2.488rem;
+
+  --sys-line-tight: 1.15;
+  --sys-line-snug: 1.35;
+  --sys-line-normal: 1.6;
+  /* Arabic script needs more leading than Latin at the same size. */
+  --sys-line-arabic: 1.8;
+
+  --sys-tracking-tight: -0.02em;
+  --sys-tracking-normal: 0;
+  --sys-tracking-wide: 0.08em;
+
+  /* --- Spacing (4px base) ------------------------------------------------ */
+  --sys-space-0: 0;
+  --sys-space-1: 0.25rem;
+  --sys-space-2: 0.5rem;
+  --sys-space-3: 0.75rem;
+  --sys-space-4: 1rem;
+  --sys-space-5: 1.5rem;
+  --sys-space-6: 2rem;
+  --sys-space-7: 3rem;
+  --sys-space-8: 4rem;
+  --sys-space-9: 6rem;
+
+  /* --- Radius ramps ------------------------------------------------------ */
+  /* A brand selects a ramp; components reference the resolved --brand-radius-*. */
+  --sys-radius-none-sm: 0;
+  --sys-radius-none-md: 0;
+  --sys-radius-none-lg: 0;
+
+  --sys-radius-sm-sm: 2px;
+  --sys-radius-sm-md: 4px;
+  --sys-radius-sm-lg: 6px;
+
+  --sys-radius-md-sm: 4px;
+  --sys-radius-md-md: 8px;
+  --sys-radius-md-lg: 14px;
+
+  --sys-radius-lg-sm: 8px;
+  --sys-radius-lg-md: 16px;
+  --sys-radius-lg-lg: 28px;
+
+  /* --- Elevation --------------------------------------------------------- */
+  --sys-shadow-sm: 0 1px 2px rgb(16 18 20 / 0.06);
+  --sys-shadow-md: 0 6px 20px -8px rgb(16 18 20 / 0.18);
+  --sys-shadow-lg: 0 24px 60px -24px rgb(16 18 20 / 0.28);
+
+  /* --- Motion ------------------------------------------------------------ */
+  /* Templates override these to express a motion personality (§100). */
+  --sys-duration-fast: 120ms;
+  --sys-duration-base: 220ms;
+  --sys-duration-slow: 420ms;
+  --sys-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --sys-ease-entrance: cubic-bezier(0.05, 0.7, 0.1, 1);
+
+  /* --- Layout ------------------------------------------------------------ */
+  --sys-content-max: 68rem;
+  --sys-tap-target: 44px; /* master spec §30 */
+
+  /* --- Brand token defaults ---------------------------------------------- */
+  /*
+   * Neutral, non-committal defaults so a component rendered outside a profile
+   * (admin chrome, an error page) is still legible. A real profile overwrites
+   * every one of these on its root element.
+   */
+  --brand-color-primary: #1f2421;
+  --brand-color-secondary: #49a078;
+  --brand-color-accent: #c9a227;
+  --brand-color-background: #fbf9f5;
+  --brand-color-surface: #ffffff;
+  --brand-color-text: #16181a;
+  --brand-color-muted: #6b7280;
+  --brand-color-border: #e5e1d8;
+  --brand-color-on-primary: #ffffff;
+
+  --brand-font-heading: var(--sys-font-stack-serif);
+  --brand-font-body: var(--sys-font-stack-sans);
+
+  --brand-radius-sm: var(--sys-radius-md-sm);
+  --brand-radius-md: var(--sys-radius-md-md);
+  --brand-radius-lg: var(--sys-radius-md-lg);
+
+  /* --- Font stacks -------------------------------------------------------- */
+  /*
+   * System stacks only in Phase 0. Licensed Arabic and Latin display families
+   * arrive with the template system (Phase 8) — the token indirection means
+   * adding them changes this block, not the components.
+   */
+  --sys-font-stack-sans: ui-sans-serif, system-ui, 'Segoe UI', 'Noto Sans Arabic', 'Noto Sans',
+    sans-serif;
+  --sys-font-stack-serif: ui-serif, Georgia, 'Noto Naskh Arabic', 'Times New Roman', serif;
+  --sys-font-stack-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--brand-color-background);
+  color: var(--brand-color-text);
+  font-family: var(--brand-font-body);
+  font-size: var(--sys-font-size-base);
+  line-height: var(--sys-line-normal);
+  /* No horizontal overflow on any mobile width (master spec §30, §139). */
+  overflow-x: hidden;
+}
+
+/* Arabic text gets its own leading wherever it appears, including when an
+   Arabic fallback string is rendered inside an English page. */
+[lang='ar'] {
+  line-height: var(--sys-line-arabic);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--brand-font-heading);
+  line-height: var(--sys-line-tight);
+  margin-block: 0;
+  text-wrap: balance;
+}
+
+p {
+  margin-block: 0;
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* master spec §101, §118 */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
