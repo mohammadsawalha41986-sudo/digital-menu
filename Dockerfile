@@ -16,7 +16,11 @@ WORKDIR /app
 # --- Dependencies ----------------------------------------------------------
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci
+# `--ignore-scripts`: the package's own postinstall is `prisma generate`, and
+# neither the schema nor the source tree exists at this layer — dependencies
+# are installed from the lockfile alone so the layer caches on it. The build
+# stage generates the client explicitly once the source is present.
+RUN npm ci --ignore-scripts
 
 # --- Migrator --------------------------------------------------------------
 # A minimal, isolated Prisma CLI install. The standalone Next.js bundle traces
