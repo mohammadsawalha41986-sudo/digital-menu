@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { href: '/admin', label: 'Dashboard', exact: true },
   { href: '/admin/businesses', label: 'Businesses', exact: false },
+  { href: '/admin/api-keys', label: 'API keys', exact: false },
 ] as const;
 
 export function AdminNav() {

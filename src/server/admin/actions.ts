@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
+import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import {
   ValidationError,
@@ -66,12 +67,21 @@ async function run(work: () => Promise<string | void>): Promise<ActionState> {
   }
 }
 
-/** Public profiles are dynamic, but admin views cache; refresh both. */
+/**
+ * Refreshes admin views and evicts the business's cached public profile.
+ *
+ * Over-calling is the safe direction: invalidation is cheap, and a stale price
+ * on a customer's menu is not (§114).
+ */
 function revalidateBusiness(businessId: string, publicId?: string) {
   revalidatePath(`/admin/businesses/${businessId}`);
   revalidatePath('/admin/businesses');
   revalidatePath('/admin');
-  if (publicId) revalidatePath(`/m/${publicId}`);
+
+  if (publicId) {
+    revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
+  }
 }
 
 export async function createBusinessAction(

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireUser } from '@/server/auth/current-user';
+import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import {
   createExternalLink,
@@ -65,6 +66,7 @@ export async function uploadFileAction(
 
     revalidatePath(`/admin/businesses/${businessId}/files`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
 
     return { ok: true, message: 'File published — the QR and URL are unchanged' };
   } catch (error) {
@@ -90,6 +92,7 @@ export async function createLinkAction(
     await createExternalLink(user, businessId, parsed.data);
     revalidatePath(`/admin/businesses/${businessId}/files`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
     return { ok: true, message: 'Link saved' };
   } catch (error) {
     if (error instanceof TenantAccessError) return { error: error.message };
@@ -109,6 +112,7 @@ export async function toggleFileVisibilityAction(
     await setFileVisibility(user, businessId, fileId, isPublic);
     revalidatePath(`/admin/businesses/${businessId}/files`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
     return { ok: true, message: isPublic ? 'Published' : 'Unpublished' };
   } catch (error) {
     if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
@@ -127,6 +131,7 @@ export async function deleteFileAction(
     await deletePublicFile(user, businessId, fileId);
     revalidatePath(`/admin/businesses/${businessId}/files`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
     return { ok: true, message: 'File removed' };
   } catch (error) {
     if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };

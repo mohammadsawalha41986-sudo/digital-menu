@@ -19,7 +19,14 @@ export function AnalyticsScript({
   branchKey: string | null;
   locale: string;
 }) {
-  const config = JSON.stringify({ publicId, branch: branchKey, locale });
+  // Every value here is server-derived and already constrained: a validated
+  // public id, a `[a-z0-9-]` branch key, a locale from a two-member enum.
+  // Escaping `<` anyway costs one line and removes the whole class of "a value
+  // closed the script tag early".
+  const config = JSON.stringify({ publicId, branch: branchKey, locale }).replaceAll(
+    '<',
+    '\\u003c',
+  );
 
   const script = `
 (function(){

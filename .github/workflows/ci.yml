@@ -45,6 +45,8 @@ jobs:
       - name: Verify migrations leave no schema drift
         run: npm run db:status
       - run: npm run db:seed
+        env:
+          SEED_ADMIN_PASSWORD: ci-password-for-e2e-only
 
       - run: npm run lint
       - run: npm run typecheck
@@ -55,6 +57,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - run: npm run test:e2e
+        env:
+          SEED_ADMIN_PASSWORD: ci-password-for-e2e-only
 
       - uses: actions/upload-artifact@v4
         if: failure()

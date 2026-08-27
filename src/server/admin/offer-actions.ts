@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireUser } from '@/server/auth/current-user';
+import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { ValidationError } from '@/server/admin/business-service';
 import { deleteOffer, upsertOffer } from '@/server/offers/service';
@@ -69,6 +70,7 @@ export async function upsertOfferAction(
 
     revalidatePath(`/admin/businesses/${businessId}/offers`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
 
     return { ok: true, message: 'Offer saved' };
   } catch (error) {
@@ -91,6 +93,7 @@ export async function deleteOfferAction(
     await deleteOffer(user, businessId, offerId);
     revalidatePath(`/admin/businesses/${businessId}/offers`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
     return { ok: true, message: 'Offer removed' };
   } catch (error) {
     if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };

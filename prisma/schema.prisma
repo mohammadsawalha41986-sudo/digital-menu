@@ -852,3 +852,39 @@ model AnalyticsEvent {
   @@index([businessId, eventType, createdAt])
   @@map("analytics_events")
 }
+
+// ---------------------------------------------------------------------------
+// PHASE 9 — programmatic API access.
+// ---------------------------------------------------------------------------
+
+/// A machine consumer of `/api/v1` — today, AI Marketing OS (master spec §130).
+///
+/// The token is stored only as a hash: a leaked database backup must not yield
+/// working credentials. Scope is a business allowlist, so a key issued for one
+/// client cannot read another's menus even if the id is known.
+model ApiClient {
+  id   String @id @default(cuid())
+  name String
+
+  /// Public, non-secret prefix shown in admin so a key can be identified.
+  tokenPrefix String @unique
+  tokenHash   String
+
+  /// Empty means platform-wide (super-admin equivalent); otherwise an allowlist.
+  businessIds String[] @default([])
+
+  /// Identifier the consuming system knows this platform's client by (§130).
+  marketingClientId String?
+
+  scopes   String[] @default(["read"])
+  isActive Boolean  @default(true)
+
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("api_clients")
+}

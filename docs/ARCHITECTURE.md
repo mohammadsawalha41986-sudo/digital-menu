@@ -459,3 +459,83 @@ uses `color-mix` to darken the brand's own text colour, so a business with a
 deep green brand gets a green-black page and one with warm brown gets a
 brown-black one — rather than every "dark" business landing on the same
 near-black. It still declares no colour of its own.
+
+---
+
+## 17. API, SEO and hardening (Phase 9)
+
+### The API is the ecosystem boundary
+
+Master spec §06 draws the line explicitly: AI Marketing OS and Digital Profile OS talk
+over an API and **never share a database**. `/api/v1` is that line.
+
+Two decisions make it usable without leaking:
+
+- **Businesses are addressed by public id** — the same identifier the QR encodes. An
+  integrating system learns exactly one identifier, and it is the one already printed on
+  the customer's table. Internal ids appear nowhere in a request or a response.
+- **Out of scope answers 404, not 403.** A key that cannot read a business must not learn
+  that it exists.
+
+Keys are bearer tokens stored as SHA-256 hashes with a public 8-character prefix. Both
+halves are hex, deliberately: base64url contains `_`, which is also the field delimiter,
+and a secret containing one would make a token ambiguous to parse. Making the alphabet
+disjoint from the delimiter removes that failure mode by construction — a bug the test
+suite caught before it shipped.
+
+Every authentication failure returns the same message. The endpoint is not a key oracle.
+
+### Caching: invalidate, never expire
+
+Public profiles cache indefinitely and are evicted explicitly, per business, on every
+write that changes what a visitor sees. Not a timer — a timer means a window during which
+a corrected price is still wrong, and that window has no good length.
+
+Offers are the exception the design accounts for: their visibility depends on the current
+time, and a cached page cannot express "expires at 22:00", so the offer predicate runs at
+read time (§5 above).
+
+### SEO is opt-in per business
+
+`sitemap.xml` lists only businesses that are ACTIVE *and* have `indexProfile` enabled;
+`robots.txt` disallows admin, the API, uploads and file downloads outright. A client's
+menu does not turn up in search results because the platform decided it should.
+
+Both routes are dynamic rather than prerendered, for the same reason the database client
+is lazy: a production build must never require production configuration.
+
+### Security posture at completion
+
+| Control | Where |
+|---|---|
+| Environment validated, production placeholders rejected by name | `src/lib/env.ts` |
+| Password hashing: scrypt, self-describing format, constant-time compare | `src/server/auth/password.ts` |
+| Sessions: HMAC-signed, httpOnly, SameSite=Lax, Secure in production, role re-read per request | `src/server/auth/session.ts`, `current-user.ts` |
+| Tenant isolation on every write, `updateMany` + scope so a foreign id matches nothing | `src/server/tenancy/`, every service |
+| API scope boundary, 404 for out-of-scope | `src/server/api/auth.ts` |
+| Upload validation: declared type + extension + magic bytes must agree | `src/server/files/validation.ts` |
+| Storage keys generated, never derived from filenames; traversal impossible | `src/server/storage/`, `media/`, `files/` |
+| Public ids validated before any query; DB check constraint as backstop | `src/lib/public-id.ts`, migration |
+| Sort fields allowlisted rather than passed through | `src/server/api/response.ts` |
+| External link schemes restricted to http/https | `src/server/files/service.ts` |
+| SVG rejected as an image type (executable markup) | `ALLOWED_IMAGE_TYPES` |
+| Analytics: no IP, no user agent, no cookie id; salted daily hash | `src/server/analytics/privacy.ts` |
+| Rate limiting on the public ingest endpoint | `src/app/api/events/route.ts` |
+| No stack traces or connection strings in any response | `handleApiError`, `/api/health` |
+
+Two `dangerouslySetInnerHTML` uses exist and are both audited: the QR preview renders SVG
+from our own generator with escaped captions, and the analytics script is built entirely
+from server-derived, already-constrained values — with `<` escaped anyway, because one
+line removes the whole class of "a value closed the script tag early".
+
+### Media
+
+Images go through the same three-way validation as documents, with the same generated
+tenant-prefixed keys. Two decisions worth noting:
+
+- **Upload and assignment are separate.** One image is often an item photo, a category
+  cover and a share image at once; re-uploading it three times would be wasteful and a
+  source of drift. Identical bytes are deduplicated by checksum within a tenant.
+- **Deletion clears every reference first**, in one transaction, so nothing is left
+  pointing at a missing image. A broken image on a customer's menu is worse than a
+  missing one (§120).

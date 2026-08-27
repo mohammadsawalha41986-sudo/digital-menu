@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/server/auth/current-user';
+import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { ParseError, parseSpreadsheet } from '@/server/import/parse';
 import { validateRows } from '@/server/import/validate';
@@ -149,6 +150,7 @@ export async function confirmImportAction(
     revalidatePath(`/admin/businesses/${businessId}/data`);
     revalidatePath(`/admin/businesses/${businessId}/menus`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
 
     return {
       ok: true,
@@ -173,6 +175,7 @@ export async function rollbackImportAction(
     revalidatePath(`/admin/businesses/${businessId}/data`);
     revalidatePath(`/admin/businesses/${businessId}/menus`);
     revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
 
     return {
       ok: true,
