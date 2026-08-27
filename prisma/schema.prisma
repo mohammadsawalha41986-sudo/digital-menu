@@ -171,6 +171,9 @@ model Business {
   importBatches   ImportBatch[]
   priceHistory    PriceHistory[]
   analyticsEvents AnalyticsEvent[]
+  modifierGroups  ModifierGroup[]
+  menuDesigns     MenuDesign[]
+  brandPresets    BrandPreset[]
   logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   ogImage         Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
@@ -250,6 +253,7 @@ model Menu {
   business       Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   categories     MenuCategory[]
   versions       MenuVersion[]  @relation("MenuVersions")
+  design         MenuDesign?
   currentVersion MenuVersion?   @relation("MenuCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
 
   @@unique([businessId, key])
@@ -340,6 +344,7 @@ model Media {
 
   business        Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
   logoOf          Business[]      @relation("BusinessLogo")
+  brandPresetLogo BrandPreset[]   @relation("BrandPresetLogo")
   ogImageOf       Business[]      @relation("BusinessOgImage")
   categoryImageOf MenuCategory[]
   offerImageOf    Offer[]
@@ -404,17 +409,25 @@ model MenuCategory {
   isActive     Boolean @default(true)
   isFeatured   Boolean @default(false)
 
+  /// Subcategory support (Menu Studio §11). One level only: a category may
+  /// have children, a child may not. Deeper nesting reads as a site map, not a
+  /// menu, and no restaurant menu in the spec's examples needs it.
+  parentId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  menu     Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
-  business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  image    Media?     @relation(fields: [imageMediaId], references: [id], onDelete: SetNull)
+  menu     Menu           @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  image    Media?         @relation(fields: [imageMediaId], references: [id], onDelete: SetNull)
+  parent   MenuCategory?  @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children MenuCategory[] @relation("CategoryChildren")
   items    MenuItem[]
 
   @@unique([menuId, key])
   @@index([businessId])
   @@index([menuId, sortOrder])
+  @@index([parentId, sortOrder])
   @@map("menu_categories")
 }
 
@@ -446,6 +459,11 @@ model MenuItem {
   allergens     String[] @default([])
   tags          String[] @default([])
 
+  /// Food cost in the same minor units as `priceMinor`. Optional, and only
+  /// ever entered by the business: margin is computed from it and shown only
+  /// when it exists. An absent cost is absent, never zero (GOALS I9, §39).
+  costMinor Int?
+
   imageMediaId String?
   availability ItemAvailability @default(AVAILABLE)
   isFeatured   Boolean          @default(false)
@@ -454,11 +472,12 @@ model MenuItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  category  MenuCategory         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  business  Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  image     Media?               @relation(fields: [imageMediaId], references: [id], onDelete: SetNull)
+  category  MenuCategory            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  business  Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  image     Media?                  @relation(fields: [imageMediaId], references: [id], onDelete: SetNull)
   gallery   MenuItemImage[]
   overrides BranchItemOverride[]
+  modifiers MenuItemModifierGroup[]
 
   @@unique([businessId, itemCode])
   @@index([categoryId, sortOrder])
@@ -887,4 +906,179 @@ model ApiClient {
 
   @@index([isActive])
   @@map("api_clients")
+}
+
+// ---------------------------------------------------------------------------
+// Menu Studio (docs/MENU-STUDIO.md)
+// ---------------------------------------------------------------------------
+
+/// A reusable set of choices attached to items — "Size", "Milk", "Extras".
+///
+/// Groups belong to the business rather than to one item because a café's
+/// "Milk" list is the same list on every drink, and duplicating it per item is
+/// how menus drift out of sync.
+model ModifierGroup {
+  id         String @id @default(cuid())
+  businessId String
+  key        String
+
+  nameAr String
+  nameEn String?
+
+  /// Selection bounds. `minSelect > 0` makes the group required.
+  minSelect Int @default(0)
+  maxSelect Int @default(1)
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  options  ModifierOption[]
+  items    MenuItemModifierGroup[]
+
+  @@unique([businessId, key])
+  @@index([businessId, sortOrder])
+  @@map("modifier_groups")
+}
+
+/// One choice within a group. `priceDeltaMinor` is a difference, not a price:
+/// "Large +3.00" survives a base price change, a stored absolute would not.
+model ModifierOption {
+  id         String @id @default(cuid())
+  groupId    String
+  businessId String
+  key        String
+
+  nameAr String
+  nameEn String?
+
+  priceDeltaMinor Int     @default(0)
+  isDefault       Boolean @default(false)
+  isActive        Boolean @default(true)
+  sortOrder       Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, key])
+  @@index([groupId, sortOrder])
+  @@map("modifier_options")
+}
+
+/// Which groups an item offers, in the order the item offers them.
+model MenuItemModifierGroup {
+  itemId     String
+  groupId    String
+  businessId String
+  sortOrder  Int    @default(0)
+
+  item  MenuItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  group ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, groupId])
+  @@index([businessId])
+  @@index([itemId, sortOrder])
+  @@map("menu_item_modifier_groups")
+}
+
+/// The presentation settings a menu renders with.
+///
+/// Separate from `Menu` because it holds no menu *data*: swapping every field
+/// here changes how the menu looks and nothing about what it says. That
+/// separation is what makes theme switching safe (docs/MENU-STUDIO.md).
+model MenuDesign {
+  id     String @id @default(cuid())
+  menuId String @unique
+
+  businessId String
+
+  /// Key into the in-code theme catalogue (src/menu-studio/themes).
+  themeKey  String @default("modern-minimal")
+  /// Layout system within the theme.
+  layoutKey String @default("a")
+
+  /// Typography roles. Null means "take the theme's default".
+  fontHeading String?
+  fontBody    String?
+  fontPrice   String?
+  fontAccent  String?
+
+  /// Presentation overrides an operator set by hand, as theme-shaped values.
+  /// Null everywhere means the theme is used exactly as authored.
+  imageStyle   String?
+  density      String?
+  showPrices   Boolean @default(true)
+  showImages   Boolean @default(true)
+  showCalories Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menu     Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("menu_designs")
+}
+
+/// A brand identity derived from a logo, plus what the operator did with it.
+///
+/// Kept apart from `BrandTheme` — which is the palette actually in use — so the
+/// measurement survives the editing. Every field records whether it came from
+/// the image or from a person, because a colour nobody can trace is a colour
+/// nobody trusts (GOALS I9).
+model BrandPreset {
+  id         String @id @default(cuid())
+  businessId String
+  key        String
+
+  label String
+
+  logoMediaId String?
+
+  /// Extracted, in the order they dominate the logo. Hex, uppercase.
+  extractedColors String[] @default([])
+  /// Set by the analysis, then possibly overridden — see `manualOverrides`.
+  colorPrimary    String
+  colorSecondary  String
+  colorAccent     String
+  colorBackground String
+  colorSurface    String
+  colorText       String
+  colorMuted      String
+  colorBorder     String
+
+  fontHeading String
+  fontBody    String
+  fontPrice   String
+  fontAccent  String
+
+  /// "light" | "dark" — which direction the logo pushes the page.
+  tone String   @default("light")
+  /// Descriptive words the analysis supports, e.g. ["warm", "premium"].
+  mood String[] @default([])
+
+  /// Theme this identity suggests. A suggestion, never applied silently.
+  recommendedThemeKey String?
+
+  /// Names of fields a person changed after extraction.
+  manualOverrides String[] @default([])
+
+  /// False when no logo was analysable and the values are platform defaults.
+  fromLogo Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  logo     Media?   @relation("BrandPresetLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, key])
+  @@index([businessId])
+  @@map("brand_presets")
 }
