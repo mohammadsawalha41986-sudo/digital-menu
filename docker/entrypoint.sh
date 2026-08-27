@@ -26,7 +26,13 @@ echo "-> applying database migrations"
 node /app/migrator/node_modules/prisma/build/index.js \
   migrate deploy --config /app/migrator/prisma.config.mjs
 
-echo "-> starting server on port ${PORT:-3000}"
+# The Next.js standalone server binds to $HOSTNAME, and container runtimes set
+# that variable to the container id. Resolving it reaches one interface at
+# best, so the platform's proxy cannot connect and the deployment never turns
+# healthy. Bind to every interface instead.
+export HOSTNAME=0.0.0.0
+
+echo "-> starting server on ${HOSTNAME}:${PORT:-3000}"
 
 if [ "$(id -u)" != "0" ]; then
   exec node /app/server.js
