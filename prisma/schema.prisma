@@ -165,6 +165,7 @@ model Business {
   qrCodes     QrCode[]
   auditLogs   AuditLog[]
   publicFiles PublicFile[]
+  offers      Offer[]
   logo        Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   ogImage     Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
@@ -336,6 +337,7 @@ model Media {
   logoOf          Business[]      @relation("BusinessLogo")
   ogImageOf       Business[]      @relation("BusinessOgImage")
   categoryImageOf MenuCategory[]
+  offerImageOf    Offer[]
   itemImageOf     MenuItem[]
   itemGallery     MenuItemImage[]
 
@@ -644,4 +646,65 @@ model PublicFileVersion {
 
   @@unique([fileId, version])
   @@map("public_file_versions")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 5 — offers.
+// ---------------------------------------------------------------------------
+
+/// Where an offer appears on the profile (master spec §43).
+enum OfferPlacement {
+  HERO
+  FEATURED
+  BANNER
+  SECTION
+}
+
+/// A scheduled promotion (master spec §41, §42).
+///
+/// Activation and expiry are computed from the stored window at read time
+/// rather than by a job flipping a flag: a cron that fails must never leave an
+/// expired offer on a customer's menu.
+model Offer {
+  id         String @id @default(cuid())
+  businessId String
+  key        String
+
+  titleAr       String
+  titleEn       String?
+  descriptionAr String?
+  descriptionEn String?
+
+  imageMediaId String?
+
+  /// Both in minor units, like every other price in the system.
+  originalPriceMinor Int?
+  offerPriceMinor    Int?
+  /// Stored when the offer is expressed as a percentage rather than a price.
+  discountPercent    Int?
+
+  ctaLabelAr String?
+  ctaLabelEn String?
+  ctaUrl     String?
+
+  /// Window bounds, stored as instants. `timezone` records the zone staff
+  /// authored them in, so the admin UI can show what they typed.
+  startsAt DateTime?
+  endsAt   DateTime?
+  timezone String    @default("Asia/Riyadh")
+
+  placement  OfferPlacement @default(FEATURED)
+  isActive   Boolean        @default(true)
+  isFeatured Boolean        @default(false)
+  sortOrder  Int            @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  image    Media?   @relation(fields: [imageMediaId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, key])
+  @@index([businessId, isActive, startsAt, endsAt])
+  @@map("offers")
 }

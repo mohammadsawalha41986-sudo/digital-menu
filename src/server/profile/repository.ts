@@ -2,6 +2,7 @@ import { parsePublicId } from '@/lib/public-id';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n/config';
 import { prisma } from '@/server/db/client';
 import { getStorage } from '@/server/storage';
+import { discountPercent, liveOfferWhere } from '@/server/offers/scheduling';
 import type {
   PublicCategory,
   PublicDownload,
@@ -92,6 +93,29 @@ export async function getPublicProfile(
           whatsapp: true,
           googleMapsUrl: true,
           workingHours: true,
+        },
+      },
+      offers: {
+        // Expired and scheduled offers are excluded by the query itself, so a
+        // failed job can never leave one on a customer's menu (§42).
+        where: liveOfferWhere(),
+        orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+        select: {
+          key: true,
+          titleAr: true,
+          titleEn: true,
+          descriptionAr: true,
+          descriptionEn: true,
+          originalPriceMinor: true,
+          offerPriceMinor: true,
+          discountPercent: true,
+          ctaLabelAr: true,
+          ctaLabelEn: true,
+          ctaUrl: true,
+          placement: true,
+          isFeatured: true,
+          endsAt: true,
+          image: { select: MEDIA_SELECT },
         },
       },
       publicFiles: {
@@ -228,9 +252,30 @@ export async function getPublicProfile(
     })),
     activeBranchKey: activeBranch?.key ?? null,
     menus: business.menus.map((menu): PublicMenu => toMenu(menu, overrides)),
-    // Offers arrive in Phase 5; the shape exists now so templates can be
-    // written against a stable contract.
-    offers: [],
+    offers: business.offers.map((offer) => ({
+      key: offer.key,
+      titleAr: offer.titleAr,
+      titleEn: offer.titleEn,
+      descriptionAr: offer.descriptionAr,
+      descriptionEn: offer.descriptionEn,
+      image: toImage(offer.image),
+      originalPriceMinor: offer.originalPriceMinor,
+      offerPriceMinor: offer.offerPriceMinor,
+      // Computed, never stored as marketing copy: a displayed discount is
+      // arithmetic or it is absent (GOALS I9).
+      discountPercent: discountPercent(
+        offer.originalPriceMinor,
+        offer.offerPriceMinor,
+        offer.discountPercent,
+      ),
+      currency: business.currency,
+      ctaLabelAr: offer.ctaLabelAr,
+      ctaLabelEn: offer.ctaLabelEn,
+      ctaUrl: offer.ctaUrl,
+      placement: offer.placement,
+      isFeatured: offer.isFeatured,
+      endsAt: offer.endsAt,
+    })),
     downloads: business.publicFiles.flatMap((file): PublicDownload[] => {
       if (file.kind === 'LINK') {
         return file.externalUrl

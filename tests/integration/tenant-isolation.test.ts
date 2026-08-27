@@ -50,8 +50,8 @@ beforeAll(async () => {
   await cleanup();
 
   const [alpha, beta] = await Promise.all([
-    createTenant('ISOAAA', 'iso-alpha'),
-    createTenant('ISOBBB', 'iso-beta'),
+    createTenant('TENAA1', 'iso-alpha'),
+    createTenant('TENBB2', 'iso-beta'),
   ]);
 
   alphaId = alpha.id;
@@ -93,7 +93,7 @@ afterAll(async () => {
 });
 
 async function cleanup() {
-  await prisma.business.deleteMany({ where: { publicId: { in: ['ISOAAA', 'ISOBBB'] } } });
+  await prisma.business.deleteMany({ where: { publicId: { in: ['TENAA1', 'TENBB2'] } } });
   await prisma.user.deleteMany({ where: { email: { endsWith: `-${SUFFIX}@example.test` } } });
 }
 
@@ -275,7 +275,7 @@ describe.skipIf(!databaseReachable)('a staff user cannot reach another tenant', 
 describe.skipIf(!databaseReachable)('a staff user can operate its own tenant', () => {
   it('reads, writes and publishes within its grant', async () => {
     const business = await getBusinessForAdmin(alphaUser, alphaId);
-    expect(business.publicId).toBe('ISOAAA');
+    expect(business.publicId).toBe('TENAA1');
 
     const result = await upsertItem(alphaUser, alphaId, itemInput);
     expect(result.created).toBe(true);
@@ -307,8 +307,8 @@ describe.skipIf(!databaseReachable)('platform super admin', () => {
     const alpha = await getBusinessForAdmin(superAdmin, alphaId);
     const beta = await getBusinessForAdmin(superAdmin, betaId);
 
-    expect(alpha.publicId).toBe('ISOAAA');
-    expect(beta.publicId).toBe('ISOBBB');
+    expect(alpha.publicId).toBe('TENAA1');
+    expect(beta.publicId).toBe('TENBB2');
   });
 
   it('still cannot reach a business that does not exist', async () => {

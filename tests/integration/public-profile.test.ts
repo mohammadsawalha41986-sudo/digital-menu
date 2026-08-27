@@ -181,3 +181,31 @@ describe.skipIf(!databaseReachable)('branch scoping', () => {
     expect(profile?.branches).toHaveLength(0);
   });
 });
+
+describe.skipIf(!databaseReachable)('public identifier integrity', () => {
+  it('the database refuses an id outside the legible alphabet', async () => {
+    // I, L, O and U are excluded so a printed code cannot be misread. An id
+    // containing one is silently unreachable — the reader normalises it to a
+    // different string — so the constraint stops it being stored at all.
+    for (const publicId of ['OFR001', 'ILOU12', 'abc123', 'TOOLONG', 'AB12']) {
+      await expect(
+        prisma.business.create({
+          data: { publicId, slug: `bad-${publicId}`, nameAr: 'x' },
+        }),
+        publicId,
+      ).rejects.toThrow();
+    }
+  });
+
+  it('accepts a generated identifier', async () => {
+    const { generatePublicId } = await import('@/lib/public-id');
+    const publicId = generatePublicId();
+
+    const created = await prisma.business.create({
+      data: { publicId, slug: `ok-${publicId.toLowerCase()}`, nameAr: 'x' },
+    });
+
+    expect(created.publicId).toBe(publicId);
+    await prisma.business.delete({ where: { id: created.id } });
+  });
+});

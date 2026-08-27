@@ -108,6 +108,100 @@
   color: var(--brand-color-on-primary);
 }
 
+/* --- Offers ---------------------------------------------------------------
+ * Editorial treats an offer as a lead paragraph, not a shouty banner: the
+ * brand's accent marks it, the price does the work (§43).
+ */
+
+.editorial__offers {
+  margin-block-start: var(--sys-space-6);
+}
+
+.editorial__offer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sys-space-4);
+}
+
+.editorial__offer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-4);
+  align-items: start;
+  padding-block: var(--sys-space-4);
+  border-block-end: var(--editorial-rule);
+  /* A single hairline in the accent marks the offer without a coloured box. */
+  border-inline-start: 3px solid var(--brand-color-accent);
+  padding-inline-start: var(--sys-space-4);
+}
+
+.editorial__offer-body {
+  flex: 1 1 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  min-inline-size: 0;
+}
+
+.editorial__offer-title {
+  font-size: var(--sys-font-size-xl);
+  color: var(--brand-color-primary);
+}
+
+.editorial__offer-note {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+  max-inline-size: 60ch;
+}
+
+.editorial__offer-pricing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sys-space-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.editorial__offer-was {
+  color: var(--brand-color-muted);
+  font-size: var(--sys-font-size-sm);
+}
+
+.editorial__offer-now {
+  font-size: var(--sys-font-size-xl);
+  color: var(--brand-color-text);
+}
+
+.editorial__offer-discount {
+  font-size: var(--sys-font-size-xs);
+  letter-spacing: var(--sys-tracking-wide);
+  color: var(--brand-color-accent);
+  border: 1px solid var(--brand-color-accent);
+  border-radius: var(--brand-radius-sm);
+  padding-inline: var(--sys-space-2);
+}
+
+.editorial__offer-cta {
+  align-self: start;
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  color: var(--brand-color-primary);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.editorial__offer-image {
+  flex: 0 1 14rem;
+  inline-size: 100%;
+  max-inline-size: 14rem;
+  border-radius: var(--brand-radius-md);
+  object-fit: cover;
+}
+
 /* --- Category index ------------------------------------------------------ */
 
 .editorial__index {

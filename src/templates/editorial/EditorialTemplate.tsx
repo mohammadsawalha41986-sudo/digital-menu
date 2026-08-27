@@ -78,6 +78,78 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
         ) : null}
       </header>
 
+      {profile.offers.length > 0 ? (
+        <section className="editorial__offers" aria-labelledby="offers-heading">
+          <h2 id="offers-heading" className="editorial__section-title">
+            {dictionary.profile.offers}
+          </h2>
+          <ul className="editorial__offer-list">
+            {profile.offers.map((offer) => (
+              <li key={offer.key} className="editorial__offer" data-offer={offer.key}>
+                <div className="editorial__offer-body">
+                  <Localized
+                    field={{ ar: offer.titleAr, en: offer.titleEn }}
+                    locale={locale}
+                    as="h3"
+                    className="editorial__offer-title"
+                  />
+                  <Localized
+                    field={{ ar: offer.descriptionAr, en: offer.descriptionEn }}
+                    locale={locale}
+                    as="p"
+                    className="editorial__offer-note"
+                  />
+                  <p className="editorial__offer-pricing">
+                    {offer.originalPriceMinor !== null ? (
+                      <s className="editorial__offer-was">
+                        <Price
+                          minor={offer.originalPriceMinor}
+                          currency={offer.currency}
+                          locale={locale}
+                        />
+                      </s>
+                    ) : null}
+                    <Price
+                      minor={offer.offerPriceMinor}
+                      currency={offer.currency}
+                      locale={locale}
+                      className="editorial__offer-now"
+                    />
+                    {offer.discountPercent !== null ? (
+                      <span className="editorial__offer-discount" data-discount="">
+                        −{offer.discountPercent}%
+                      </span>
+                    ) : null}
+                  </p>
+                  {offer.ctaUrl ? (
+                    <a
+                      href={offer.ctaUrl}
+                      className="editorial__offer-cta"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-event="offer_cta"
+                    >
+                      <Localized
+                        field={{ ar: offer.ctaLabelAr, en: offer.ctaLabelEn }}
+                        locale={locale}
+                      />
+                    </a>
+                  ) : null}
+                </div>
+                {offer.image ? (
+                  <ProfileImage
+                    image={offer.image}
+                    locale={locale}
+                    className="editorial__offer-image"
+                    sizes="(min-width: 48rem) 20rem, 100vw"
+                  />
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {categories.length > 1 ? (
         <nav aria-label={dictionary.profile.categories} className="editorial__index">
           <ul className="editorial__index-list">
