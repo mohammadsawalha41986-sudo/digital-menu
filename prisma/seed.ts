@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
+import { generatePassword, hashPassword } from '../src/server/auth/password';
 
 /**
  * Deterministic development seed.
@@ -45,18 +46,7 @@ interface SeedCategory {
 }
 
 async function main() {
-  const staff = await prisma.user.upsert({
-    where: { email: 'staff@example.com' },
-    update: {},
-    create: {
-      email: 'staff@example.com',
-      name: 'Demo Staff',
-      role: 'SUPER_ADMIN',
-      // No password is set here: credentials are provisioned in Phase 3, and
-      // seeding a known one into every environment would be a liability.
-      passwordHash: null,
-    },
-  });
+  const staff = await provisionStaffUser();
 
   // Demo rows converge on re-seed: `update` carries the same payload as
   // `create`, so re-running after the demo content changes refreshes the row
@@ -399,6 +389,51 @@ async function seedMenu(
 
     await tx.menu.update({ where: { id: menu.id }, data: { currentVersionId: version.id } });
   });
+}
+
+/**
+ * Provisions the development staff account.
+ *
+ * The password comes from SEED_ADMIN_PASSWORD when set (CI, scripted
+ * environments) and is otherwise generated and printed **once**. A hard-coded
+ * credential in a seed is a credential in every environment that ever ran it.
+ *
+ * An existing account keeps its password: re-seeding must not silently reset
+ * an operator's login.
+ */
+async function provisionStaffUser() {
+  const email = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
+
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, passwordHash: true },
+  });
+
+  if (existing?.passwordHash) {
+    return prisma.user.update({
+      where: { id: existing.id },
+      data: { role: 'SUPER_ADMIN', isActive: true },
+    });
+  }
+
+  const password = process.env.SEED_ADMIN_PASSWORD ?? generatePassword();
+  const passwordHash = await hashPassword(password);
+
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: { passwordHash, role: 'SUPER_ADMIN', isActive: true },
+    create: { email, name: 'Demo Staff', role: 'SUPER_ADMIN', passwordHash },
+  });
+
+  if (!process.env.SEED_ADMIN_PASSWORD) {
+    console.log('');
+    console.log('  Admin account provisioned — this password is shown once:');
+    console.log(`    email:    ${email}`);
+    console.log(`    password: ${password}`);
+    console.log('');
+  }
+
+  return user;
 }
 
 main()

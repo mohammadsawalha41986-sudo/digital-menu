@@ -1,3 +1,4 @@
 @import 'tailwindcss';
 @import '../design/tokens.css';
 @import '../templates/editorial/editorial.css';
+@import './admin/admin.css';

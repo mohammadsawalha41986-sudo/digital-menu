@@ -45,6 +45,8 @@ export default defineConfig({
       DATABASE_URL: process.env.DATABASE_URL ?? '',
       APP_URL: baseURL,
       PUBLIC_URL: baseURL,
+      // The admin journey signs in as the seeded staff account.
+      SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345',
     },
   },
 });

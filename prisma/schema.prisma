@@ -76,8 +76,11 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
+  lastLoginAt DateTime?
+
   memberships     BusinessMembership[]
   publishedMenues MenuVersion[]        @relation("MenuVersionPublisher")
+  auditLogs       AuditLog[]
 
   @@index([role])
   @@map("users")
@@ -159,6 +162,7 @@ model Business {
   items       MenuItem[]
   media       Media[]
   qrCodes     QrCode[]
+  auditLogs   AuditLog[]
   logo        Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   ogImage     Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
@@ -530,4 +534,36 @@ model QrCode {
 
   @@index([businessId])
   @@map("qr_codes")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 3 — audit trail.
+// ---------------------------------------------------------------------------
+
+/// Append-only record of consequential staff actions (master spec §123).
+///
+/// Deliberately not a foreign key to the entity: rows survive the deletion of
+/// what they describe, which is the point of an audit trail.
+model AuditLog {
+  id String @id @default(cuid())
+
+  /// Null for platform-level actions with no tenant.
+  businessId String?
+  userId     String?
+
+  action   String
+  entity   String
+  entityId String?
+
+  /// Before/after payloads for the fields that changed.
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
 }
