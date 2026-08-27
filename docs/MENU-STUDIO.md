@@ -63,3 +63,73 @@ none is configured in this repository. The recommendation engine here is determi
 and inspectable: contrast ratios, hue relationships and script coverage decide the
 suggestion. It is labelled as a suggestion and every field it fills stays editable. When
 an AI service is configured it can replace the recommender behind the same interface.
+
+## Where the studio lives
+
+| Screen | Does |
+|---|---|
+| `/admin/businesses/{id}/studio` | Brand identity, modifier groups, menu projects |
+| `/admin/businesses/{id}/studio/{menuId}` | Structure · live preview · design, then bulk edit |
+| `/admin/businesses/{id}/menus` | Menu content: categories, items, publishing |
+| `/admin/businesses/{id}/data` | Excel/CSV import and export |
+| `/m/{publicId}` | What a customer gets |
+
+## §41 — the QA list, and what actually passes
+
+Each line is checked by a test, and the test is named. Nothing is ticked on the
+strength of having written the code.
+
+| Check | State | Evidence |
+|---|---|---|
+| Logo upload | **Works** | `tests/integration/media.test.ts` |
+| Logo identity extraction | **Works** | `tests/unit/brand-identity.test.ts` — real images decoded |
+| Brand palette | **Works** | same, including the 7:1 / 4.5:1 contrast guarantee |
+| Theme switching | **Works** | `tests/integration/menu-studio.test.ts`, `e2e/menu-studio.spec.ts` |
+| Typography switching | **Works** | `menu-studio.test.ts`; roles resolve to real stacks |
+| Arabic / English / RTL | **Works** | `e2e/smoke.spec.ts`, `e2e/profile-content.spec.ts` |
+| Menu items, categories, subcategories | **Works** | `menu-studio.test.ts`, `import-export.test.ts` |
+| Images | **Works** | `media.test.ts` |
+| Live preview | **Works** | `e2e/menu-studio.spec.ts` — a real iframe of the public page |
+| Mobile preview | **Works** | same; the whole E2E suite runs at Pixel 7 width |
+| Import Excel and CSV, mapping, validation | **Works** | `import-export.test.ts` |
+| Export Excel and CSV | **Works** | same |
+| Import/export round trip | **Works** | same — including subcategory and cost |
+| Draft / publish / versioning | **Works** | `public-profile.test.ts`, `full-journey.spec.ts` |
+| Multiple themes | **Works** | `menu-themes.test.ts` proves they are structurally distinct |
+| Brand preset | **Works** | `brand-identity.test.ts`, `menu-studio.test.ts` |
+| No client data leakage | **Works** | `tenant-isolation.test.ts`, plus scoped tests in `menu-studio.test.ts` |
+| No fake functionality | **Works** | margins, calories and translations are absent when unknown |
+| No hard-coded restaurant identity | **Works** | a test asserts no theme contains a colour at all |
+| PDF export | **Not implemented** | see below |
+
+### What is deliberately not claimed
+
+**Server-side PDF export (§25).** The print path exists — a print stylesheet
+that drops photography and keeps items off page breaks, and a print preview in
+the studio — so a menu can be printed to PDF from a browser today. Generating
+the file on the server needs a headless renderer in the runtime image, which is
+a deployment decision with real weight (image size, memory, a browser to patch).
+It is not implemented and the interface does not offer a button that pretends
+otherwise.
+
+**Drag and drop (§16).** Ordering is by `sort_order` through forms and the
+spreadsheet, which works with a keyboard, on a phone, and with no JavaScript.
+Drag-and-drop would be an addition to that, never a replacement: the spec asks
+for a non-drag alternative, and building the alternative first is the way to be
+sure it exists.
+
+**A full page designer (§15).** Page size, margins and columns are theme and
+layout properties, not free-form controls. Density, photography treatment,
+typography and display toggles are per menu. Arbitrary margins would produce
+menus that break at some width, and every layout here is one that holds.
+
+**Agency → client hierarchy (§32).** Isolation is per business, enforced
+server-side and tested. Brand presets are per business, so identities cannot
+mix. A second tier above business — an agency owning many clients — is not
+modelled; memberships would carry it when the product needs it.
+
+**Marketing and profitability integration (§38, §39).** No marketing engine
+exists in this repository, and this platform records no orders. Food cost is
+stored where a business enters it and margin is computed from it; demand,
+campaign performance and "top-performing item" are not shown, because the data
+to compute them honestly is not here.

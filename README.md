@@ -35,7 +35,8 @@ and asserts the QR payload and rendered SVG are byte-identical afterwards.
 | Bulk | Excel/CSV import with preview, mapping, partial import, rollback; import-shaped export |
 | Analytics | Privacy-conscious events, no PII, admin reporting |
 | API | `/api/v1` read surface with scoped bearer keys |
-| Deployment | Multi-stage Docker image needing no build-time secrets, compose, health checks, CI |
+| Menu Studio | Brand identity measured from the logo, ten data-driven themes, live preview, modifiers, bulk edit |
+| Deployment | Multi-stage Docker image needing no build-time secrets, compose, health checks, CI, Railway |
 
 Known gaps are listed at the end of this file, honestly.
 
@@ -45,6 +46,7 @@ Known gaps are listed at the end of this file, honestly.
 |---|---|
 | [`docs/GOALS.md`](docs/GOALS.md) | Product invariants and the phased plan |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Decisions of record and why |
+| [`docs/MENU-STUDIO.md`](docs/MENU-STUDIO.md) | The studio: brand engine, theme layer, and what is not claimed |
 | [`docs/DOMAIN.md`](docs/DOMAIN.md) | The vocabulary and what each term may mean |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Schema, indexes, transactions, migrations |
 | [`docs/QR.md`](docs/QR.md) | Payload rules, artwork, readability validation |
@@ -52,7 +54,8 @@ Known gaps are listed at the end of this file, honestly.
 | [`docs/THEMES.md`](docs/THEMES.md) | Token layers, derived values |
 | [`docs/EXCEL-IMPORT.md`](docs/EXCEL-IMPORT.md) | Columns, validation, rollback, export |
 | [`docs/API.md`](docs/API.md) | Endpoints, auth, envelopes, AI Marketing OS integration |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Docker, Coolify, environment, backups |
+| [`docs/MENU-STUDIO.md`](docs/MENU-STUDIO.md) | The studio: brand engine, theme layer, and what is not claimed |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Docker, Coolify, Railway, environment, backups |
 
 ## Quick start
 
@@ -77,6 +80,7 @@ Then open:
 | URL | What it is |
 |---|---|
 | `/admin` | Staff dashboard (sign in with the seeded account) |
+| `/admin/businesses/{id}/studio` | Menu Studio — brand identity, themes, live preview |
 | `/m/DEM001` | Demo restaurant — Editorial, two branches |
 | `/m/DEM001/b/olaya` | The same business, branch-scoped, with its own price |
 | `/m/DEM002?lang=en` | Arabic-only business seen by an English visitor |
@@ -204,6 +208,12 @@ Stated plainly rather than left to be discovered:
 - **Demo photography is absent.** The demo businesses carry no images, because the spec
   bars low-quality stock and infringing assets and no licensed set was available. Every
   template renders correctly with and without imagery.
+- **Server-side PDF export is not implemented.** A print stylesheet and a print
+  preview exist, so a menu prints to PDF from a browser; generating the file on the
+  server needs a headless renderer in the runtime image. See `docs/MENU-STUDIO.md`.
+- **Drag-and-drop ordering is not implemented.** Ordering is by `sort_order` through
+  forms and the spreadsheet, which works with a keyboard, on a phone and with no
+  JavaScript. Drag would be an addition to that, not a replacement.
 - **Rate limiting is in-process.** Fine for one instance; it moves behind Redis when a
   second is added.
 - **Docker Compose is unverified by execution** in the environment this was built in (no
