@@ -443,3 +443,144 @@ describe.skipIf(!databaseReachable)('the design reaches the public menu', () => 
     expect(design?.showPrices).toBe(true);
   });
 });
+
+describe.skipIf(!databaseReachable)('bulk edits', () => {
+  const CODES = ['BK-001', 'BK-002', 'BK-003'];
+
+  beforeAll(async () => {
+    if (!databaseReachable) return;
+
+    const category = await prisma.menuCategory.findFirstOrThrow({
+      where: { businessId, key: 'mains' },
+    });
+
+    for (const [index, code] of CODES.entries()) {
+      await prisma.menuItem.upsert({
+        where: { businessId_itemCode: { businessId, itemCode: code } },
+        update: {},
+        create: {
+          categoryId: category.id,
+          businessId,
+          itemCode: code,
+          nameAr: `صنف ${index + 1}`,
+          priceMinor: index === 2 ? null : 1000 * (index + 1),
+          tags: ['classic'],
+        },
+      });
+    }
+  });
+
+  it('changes availability across a selection and reports the count', async () => {
+    const { bulkEditItems } = await import('@/server/menu-studio/bulk');
+
+    const result = await bulkEditItems(user, businessId, CODES, {
+      kind: 'availability',
+      availability: 'UNAVAILABLE',
+    });
+
+    expect(result.changed).toBe(3);
+    expect(result.missing).toEqual([]);
+    expect(
+      await prisma.menuItem.count({ where: { businessId, availability: 'UNAVAILABLE' } }),
+    ).toBe(3);
+  });
+
+  it('adds and removes tags without discarding the ones already there', async () => {
+    const { bulkEditItems } = await import('@/server/menu-studio/bulk');
+
+    await bulkEditItems(user, businessId, CODES, {
+      kind: 'tags',
+      add: ['popular', 'spicy'],
+      remove: ['classic'],
+    });
+
+    const items = await prisma.menuItem.findMany({ where: { businessId, itemCode: { in: CODES } } });
+
+    for (const item of items) {
+      expect(item.tags).toContain('popular');
+      expect(item.tags).toContain('spicy');
+      expect(item.tags).not.toContain('classic');
+    }
+  });
+
+  it('raises prices by a percentage and writes the history', async () => {
+    const { bulkEditItems } = await import('@/server/menu-studio/bulk');
+
+    const result = await bulkEditItems(user, businessId, CODES, {
+      kind: 'price',
+      mode: 'adjust-percent',
+      value: 10,
+    });
+
+    // The third item has no price, so there is nothing to adjust — it is
+    // skipped rather than invented.
+    expect(result.changed).toBe(2);
+
+    const items = await prisma.menuItem.findMany({
+      where: { businessId, itemCode: { in: CODES } },
+      orderBy: { itemCode: 'asc' },
+    });
+
+    expect(items.map((item) => item.priceMinor)).toEqual([1100, 2200, null]);
+
+    const history = await prisma.priceHistory.findMany({
+      where: { businessId, itemCode: 'BK-001' },
+    });
+    expect(history.at(-1)?.newPriceMinor).toBe(1100);
+  });
+
+  it('reports codes it could not find instead of failing silently', async () => {
+    const { bulkEditItems } = await import('@/server/menu-studio/bulk');
+
+    const result = await bulkEditItems(user, businessId, ['BK-001', 'NOT-A-CODE'], {
+      kind: 'featured',
+      featured: true,
+    });
+
+    expect(result.changed).toBe(1);
+    expect(result.missing).toEqual(['NOT-A-CODE']);
+  });
+
+  it('cannot move items into another business’s category', async () => {
+    const { bulkEditItems } = await import('@/server/menu-studio/bulk');
+
+    const foreignMenu = await prisma.menu.create({
+      data: { businessId: otherBusinessId, key: 'foreign-menu', titleAr: 'قائمة' },
+    });
+    await prisma.menuCategory.create({
+      data: {
+        menuId: foreignMenu.id,
+        businessId: otherBusinessId,
+        key: 'foreign-category',
+        nameAr: 'قسم',
+      },
+    });
+
+    await expect(
+      bulkEditItems(user, businessId, CODES, {
+        kind: 'category',
+        categoryKey: 'foreign-category',
+      }),
+    ).rejects.toThrow(/does not exist/i);
+  });
+
+  it('refuses an empty selection rather than touching every item', async () => {
+    const { bulkEditItems } = await import('@/server/menu-studio/bulk');
+
+    await expect(
+      bulkEditItems(user, businessId, [], { kind: 'delete' }),
+    ).rejects.toThrow(/at least one item/i);
+
+    expect(await prisma.menuItem.count({ where: { businessId } })).toBeGreaterThan(0);
+  });
+
+  it('deletes only the selection', async () => {
+    const { bulkEditItems } = await import('@/server/menu-studio/bulk');
+
+    const before = await prisma.menuItem.count({ where: { businessId } });
+    const result = await bulkEditItems(user, businessId, ['BK-003'], { kind: 'delete' });
+
+    expect(result.changed).toBe(1);
+    expect(await prisma.menuItem.count({ where: { businessId } })).toBe(before - 1);
+  });
+});

@@ -46,6 +46,23 @@ export const IMPORT_COLUMNS: readonly ColumnDefinition[] = [
     description: 'Category name in English. Never machine-translated.',
   },
   {
+    key: 'subcategory_ar',
+    labelEn: 'subcategory_ar',
+    labelAr: 'القسم الفرعي',
+    required: false,
+    aliases: ['subcategory', 'sub_category', 'subsection', 'القسم الفرعي بالعربي', 'التصنيف الفرعي'],
+    description:
+      'Subcategory name in Arabic. Blank puts the item directly in its category (§11).',
+  },
+  {
+    key: 'subcategory_en',
+    labelEn: 'subcategory_en',
+    labelAr: 'القسم الفرعي بالإنجليزي',
+    required: false,
+    aliases: ['subcategoryen', 'sub_category_en', 'التصنيف الفرعي الإنجليزي'],
+    description: 'Subcategory name in English. Never machine-translated.',
+  },
+  {
     key: 'item_name_ar',
     labelEn: 'item_name_ar',
     labelAr: 'اسم الصنف',
@@ -84,6 +101,15 @@ export const IMPORT_COLUMNS: readonly ColumnDefinition[] = [
     required: true,
     aliases: ['amount', 'cost', 'السعر بالريال', 'سعر'],
     description: 'Price in the business currency. Required.',
+  },
+  {
+    key: 'cost',
+    labelEn: 'cost',
+    labelAr: 'التكلفة',
+    required: false,
+    aliases: ['food_cost', 'foodcost', 'cost_price', 'التكلفة الفعلية', 'سعر التكلفة'],
+    description:
+      'Food cost in the same currency as the price. Blank means no cost is known — margin is then not shown at all, never estimated (§39).',
   },
   {
     key: 'currency',

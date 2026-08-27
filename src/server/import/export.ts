@@ -64,6 +64,7 @@ export async function exportMenu(
         select: {
           nameAr: true,
           nameEn: true,
+          parent: { select: { nameAr: true, nameEn: true } },
           items: {
             orderBy: [{ sortOrder: 'asc' }, { itemCode: 'asc' }],
             select: {
@@ -73,6 +74,7 @@ export async function exportMenu(
               descriptionAr: true,
               descriptionEn: true,
               priceMinor: true,
+              costMinor: true,
               currency: true,
               calories: true,
               servingSizeAr: true,
@@ -105,14 +107,21 @@ export async function exportMenu(
         const values: Record<string, string> = {
           item_id: item.itemCode,
           menu: menu.key,
-          category_ar: category.nameAr,
-          category_en: category.nameEn ?? '',
+          category_ar: (category.parent ?? category).nameAr,
+          category_en: (category.parent ?? category).nameEn ?? '',
+          // A child category exports as its parent plus a subcategory, which
+          // is the shape the importer reads back (§26 round trip).
+          subcategory_ar: category.parent ? category.nameAr : '',
+          subcategory_en: category.parent ? (category.nameEn ?? '') : '',
           item_name_ar: item.nameAr,
           item_name_en: item.nameEn ?? '',
           description_ar: item.descriptionAr ?? '',
           description_en: item.descriptionEn ?? '',
           price:
             item.priceMinor === null ? '' : formatMinorAsDecimal(item.priceMinor, item.currency),
+          // Blank where no cost is known: exporting a zero would turn absence
+          // into a claim the business never made (§39).
+          cost: item.costMinor === null ? '' : formatMinorAsDecimal(item.costMinor, item.currency),
           currency: item.currency,
           // An empty cell means the business has not measured it; exporting a
           // zero here would turn absence into a claim (§37; GOALS I9).

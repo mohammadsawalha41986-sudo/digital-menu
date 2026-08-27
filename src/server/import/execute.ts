@@ -166,6 +166,31 @@ async function importRow(
     select: { id: true },
   });
 
+  // A subcategory is created under its parent on demand, the same way the
+  // parent is (§11). The key is prefixed so "Hot" under Starters and "Hot"
+  // under Drinks stay two different sections rather than collapsing into one.
+  let targetCategoryId = category.id;
+
+  if (row.subcategoryAr) {
+    const subKey = `${categoryKey}-${slugifyCategory(row.subcategoryAr, row.subcategoryEn)}`;
+
+    const subcategory = await prisma.menuCategory.upsert({
+      where: { menuId_key: { menuId: menu.id, key: subKey } },
+      update: {},
+      create: {
+        menuId: menu.id,
+        businessId: context.businessId,
+        key: subKey,
+        nameAr: row.subcategoryAr,
+        nameEn: row.subcategoryEn,
+        parentId: category.id,
+      },
+      select: { id: true },
+    });
+
+    targetCategoryId = subcategory.id;
+  }
+
   const itemCode = row.itemCode ?? deriveItemCode(categoryKey, row.nameAr, row.rowNumber);
 
   const existing = await prisma.menuItem.findUnique({
@@ -178,6 +203,7 @@ async function importRow(
       descriptionAr: true,
       descriptionEn: true,
       priceMinor: true,
+      costMinor: true,
       calories: true,
       servingSizeAr: true,
       ingredientsAr: true,
@@ -196,12 +222,13 @@ async function importRow(
   }
 
   const data = {
-    categoryId: category.id,
+    categoryId: targetCategoryId,
     nameAr: row.nameAr,
     nameEn: row.nameEn,
     descriptionAr: row.descriptionAr,
     descriptionEn: row.descriptionEn,
     priceMinor: row.priceMinor,
+    costMinor: row.costMinor,
     currency,
     // Never inferred: an empty cell leaves the field empty (§37; GOALS I9).
     calories: row.calories,

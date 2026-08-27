@@ -19,6 +19,14 @@ export interface ValidationIssue {
   problem: string;
   /** Concrete correction, not a restatement of the problem. */
   suggestion: string;
+  /**
+   * `error` blocks the row; `warning` is reported and imported anyway.
+   *
+   * The distinction is whether the platform would have to *invent* something
+   * to proceed. An unreadable price would; a cost above the price would not —
+   * loss leaders are real, so that is worth saying and not worth refusing.
+   */
+  severity: 'error' | 'warning';
 }
 
 export interface ValidatedRow {
@@ -26,12 +34,15 @@ export interface ValidatedRow {
   valid: boolean;
   itemCode: string | null;
   categoryAr: string;
+  subcategoryAr: string | null;
+  subcategoryEn: string | null;
   categoryEn: string | null;
   nameAr: string;
   nameEn: string | null;
   descriptionAr: string | null;
   descriptionEn: string | null;
   priceMinor: number | null;
+  costMinor: number | null;
   calories: number | null;
   servingSize: string | null;
   ingredientsAr: string | null;
@@ -118,11 +129,22 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
     };
 
     const rowIssues: ValidationIssue[] = [];
-    const fail = (column: string, value: string, problem: string, suggestion: string) => {
-      const issue = { rowNumber, column, value, problem, suggestion };
+    const record = (
+      severity: 'error' | 'warning',
+      column: string,
+      value: string,
+      problem: string,
+      suggestion: string,
+    ) => {
+      const issue = { rowNumber, column, value, problem, suggestion, severity };
       rowIssues.push(issue);
       issues.push(issue);
     };
+
+    const fail = (column: string, value: string, problem: string, suggestion: string) =>
+      record('error', column, value, problem, suggestion);
+    const warn = (column: string, value: string, problem: string, suggestion: string) =>
+      record('warning', column, value, problem, suggestion);
 
     const itemCode = get('item_id').trim().toUpperCase() || null;
     const categoryAr = get('category_ar').trim();
@@ -148,6 +170,30 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
           rawPrice,
           'Price could not be read',
           `Use digits only, such as 42 or 42.50 (${options.currency})`,
+        );
+      }
+    }
+
+    // Cost is optional everywhere. A blank cell means the business has not
+    // told us the cost — margin is then simply not shown (§39; GOALS I9).
+    const rawCost = get('cost').trim();
+    let costMinor: number | null = null;
+    if (rawCost !== '') {
+      costMinor = parsePriceToMinor(rawCost, options.currency);
+      if (costMinor === null) {
+        fail(
+          'cost',
+          rawCost,
+          'Cost could not be read',
+          `Use digits only, such as 12 or 12.50 (${options.currency})`,
+        );
+      } else if (priceMinor !== null && costMinor > priceMinor) {
+        // Not an error: restaurants do sell loss leaders. Worth saying aloud.
+        warn(
+          'cost',
+          rawCost,
+          'Cost is higher than the price',
+          'The item would sell at a loss. Import proceeds — check the figure is right.',
         );
       }
     }
@@ -182,7 +228,7 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
     const imageUrl = get('image_url').trim() || null;
     if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
       // A bad image URL never fails the row (§70) — the item still imports.
-      fail(
+      warn(
         'image_url',
         imageUrl,
         'Image URL is not an http(s) link — the item will import without an image',
@@ -218,9 +264,8 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
       }
     }
 
-    // Only issues that make the row unimportable invalidate it: a bad image
-    // URL is a warning, a missing name is not.
-    const blocking = rowIssues.filter((issue) => issue.column !== 'image_url');
+    // Only issues that make the row unimportable invalidate it.
+    const blocking = rowIssues.filter((issue) => issue.severity === 'error');
 
     rows.push({
       rowNumber,
@@ -228,11 +273,14 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
       itemCode,
       categoryAr,
       categoryEn: get('category_en').trim() || null,
+      subcategoryAr: get('subcategory_ar').trim() || null,
+      subcategoryEn: get('subcategory_en').trim() || null,
       nameAr,
       nameEn: get('item_name_en').trim() || null,
       descriptionAr: get('description_ar').trim() || null,
       descriptionEn: get('description_en').trim() || null,
       priceMinor,
+      costMinor,
       calories,
       servingSize: get('serving_size').trim() || null,
       ingredientsAr: get('ingredients_ar').trim() || null,

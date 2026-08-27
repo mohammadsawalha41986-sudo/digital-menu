@@ -131,6 +131,22 @@ async function priceOf(itemCode: string) {
 }
 
 /** Runs a spreadsheet through the whole pipeline, as the admin wizard does. */
+/**
+ * Builds a small CSV from field/value objects and imports it, so a test can
+ * state the columns it cares about instead of positioning cells by hand.
+ */
+async function importRows(rows: Record<string, string>[]) {
+  const headers = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+  const escape = (value: string) => (/[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
+
+  const csv = [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => escape(row[header] ?? '')).join(',')),
+  ].join('\n');
+
+  return importFile(new TextEncoder().encode(csv), 'rows.csv');
+}
+
 async function importFile(bytes: Uint8Array, fileName: string, edit?: (row: string[]) => void) {
   const parsed = await parseSpreadsheet(bytes, fileName);
 
@@ -380,5 +396,123 @@ describe.skipIf(!databaseReachable)('tenant boundaries', () => {
     await expect(
       exportMenu(outsider, businessId, { audience: 'admin', format: 'xlsx' }),
     ).rejects.toBeInstanceOf(TenantAccessError);
+  });
+});
+
+describe.skipIf(!databaseReachable)('subcategories and cost survive the round trip (§24, §26)', () => {
+  it('imports a subcategory as a child of its category, not as a sibling', async () => {
+    const { result } = await importRows([
+      {
+        category_ar: 'الأطباق الرئيسية',
+        subcategory_ar: 'من الشواية',
+        subcategory_en: 'From the grill',
+        item_name_ar: 'ريش',
+        item_name_en: 'Lamb chops',
+        price: '95',
+        cost: '38',
+      },
+    ]);
+
+    expect(result.created).toBe(1);
+
+    const child = await prisma.menuCategory.findFirstOrThrow({
+      where: { businessId, nameAr: 'من الشواية' },
+      include: { parent: true, items: true },
+    });
+
+    expect(child.parent?.nameAr).toBe('الأطباق الرئيسية');
+    expect(child.items).toHaveLength(1);
+    expect(child.items[0]?.costMinor).toBe(3800);
+  });
+
+  it('exports the child as category + subcategory, and re-imports it unchanged', async () => {
+    const before = await prisma.menuItem.findFirstOrThrow({
+      where: { businessId, nameAr: 'ريش' },
+      include: { category: { include: { parent: true } } },
+    });
+
+    const exported = await exportMenu(user, businessId, { audience: 'admin', format: 'xlsx' });
+    const parsed = await parseSpreadsheet(exported.bytes, exported.fileName);
+
+    const column = (key: string) =>
+      Number(Object.entries(parsed.suggestedMapping).find(([, value]) => value === key)?.[0]);
+
+    const row = parsed.rows.find((entry) => entry[column('item_name_ar')] === 'ريش')!;
+
+    expect(row[column('category_ar')]).toBe('الأطباق الرئيسية');
+    expect(row[column('subcategory_ar')]).toBe('من الشواية');
+    expect(row[column('cost')]).toBe('38');
+
+    // Re-importing the untouched export must change nothing at all.
+    const { result } = await importFile(exported.bytes, exported.fileName);
+    expect(result.created).toBe(0);
+
+    const after = await prisma.menuItem.findFirstOrThrow({
+      where: { businessId, nameAr: 'ريش' },
+      include: { category: { include: { parent: true } } },
+    });
+
+    expect(after.categoryId).toBe(before.categoryId);
+    expect(after.category.parent?.nameAr).toBe('الأطباق الرئيسية');
+    expect(after.priceMinor).toBe(before.priceMinor);
+    expect(after.costMinor).toBe(before.costMinor);
+
+    // And no second "من الشواية" was created alongside the first.
+    expect(
+      await prisma.menuCategory.count({ where: { businessId, nameAr: 'من الشواية' } }),
+    ).toBe(1);
+  });
+
+  it('keeps two identically-named subcategories apart under different parents', async () => {
+    await importRows([
+      { category_ar: 'المقبلات', subcategory_ar: 'ساخن', item_name_ar: 'شوربة', price: '18' },
+      { category_ar: 'المشروبات', subcategory_ar: 'ساخن', item_name_ar: 'شاي', price: '12' },
+    ]);
+
+    const hot = await prisma.menuCategory.findMany({
+      where: { businessId, nameAr: 'ساخن' },
+      include: { parent: true },
+    });
+
+    expect(hot).toHaveLength(2);
+    expect(hot.map((category) => category.parent?.nameAr).sort()).toEqual(
+      ['المشروبات', 'المقبلات'].sort(),
+    );
+  });
+
+  it('leaves cost empty rather than zero when the business gave none', async () => {
+    await importRows([
+      { category_ar: 'الحلويات', item_name_ar: 'كنافة', price: '25' },
+    ]);
+
+    const item = await prisma.menuItem.findFirstOrThrow({
+      where: { businessId, nameAr: 'كنافة' },
+    });
+    expect(item.costMinor).toBeNull();
+
+    const exported = await exportMenu(user, businessId, { audience: 'admin', format: 'csv' });
+    const parsed = await parseSpreadsheet(exported.bytes, exported.fileName);
+
+    const column = (key: string) =>
+      Number(Object.entries(parsed.suggestedMapping).find(([, value]) => value === key)?.[0]);
+
+    const row = parsed.rows.find((entry) => entry[column('item_name_ar')] === 'كنافة')!;
+
+    // An empty cell, not a zero: absence must survive the export too.
+    expect(row[column('cost')]).toBe('');
+    expect(row[column('price')]).toBe('25');
+  });
+
+  it('reports a cost above the price without refusing the row', async () => {
+    const { validation, result } = await importRows([
+      { category_ar: 'العروض', item_name_ar: 'طبق اليوم', price: '20', cost: '25' },
+    ]);
+
+    const issue = validation.issues.find((entry) => entry.column === 'cost');
+    expect(issue?.severity).toBe('warning');
+    expect(issue?.problem).toMatch(/higher than the price/i);
+
+    // A loss leader is a real thing a restaurant does: reported, still imported.
+    expect(result.created).toBe(1);
   });
 });
