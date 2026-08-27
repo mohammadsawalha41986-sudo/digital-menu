@@ -3,6 +3,7 @@ import { DEFAULT_LOCALE, isLocale } from '@/i18n/config';
 import { prisma } from '@/server/db/client';
 import { getStorage } from '@/server/storage';
 import { discountPercent, liveOfferWhere } from '@/server/offers/scheduling';
+import { resolveDesign, type DesignRowLike } from '@/menu-studio/resolve';
 import type {
   PublicCategory,
   PublicDownload,
@@ -144,6 +145,21 @@ export async function getPublicProfile(
           titleAr: true,
           titleEn: true,
           currentVersion: { select: { version: true, publishedAt: true } },
+          design: {
+            select: {
+              themeKey: true,
+              layoutKey: true,
+              fontHeading: true,
+              fontBody: true,
+              fontPrice: true,
+              fontAccent: true,
+              imageStyle: true,
+              density: true,
+              showPrices: true,
+              showImages: true,
+              showCalories: true,
+            },
+          },
           categories: {
             where: { isActive: true },
             orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
@@ -398,6 +414,7 @@ interface MenuRow {
   titleAr: string;
   titleEn: string | null;
   currentVersion: { version: number; publishedAt: Date | null } | null;
+  design: DesignRowLike | null;
   categories: CategoryRow[];
 }
 
@@ -434,17 +451,48 @@ interface ItemRow {
 }
 
 function toMenu(menu: MenuRow, overrides: OverrideMap | null): PublicMenu {
+  // A menu with no design row renders in the default theme rather than
+  // unstyled — see src/menu-studio/resolve.ts.
+  const design = resolveDesign(menu.design);
+
   return {
     key: menu.key,
     titleAr: menu.titleAr,
     titleEn: menu.titleEn,
     publishedVersion: menu.currentVersion?.version ?? null,
     publishedAt: menu.currentVersion?.publishedAt ?? null,
+    design,
     categories: menu.categories
-      .map((category): PublicCategory => toCategory(category, overrides))
+      .map((category): PublicCategory => withPresentation(toCategory(category, overrides), design))
       // A category whose every item is hidden would render as an empty heading;
       // drop it rather than show a broken section (§120).
       .filter((category) => category.items.length > 0),
+  };
+}
+
+/**
+ * Applies the menu's display toggles to the read model.
+ *
+ * Hiding happens here rather than in CSS, so a hidden price is *absent* from
+ * the page: not in the markup, not in view-source, not read out by a screen
+ * reader. A price hidden only visually is still published.
+ *
+ * Nothing is deleted — the row keeps its price, and switching the toggle back
+ * restores it.
+ */
+function withPresentation(category: PublicCategory, design: PublicMenu['design']): PublicCategory {
+  if (design.showPrices && design.showCalories && design.showImages) return category;
+
+  return {
+    ...category,
+    image: design.showImages ? category.image : null,
+    items: category.items.map((item) => ({
+      ...item,
+      priceMinor: design.showPrices ? item.priceMinor : null,
+      calories: design.showCalories ? item.calories : null,
+      image: design.showImages ? item.image : null,
+      gallery: design.showImages ? item.gallery : [],
+    })),
   };
 }
 

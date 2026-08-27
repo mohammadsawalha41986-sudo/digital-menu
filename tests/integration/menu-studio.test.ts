@@ -358,3 +358,88 @@ describe.skipIf(!databaseReachable)('modifiers', () => {
     expect(await prisma.menuItem.count({ where: { businessId, itemCode: 'ST-001' } })).toBe(1);
   });
 });
+
+describe.skipIf(!databaseReachable)('the design reaches the public menu', () => {
+  it('publishes the chosen theme, layout and fonts with the menu', async () => {
+    const { getPublicProfile } = await import('@/server/profile/repository');
+
+    const version = await prisma.menuVersion.create({
+      data: { menuId, version: 1, publishedAt: new Date() },
+    });
+    await prisma.menu.update({ where: { id: menuId }, data: { currentVersionId: version.id } });
+
+    await updateMenuDesign(user, businessId, menuId, {
+      themeKey: 'arabic-contemporary',
+      layoutKey: 'b',
+      fontHeading: 'arabic-kufi',
+      showPrices: true,
+      showImages: true,
+      showCalories: true,
+    });
+
+    const profile = await getPublicProfile(PUBLIC_ID);
+    const design = profile?.menus[0]?.design;
+
+    expect(design?.themeKey).toBe('arabic-contemporary');
+    expect(design?.layoutKey).toBe('b');
+    // Resolved to a stack, not left as a key the browser cannot use.
+    expect(design?.fonts.heading).toMatch(/Kufi/);
+    expect(design?.itemStyle).toBe('row');
+  });
+
+  it('hides a price by leaving it out of the page, not by covering it', async () => {
+    const { getPublicProfile } = await import('@/server/profile/repository');
+
+    await updateMenuDesign(user, businessId, menuId, {
+      showPrices: false,
+      showCalories: false,
+      showImages: false,
+    });
+
+    const profile = await getPublicProfile(PUBLIC_ID);
+    const item = profile?.menus[0]?.categories.flatMap((category) => category.items)[0];
+
+    expect(item).toBeDefined();
+    expect(item?.priceMinor).toBeNull();
+    expect(item?.calories).toBeNull();
+    expect(item?.image).toBeNull();
+    // A hidden price is absent from the payload entirely.
+    expect(JSON.stringify(profile?.menus[0])).not.toContain('3800');
+
+    // And the row still holds it: hiding is presentation, not deletion.
+    const row = await prisma.menuItem.findFirstOrThrow({
+      where: { businessId, itemCode: 'ST-001' },
+    });
+    expect(row.priceMinor).toBe(3800);
+    expect(row.calories).toBe(680);
+  });
+
+  it('restores what was hidden when the toggle goes back', async () => {
+    const { getPublicProfile } = await import('@/server/profile/repository');
+
+    await updateMenuDesign(user, businessId, menuId, {
+      showPrices: true,
+      showCalories: true,
+      showImages: true,
+    });
+
+    const profile = await getPublicProfile(PUBLIC_ID);
+    const item = profile?.menus[0]?.categories.flatMap((category) => category.items)[0];
+
+    expect(item?.priceMinor).toBe(3800);
+    expect(item?.calories).toBe(680);
+  });
+
+  it('falls back to a real theme when a menu has no design row at all', async () => {
+    const { getPublicProfile } = await import('@/server/profile/repository');
+
+    await prisma.menuDesign.deleteMany({ where: { menuId } });
+
+    const profile = await getPublicProfile(PUBLIC_ID);
+    const design = profile?.menus[0]?.design;
+
+    expect(design?.themeKey).toBe('modern-minimal');
+    expect(design?.fonts.body.length).toBeGreaterThan(0);
+    expect(design?.showPrices).toBe(true);
+  });
+});

@@ -2,6 +2,7 @@ import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../sha
 import { composeProfile } from '../shared/composition';
 import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
+import { designToAttributes } from '@/menu-studio/resolve';
 
 /**
  * BOLD — full-bleed bands, oversized type, no cards.
@@ -67,7 +68,8 @@ export function BoldTemplate({ profile, locale, dictionary }: TemplateRenderProp
         ) : null}
 
         {profile.menus.map((menu) => (
-          <section key={menu.key} data-menu={menu.key}>
+          <section key={menu.key} data-menu={menu.key}
+            {...designToAttributes(menu.design)}>
             {menu.categories.map((category) => (
               <section
                 key={category.key}

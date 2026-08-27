@@ -2,6 +2,7 @@ import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../sha
 import { composeProfile } from '../shared/composition';
 import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
+import { designToAttributes } from '@/menu-studio/resolve';
 
 /**
  * CASUAL — category tiles first, then a plain photo list.
@@ -82,7 +83,8 @@ export function CasualTemplate({ profile, locale, dictionary }: TemplateRenderPr
         ) : null}
 
         {profile.menus.map((menu) => (
-          <section key={menu.key} data-menu={menu.key}>
+          <section key={menu.key} data-menu={menu.key}
+            {...designToAttributes(menu.design)}>
             {menu.categories.map((category) => (
               <section
                 key={category.key}

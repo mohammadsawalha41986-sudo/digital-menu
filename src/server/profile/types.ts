@@ -54,6 +54,25 @@ export interface PublicCategory {
   items: PublicItem[];
 }
 
+export interface PublicMenuDesign {
+  themeKey: string;
+  layoutKey: string;
+  /** Resolved font stacks, already chosen between design override and theme. */
+  fonts: { heading: string; body: string; price: string; accent: string };
+  imageStyle: string;
+  density: string;
+  categoryStyle: string;
+  priceStyle: string;
+  itemStyle: string;
+  borders: string;
+  headingTransform: string;
+  headingTracking: string;
+  scale: number;
+  showPrices: boolean;
+  showImages: boolean;
+  showCalories: boolean;
+}
+
 export interface PublicMenu {
   key: string;
   titleAr: string;
@@ -61,6 +80,8 @@ export interface PublicMenu {
   publishedVersion: number | null;
   publishedAt: Date | null;
   categories: PublicCategory[];
+  /** Presentation for this menu. Never null: an unstyled menu is a bug. */
+  design: PublicMenuDesign;
 }
 
 export interface PublicBranch {

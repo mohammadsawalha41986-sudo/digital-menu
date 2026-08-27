@@ -2,6 +2,7 @@ import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../sha
 import { composeProfile } from '../shared/composition';
 import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
+import { designToAttributes } from '@/menu-studio/resolve';
 
 /**
  * LUXURY — centred, ceremonial, image-restrained.
@@ -68,7 +69,8 @@ export function LuxuryTemplate({ profile, locale, dictionary }: TemplateRenderPr
         ) : null}
 
         {profile.menus.map((menu) => (
-          <section key={menu.key} className="luxury__menu" data-menu={menu.key}>
+          <section key={menu.key} className="luxury__menu" data-menu={menu.key}
+            {...designToAttributes(menu.design)}>
             {profile.menus.length > 1 ? (
               <Localized
                 field={{ ar: menu.titleAr, en: menu.titleEn }}

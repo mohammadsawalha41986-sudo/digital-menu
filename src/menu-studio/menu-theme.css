@@ -1,0 +1,196 @@
+/* ---------------------------------------------------------------------------
+   Menu Studio theme layer.
+
+   Applies to the menu section of whichever template family is rendering. The
+   template decides *composition* — what elements exist and how they are
+   arranged. This layer decides *presentation* — which face each role is set
+   in, how dense the rhythm is, how photography is treated, whether prices and
+   calories show at all.
+
+   It reads only the custom properties and data attributes that
+   src/menu-studio/resolve.ts emits, and it can express nothing about content.
+   That is deliberate: a stylesheet that cannot reach a price cannot lose one.
+
+   Every rule is written with logical properties, so an Arabic menu is composed
+   right-to-left rather than mirrored (GOALS I4).
+   --------------------------------------------------------------------------- */
+
+[data-menu-theme] {
+  font-family: var(--menu-font-body, inherit);
+}
+
+[data-menu-theme] :is(h2, h3, h4) {
+  font-family: var(--menu-font-heading, inherit);
+  text-transform: var(--menu-heading-transform, none);
+  letter-spacing: var(--menu-heading-tracking, 0);
+}
+
+[data-menu-theme] [data-price] {
+  font-family: var(--menu-font-price, inherit);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Density -------------------------------------------------------------- */
+
+[data-density='compact'] {
+  --menu-rhythm: 0.5rem;
+}
+
+[data-density='regular'] {
+  --menu-rhythm: 0.9rem;
+}
+
+[data-density='airy'] {
+  --menu-rhythm: 1.6rem;
+}
+
+[data-menu-theme] [data-item] {
+  padding-block: var(--menu-rhythm, 0.9rem);
+}
+
+[data-menu-theme] [data-category] + [data-category] {
+  margin-block-start: calc(var(--menu-rhythm, 0.9rem) * 2);
+}
+
+/* --- Type scale ----------------------------------------------------------- */
+
+[data-menu-theme] :is(h2, h3) {
+  font-size: calc(1em * var(--menu-scale, 1));
+}
+
+/* --- Photography ---------------------------------------------------------- */
+
+/* The operator switched images off, or the theme sets none. Hidden rather
+   than absent, because the item still has its image in the database — this is
+   a presentation choice and reversible. */
+[data-image-style='none'] img {
+  display: none;
+}
+
+[data-image-style='circle'] img {
+  border-radius: 50%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+[data-image-style='rounded'] img {
+  border-radius: var(--brand-radius-md, 8px);
+  object-fit: cover;
+}
+
+[data-image-style='thumbnail'] img {
+  inline-size: 4.5rem;
+  block-size: 4.5rem;
+  object-fit: cover;
+  border-radius: var(--brand-radius-sm, 4px);
+}
+
+[data-image-style='grid'] img {
+  aspect-ratio: 1;
+  inline-size: 100%;
+  object-fit: cover;
+}
+
+[data-image-style='editorial'] img {
+  aspect-ratio: 3 / 2;
+  inline-size: 100%;
+  object-fit: cover;
+}
+
+[data-image-style='full-bleed'] img {
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+[data-image-style='polaroid'] img {
+  border: 0.5rem solid var(--brand-color-surface, #fff);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.18);
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+[data-image-style='floating'] img {
+  border-radius: var(--brand-radius-lg, 14px);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.22);
+  object-fit: cover;
+}
+
+/* --- Price presentation --------------------------------------------------- */
+
+[data-price-style='badge'] [data-price] {
+  display: inline-block;
+  padding-inline: 0.5rem;
+  padding-block: 0.15rem;
+  border-radius: 999px;
+  background: var(--brand-color-accent, #c9a227);
+  color: var(--brand-color-background, #fff);
+}
+
+[data-price-style='stacked'] [data-price] {
+  display: block;
+  margin-block-start: 0.35rem;
+}
+
+/* A leader runs from the dish to its price. Generated content, so it is never
+   read aloud as characters by a screen reader. */
+[data-price-style='leader-dots'] [data-item] {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  column-gap: 0.4rem;
+}
+
+[data-price-style='leader-dots'] [data-item]::after {
+  content: '';
+  order: 1;
+  border-block-end: 1px dotted currentColor;
+  opacity: 0.35;
+  align-self: end;
+  margin-block-end: 0.3em;
+}
+
+[data-price-style='leader-dots'] [data-item] [data-price] {
+  order: 2;
+}
+
+/* --- Borders -------------------------------------------------------------- */
+
+[data-borders='none'] [data-item] {
+  border: 0;
+}
+
+[data-borders='hairline'] [data-item] + [data-item] {
+  border-block-start: 1px solid var(--brand-color-border, #e5e1d8);
+}
+
+[data-borders='rule'] [data-category] {
+  border-block-start: 2px solid var(--brand-color-text, currentColor);
+  padding-block-start: var(--menu-rhythm, 0.9rem);
+}
+
+[data-borders='boxed'] [data-item] {
+  border: 1px solid var(--brand-color-border, #e5e1d8);
+  border-radius: var(--brand-radius-md, 8px);
+  padding-inline: var(--menu-rhythm, 0.9rem);
+}
+
+/* --- Print ---------------------------------------------------------------- */
+
+@media print {
+  /* Photography and interactive chrome cost ink and say nothing on paper. */
+  [data-menu-theme] img,
+  [data-menu-theme] [data-category-index] {
+    display: none;
+  }
+
+  [data-menu-theme] [data-item] {
+    break-inside: avoid;
+    padding-block: 0.35rem;
+  }
+
+  [data-menu-theme] [data-category] {
+    break-inside: avoid-page;
+  }
+}

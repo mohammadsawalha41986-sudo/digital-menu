@@ -2,6 +2,7 @@ import { Localized, LocaleSwitcher, Price, hasContent } from '../shared/primitiv
 import { composeProfile } from '../shared/composition';
 import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
+import { designToAttributes } from '@/menu-studio/resolve';
 
 /**
  * HOSPITALITY — a service catalogue, not a food menu.
@@ -90,7 +91,8 @@ export function HospitalityTemplate({ profile, locale, dictionary }: TemplateRen
         ) : null}
 
         {profile.menus.map((menu) => (
-          <section key={menu.key} data-menu={menu.key}>
+          <section key={menu.key} data-menu={menu.key}
+            {...designToAttributes(menu.design)}>
             {menu.categories.map((category) => (
               <details
                 key={category.key}

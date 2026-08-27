@@ -2,6 +2,7 @@ import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../sha
 import { composeProfile } from '../shared/composition';
 import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
+import { designToAttributes } from '@/menu-studio/resolve';
 
 /**
  * PREMIUM — magazine: a feature spread per category, then a quiet index.
@@ -54,7 +55,8 @@ export function PremiumTemplate({ profile, locale, dictionary }: TemplateRenderP
         ) : null}
 
         {profile.menus.map((menu) => (
-          <section key={menu.key} data-menu={menu.key}>
+          <section key={menu.key} data-menu={menu.key}
+            {...designToAttributes(menu.design)}>
             {menu.categories.map((category) => {
               const feature =
                 category.items.find((item) => item.isFeatured) ?? category.items[0] ?? null;

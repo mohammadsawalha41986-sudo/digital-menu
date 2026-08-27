@@ -11,6 +11,7 @@ import {
   hasContent,
 } from '../shared/primitives';
 import type { TemplateRenderProps } from '../types';
+import { designToAttributes } from '@/menu-studio/resolve';
 
 /**
  * EDITORIAL — type-led, rule-separated, restrained.
@@ -173,7 +174,8 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
         ) : null}
 
         {menus.map((menu) => (
-          <section key={menu.key} className="editorial__menu" data-menu={menu.key}>
+          <section key={menu.key} className="editorial__menu" data-menu={menu.key}
+            {...designToAttributes(menu.design)}>
             {menus.length > 1 ? (
               <Localized
                 field={{ ar: menu.titleAr, en: menu.titleEn }}

@@ -2,6 +2,7 @@ import { Localized, LocaleSwitcher, Price } from '../shared/primitives';
 import { composeProfile } from '../shared/composition';
 import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
+import { designToAttributes } from '@/menu-studio/resolve';
 
 /**
  * MINIMAL — text only, no images, no motion.
@@ -56,7 +57,8 @@ export function MinimalTemplate({ profile, locale, dictionary }: TemplateRenderP
         ) : null}
 
         {profile.menus.map((menu) => (
-          <section key={menu.key} data-menu={menu.key} className="minimal__menu">
+          <section key={menu.key} data-menu={menu.key}
+            {...designToAttributes(menu.design)} className="minimal__menu">
             {profile.menus.length > 1 ? (
               <Localized
                 field={{ ar: menu.titleAr, en: menu.titleEn }}
