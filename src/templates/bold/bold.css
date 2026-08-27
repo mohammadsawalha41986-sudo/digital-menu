@@ -1,0 +1,355 @@
+/*
+ * BOLD — full-bleed bands and oversized type.
+ *
+ * Motion personality (§100): strong, decisive transitions. Larger travel than
+ * any other family, still transform/opacity only.
+ */
+
+.bold {
+  display: flex;
+  flex-direction: column;
+  /* Deliberately not inset: bands run edge to edge. */
+  inline-size: 100%;
+  padding-block-end: var(--sys-space-8);
+}
+
+.bold__hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-4);
+  padding: var(--sys-space-6) var(--sys-space-4) var(--sys-space-7);
+  background: var(--brand-color-primary);
+  color: var(--brand-color-on-primary);
+}
+
+.bold__locales {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-self: flex-start;
+}
+
+.bold__locale {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-3);
+  border: 2px solid currentColor;
+  color: inherit;
+  opacity: 0.6;
+  font-size: var(--sys-font-size-xs);
+  font-weight: 700;
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.bold__locale[data-active] {
+  opacity: 1;
+}
+
+.bold__title {
+  font-size: clamp(2.5rem, 14vw, 6rem);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: inherit;
+  animation: bold-rise var(--sys-duration-slow) var(--sys-ease-entrance) both;
+}
+
+.bold__lede {
+  max-inline-size: 40ch;
+  font-size: var(--sys-font-size-lg);
+  color: inherit;
+  opacity: 0.85;
+}
+
+.bold__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+}
+
+.bold__hero-action {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-5);
+  background: var(--brand-color-accent);
+  color: var(--brand-color-on-primary);
+  font-weight: 700;
+  font-size: var(--sys-font-size-sm);
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: transform var(--sys-duration-fast) var(--sys-ease-standard);
+}
+
+.bold__hero-action:active {
+  transform: translateY(2px);
+}
+
+.bold__band {
+  padding-block: var(--sys-space-6);
+  scroll-margin-block-start: var(--sys-space-4);
+}
+
+.bold__band-title {
+  padding: var(--sys-space-3) var(--sys-space-4);
+  background: var(--brand-color-text);
+  color: var(--brand-color-background);
+  font-size: clamp(1.5rem, 7vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.bold__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bold__item {
+  padding-block: var(--sys-space-5);
+  border-block-end: 4px solid var(--brand-color-text);
+}
+
+.bold__item-image {
+  inline-size: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+
+.bold__item-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-3) var(--sys-space-4) 0;
+}
+
+.bold__item-name {
+  font-size: var(--sys-font-size-2xl);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--brand-color-text);
+}
+
+/* The loudest price treatment in the system: as large as the item name. */
+.bold__item-price {
+  font-size: var(--sys-font-size-2xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-color-accent);
+  white-space: nowrap;
+}
+
+.bold__item-description,
+.bold__item-meta,
+.bold__empty,
+.bold__address,
+.bold__offer-note,
+.bold__download-note {
+  padding-inline: var(--sys-space-4);
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+}
+
+.bold__item-meta {
+  display: flex;
+  gap: var(--sys-space-3);
+  padding-block-start: var(--sys-space-2);
+}
+
+.bold__item-flag {
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--brand-color-accent);
+}
+
+.bold__section-title {
+  padding: var(--sys-space-3) var(--sys-space-4);
+  font-size: var(--sys-font-size-xl);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--brand-color-text);
+}
+
+.bold__offer-list,
+.bold__download-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bold__offer {
+  display: flex;
+  flex-direction: column;
+  background: var(--brand-color-accent);
+  color: var(--brand-color-on-primary);
+  margin-block-end: var(--sys-space-3);
+}
+
+.bold__offer-image {
+  inline-size: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.bold__offer-body {
+  padding: var(--sys-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.bold__offer-title {
+  font-size: var(--sys-font-size-xl);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: inherit;
+}
+
+.bold__offer-note {
+  padding-inline: 0;
+  color: inherit;
+  opacity: 0.9;
+}
+
+.bold__offer-pricing {
+  display: flex;
+  gap: var(--sys-space-3);
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.bold__offer-now {
+  font-size: var(--sys-font-size-2xl);
+  font-weight: 800;
+}
+
+.bold__offer-was {
+  opacity: 0.7;
+}
+
+.bold__offer-discount {
+  font-weight: 800;
+  padding-inline: var(--sys-space-2);
+  background: var(--brand-color-text);
+  color: var(--brand-color-background);
+}
+
+.bold__offer-cta,
+.bold__download-link,
+.bold__social-link,
+.bold__action {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--sys-tracking-wide);
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.bold__download-link {
+  justify-content: space-between;
+  inline-size: 100%;
+  padding: var(--sys-space-4);
+  border-block-end: 4px solid var(--brand-color-text);
+  color: var(--brand-color-text);
+  text-decoration: none;
+}
+
+.bold__download-meta {
+  color: var(--brand-color-accent);
+}
+
+.bold__contact {
+  padding: var(--sys-space-6) var(--sys-space-4);
+  background: var(--brand-color-text);
+  color: var(--brand-color-background);
+}
+
+.bold__contact .bold__section-title {
+  padding-inline: 0;
+  color: inherit;
+}
+
+.bold__actions,
+.bold__social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-4);
+  padding-block-start: var(--sys-space-3);
+}
+
+.bold__contact .bold__address {
+  padding-inline: 0;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.bold__platform {
+  padding: var(--sys-space-4);
+  font-size: var(--sys-font-size-xs);
+  text-transform: uppercase;
+  color: var(--brand-color-muted);
+}
+
+@keyframes bold-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  .bold__hero,
+  .bold__band-title,
+  .bold__item-caption,
+  .bold__item-description,
+  .bold__item-meta,
+  .bold__section-title,
+  .bold__contact {
+    padding-inline: var(--sys-space-7);
+  }
+
+  .bold__items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .bold__item {
+    border-inline-end: 4px solid var(--brand-color-text);
+  }
+}
+
+/* --- Layout variants ------------------------------------------------------ */
+
+@media (min-width: 48rem) {
+  /* A keeps one band per row; B takes the two-up grid. */
+  [data-variant='a'] .bold__items {
+    display: block;
+  }
+
+  [data-variant='a'] .bold__item {
+    border-inline-end: none;
+  }
+
+  [data-variant='b'] .bold__items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

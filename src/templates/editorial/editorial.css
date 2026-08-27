@@ -517,3 +517,31 @@
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   }
 }
+
+/* --- Layout variants ------------------------------------------------------
+ * Variants change density and column count within the family's structure.
+ * Anything needing different markup is a new family, not a variant (§24).
+ */
+
+[data-variant='b'] .editorial__items {
+  display: grid;
+  gap: 0 var(--sys-space-6);
+}
+
+@media (min-width: 48rem) {
+  [data-variant='b'] .editorial__items {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+[data-variant='c'] .editorial__item-disclosure {
+  padding-block: var(--sys-space-2);
+}
+
+[data-variant='c'] .editorial__item-name {
+  font-size: var(--sys-font-size-base);
+}
+
+[data-variant='c'] .editorial__body {
+  gap: var(--sys-space-5);
+}

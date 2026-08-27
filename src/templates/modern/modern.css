@@ -1,0 +1,433 @@
+/*
+ * MODERN — app-like, dense, horizontal.
+ *
+ * Motion personality (§100): quick slides. Short durations, transform-based,
+ * nothing that lingers.
+ */
+
+.modern {
+  --modern-thumb: 88px;
+
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100%;
+  /* Room for the fixed dock so the last item is never trapped behind it. */
+  padding-block-end: calc(var(--sys-tap-target) + var(--sys-space-6));
+}
+
+.modern__bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-3) var(--sys-space-4);
+  background: var(--brand-color-surface);
+  border-block-end: 1px solid var(--brand-color-border);
+}
+
+.modern__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-3);
+  min-inline-size: 0;
+}
+
+.modern__logo {
+  block-size: 2rem;
+  inline-size: auto;
+  object-fit: contain;
+}
+
+.modern__title {
+  font-size: var(--sys-font-size-lg);
+  color: var(--brand-color-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modern__locales {
+  display: flex;
+  gap: var(--sys-space-1);
+}
+
+.modern__locale {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-2);
+  border-radius: var(--brand-radius-md);
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+  text-decoration: none;
+}
+
+.modern__locale[data-active] {
+  background: var(--brand-color-primary);
+  color: var(--brand-color-on-primary);
+}
+
+.modern__chips {
+  position: sticky;
+  inset-block-start: calc(var(--sys-tap-target) + var(--sys-space-2));
+  z-index: 2;
+  display: flex;
+  gap: var(--sys-space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: var(--sys-space-3) var(--sys-space-4);
+  background: var(--brand-color-background);
+}
+
+.modern__chips::-webkit-scrollbar {
+  display: none;
+}
+
+.modern__chip {
+  flex: 0 0 auto;
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-4);
+  border-radius: 999px;
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  color: var(--brand-color-text);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform var(--sys-duration-fast) var(--sys-ease-standard);
+}
+
+.modern__chip:active {
+  transform: scale(0.96);
+}
+
+.modern__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-5);
+  max-inline-size: var(--sys-content-max);
+  inline-size: 100%;
+  margin-inline: auto;
+  padding-inline: var(--sys-space-4);
+  padding-block-start: var(--sys-space-4);
+}
+
+.modern__lede,
+.modern__empty,
+.modern__address {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+}
+
+.modern__menu-title {
+  font-size: var(--sys-font-size-xl);
+  color: var(--brand-color-primary);
+}
+
+.modern__category {
+  padding-block-start: var(--sys-space-5);
+  scroll-margin-block-start: calc(var(--sys-tap-target) * 2 + var(--sys-space-4));
+}
+
+.modern__category-title,
+.modern__section-title {
+  font-size: var(--sys-font-size-sm);
+  font-weight: 600;
+  color: var(--brand-color-text);
+  padding-block-end: var(--sys-space-3);
+}
+
+.modern__items,
+.modern__offer-list,
+.modern__download-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.modern__item-disclosure {
+  display: block;
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius-md);
+  padding: var(--sys-space-3);
+}
+
+.modern__item-disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.modern__item-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.modern__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-3);
+  min-inline-size: 0;
+}
+
+.modern__thumb {
+  flex: 0 0 auto;
+  inline-size: var(--modern-thumb);
+  block-size: var(--modern-thumb);
+  border-radius: var(--brand-radius-sm);
+  object-fit: cover;
+}
+
+.modern__thumb--empty {
+  background: var(--brand-color-background);
+  border: 1px dashed var(--brand-color-border);
+}
+
+.modern__row-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.modern__item-name {
+  font-weight: 600;
+  color: var(--brand-color-text);
+}
+
+.modern__item-summary {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.modern__item-meta {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-items: center;
+}
+
+.modern__item-calories,
+.modern__item-flag {
+  font-size: var(--sys-font-size-2xs);
+  color: var(--brand-color-muted);
+}
+
+.modern__item-price {
+  flex: 0 0 auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-color-primary);
+  white-space: nowrap;
+}
+
+.modern__item-disclosure [data-item-detail] {
+  padding-block-start: var(--sys-space-3);
+  animation: modern-slide var(--sys-duration-fast) var(--sys-ease-standard);
+}
+
+.modern__item-description,
+.modern__offer-note,
+.modern__download-note {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+}
+
+.modern__offer {
+  display: flex;
+  gap: var(--sys-space-3);
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-accent);
+  border-radius: var(--brand-radius-md);
+  padding: var(--sys-space-3);
+}
+
+.modern__offer-image {
+  inline-size: 6rem;
+  block-size: 6rem;
+  border-radius: var(--brand-radius-sm);
+  object-fit: cover;
+}
+
+.modern__offer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+  min-inline-size: 0;
+}
+
+.modern__offer-title {
+  font-size: var(--sys-font-size-base);
+  font-weight: 600;
+}
+
+.modern__offer-pricing {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.modern__offer-now {
+  font-weight: 600;
+  color: var(--brand-color-primary);
+}
+
+.modern__offer-was {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+}
+
+.modern__offer-discount {
+  font-size: var(--sys-font-size-2xs);
+  padding-inline: var(--sys-space-2);
+  border-radius: 999px;
+  background: var(--brand-color-accent);
+  color: var(--brand-color-on-primary);
+}
+
+.modern__download-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  min-block-size: var(--sys-tap-target);
+  padding: var(--sys-space-3);
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius-md);
+  text-decoration: none;
+}
+
+.modern__download-title {
+  font-weight: 600;
+  color: var(--brand-color-text);
+}
+
+.modern__download-meta,
+.modern__offer-cta,
+.modern__social-link {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-primary);
+}
+
+.modern__contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  padding-block-start: var(--sys-space-5);
+}
+
+.modern__actions,
+.modern__social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+}
+
+.modern__action {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-4);
+  border-radius: 999px;
+  background: var(--brand-color-primary);
+  color: var(--brand-color-on-primary);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+}
+
+/* The dock is this family's signature and appears in no other (§96). */
+.modern__dock {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 4;
+  display: flex;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-2) var(--sys-space-4);
+  padding-block-end: max(var(--sys-space-2), env(safe-area-inset-bottom));
+  background: var(--brand-color-surface);
+  border-block-start: 1px solid var(--brand-color-border);
+}
+
+.modern__dock-action {
+  flex: 1 1 0;
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--brand-radius-md);
+  background: var(--brand-color-primary);
+  color: var(--brand-color-on-primary);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+}
+
+.modern__platform {
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+}
+
+@keyframes modern-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  .modern {
+    padding-block-end: var(--sys-space-8);
+  }
+
+  .modern__dock {
+    /* On a wide viewport the dock is unnecessary — the actions are in view. */
+    display: none;
+  }
+
+  .modern__items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--sys-space-3);
+  }
+}
+
+/* --- Layout variants ------------------------------------------------------ */
+
+@media (min-width: 48rem) {
+  /* Variant A stays single-column even where there is room; B takes the
+     two-up grid the base composition allows. */
+  [data-variant='a'] .modern__items {
+    display: flex;
+  }
+
+  [data-variant='b'] .modern__items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+[data-variant='c'] .modern {
+  --modern-thumb: 112px;
+}
+
+[data-variant='c'] .modern__item-disclosure {
+  padding: var(--sys-space-4);
+}

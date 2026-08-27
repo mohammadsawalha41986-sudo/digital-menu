@@ -43,7 +43,7 @@ export async function renderProfile(profile: PublicProfile, searchParams: Search
   const locale = await resolveRequestLocale(searchParams, profile.defaultLocale);
   const direction = directionOf(locale);
   const dictionary = getDictionary(locale);
-  const { definition } = resolveTemplate(profile.templateKey, profile.variantKey);
+  const { definition, variant } = resolveTemplate(profile.templateKey, profile.variantKey);
   const headerStore = await headers();
 
   // Recorded after the response is sent, so counting never delays the menu
@@ -79,6 +79,7 @@ export async function renderProfile(profile: PublicProfile, searchParams: Search
       dir={direction}
       data-profile-root=""
       data-template={definition.key}
+      data-variant={variant.key}
       data-locale={locale}
       data-branch={profile.activeBranchKey ?? undefined}
       // Brand identity enters as CSS custom properties here and nowhere else.

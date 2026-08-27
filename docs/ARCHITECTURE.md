@@ -401,3 +401,61 @@ Decisions worth recording:
   by guessing a path (§108).
 - **Item detail is a native `<details>` disclosure.** No JavaScript, keyboard accessible,
   works before hydration; each template styles it into a card, drawer or row (§39, §103).
+
+---
+
+## 16. The template system at full strength (Phase 8)
+
+Ten families ship, and the thing that makes them ten templates rather than one
+template with ten palettes is **composition**:
+
+| Family | What is structurally different |
+|---|---|
+| Editorial | Sticky category index, rule-separated rows, price as a tabular figure. No cards. |
+| Luxury | Centred ceremonial masthead, *no* category navigation, items as centred stanzas, at most one photograph per category. |
+| Minimal | Renders no photography at all. One line per item. No navigation, no disclosure, no motion. |
+| Modern | Sticky identity bar, pill chips, horizontal rows with a square thumbnail, fixed contact dock on phones. |
+| Bold | Full-bleed bands rather than a content column; slab category titles; price set as large as the item name. |
+| Dark | Image mosaic on a ground *derived* from the brand's text colour; captions over a scrim; featured items span two columns. |
+| Hospitality | Address and hours above the catalogue; collapsible service groups; duration beside price; a booking action after every group. |
+| Café | Compact square tiles two-up; underlined tabs; size and price stacked. |
+| Casual | Opens with large category picture tiles, then generous photo-left rows. |
+| Premium | One item per category at feature size with a standfirst, the rest as a quiet two-column index. |
+
+### How the separation is enforced rather than promised
+
+Four unit tests and one E2E suite make "template ≠ theme" checkable:
+
+- **No colour literals.** Every family's stylesheet is scanned for hex and
+  `rgb()`/`hsl()` values. Brand identity may only enter as `--brand-*`.
+- **Logical properties only.** Physical directional properties fail the build,
+  so RTL cannot regress in any family.
+- **Distinct motion.** No two families may share a keyframe name; Minimal must
+  declare no motion at all. Families that all animate alike are one family.
+- **Distinct vocabulary.** Each family's markup must use its own class prefix,
+  and an E2E test asserts the six demos share *zero* class names.
+- **Variants must do something.** Every variant declared in the registry must
+  have a matching `[data-variant]` rule in its stylesheet — a variant offered
+  in admin that changes nothing would be a lie.
+
+### The §140 design QA, automated
+
+A machine cannot judge taste, but it can prove the properties that make two
+pages the same website. `e2e/design-qa.spec.ts` loads the six demo businesses
+and asserts they differ in class vocabulary, palette and structural
+fingerprint (item element, list display mode, column count, measure, text
+alignment, presence of navigation), that every one renders natively in both
+directions with no horizontal overflow at 360/390/430/768/1200px, and that
+none renders an empty container.
+
+That last check earned its place immediately: it caught the salon demo
+rendering an empty details card, because that business has no address and no
+contact channels. Fixed in the same phase.
+
+### Dark, and deriving rather than declaring
+
+Dark is the one family whose surface is not taken directly from the brand. It
+uses `color-mix` to darken the brand's own text colour, so a business with a
+deep green brand gets a green-black page and one with warm brown gets a
+brown-black one — rather than every "dark" business landing on the same
+near-black. It still declares no colour of its own.

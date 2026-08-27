@@ -1,0 +1,298 @@
+/*
+ * HOSPITALITY — service catalogue.
+ *
+ * Motion personality (§100): calm and functional. Only the disclosure marker
+ * animates; content does not move on open.
+ */
+
+.hospitality {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-5);
+  max-inline-size: 46rem;
+  margin-inline: auto;
+  padding-inline: var(--sys-space-4);
+  padding-block: var(--sys-space-6) var(--sys-space-9);
+}
+
+.hospitality__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+}
+
+.hospitality__locales {
+  display: flex;
+  gap: var(--sys-space-3);
+  align-self: flex-start;
+}
+
+.hospitality__locale {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  color: var(--brand-color-muted);
+  font-size: var(--sys-font-size-xs);
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.hospitality__locale[data-active] {
+  color: var(--brand-color-primary);
+}
+
+.hospitality__title {
+  font-size: var(--sys-font-size-2xl);
+  color: var(--brand-color-primary);
+}
+
+.hospitality__lede,
+.hospitality__empty,
+.hospitality__service-note,
+.hospitality__offer-note,
+.hospitality__download-note {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+  max-inline-size: 56ch;
+}
+
+/* The details block sits above the catalogue — this family's signature. */
+.hospitality__details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-4);
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius-md);
+}
+
+.hospitality__address {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-text);
+}
+
+.hospitality__actions,
+.hospitality__social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+}
+
+.hospitality__action {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-4);
+  border-radius: var(--brand-radius-md);
+  background: var(--brand-color-primary);
+  color: var(--brand-color-on-primary);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+}
+
+.hospitality__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+}
+
+.hospitality__group {
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius-md);
+  background: var(--brand-color-surface);
+  scroll-margin-block-start: var(--sys-space-4);
+}
+
+.hospitality__group-summary {
+  list-style: none;
+  cursor: pointer;
+  min-block-size: var(--sys-tap-target);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-3) var(--sys-space-4);
+}
+
+.hospitality__group-summary::-webkit-details-marker {
+  display: none;
+}
+
+.hospitality__group-title {
+  font-family: var(--brand-font-heading);
+  font-size: var(--sys-font-size-lg);
+  color: var(--brand-color-primary);
+}
+
+.hospitality__group-count {
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+  border: 1px solid var(--brand-color-border);
+  border-radius: 999px;
+  padding-inline: var(--sys-space-2);
+}
+
+.hospitality__services {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--sys-space-4);
+}
+
+.hospitality__service {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  padding-block: var(--sys-space-3);
+  border-block-start: 1px solid var(--brand-color-border);
+}
+
+.hospitality__service-main {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+.hospitality__service-name {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-text);
+}
+
+.hospitality__service-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sys-space-3);
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.hospitality__service-duration,
+.hospitality__service-flag {
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+}
+
+.hospitality__service-price {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-primary);
+  white-space: nowrap;
+}
+
+/* Repeated after each group: the decision to book happens mid-list. */
+.hospitality__group-cta {
+  display: block;
+  margin: var(--sys-space-3) var(--sys-space-4) var(--sys-space-4);
+  min-block-size: var(--sys-tap-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--brand-radius-md);
+  border: 1px solid var(--brand-color-primary);
+  color: var(--brand-color-primary);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+}
+
+.hospitality__section-title {
+  font-size: var(--sys-font-size-sm);
+  font-weight: 600;
+  color: var(--brand-color-text);
+  padding-block-end: var(--sys-space-2);
+}
+
+.hospitality__offer-list,
+.hospitality__download-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+}
+
+.hospitality__offer {
+  display: flex;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-4);
+  border-radius: var(--brand-radius-md);
+  background: var(--brand-color-surface);
+  border-inline-start: 3px solid var(--brand-color-accent);
+}
+
+.hospitality__offer-image {
+  inline-size: 5rem;
+  block-size: 5rem;
+  object-fit: cover;
+  border-radius: var(--brand-radius-sm);
+}
+
+.hospitality__offer-title {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-primary);
+}
+
+.hospitality__offer-pricing {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.hospitality__offer-was {
+  color: var(--brand-color-muted);
+  font-size: var(--sys-font-size-sm);
+}
+
+.hospitality__offer-discount {
+  font-size: var(--sys-font-size-2xs);
+  color: var(--brand-color-accent);
+}
+
+.hospitality__download-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  min-block-size: var(--sys-tap-target);
+  padding: var(--sys-space-3) var(--sys-space-4);
+  border-radius: var(--brand-radius-md);
+  border: 1px solid var(--brand-color-border);
+  text-decoration: none;
+  color: var(--brand-color-text);
+}
+
+.hospitality__download-meta,
+.hospitality__offer-cta,
+.hospitality__social-link {
+  color: var(--brand-color-primary);
+  font-size: var(--sys-font-size-sm);
+}
+
+.hospitality__contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  padding-block-start: var(--sys-space-5);
+  border-block-start: 1px solid var(--brand-color-border);
+}
+
+.hospitality__platform {
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+}
+
+/* --- Layout variants ------------------------------------------------------ */
+
+[data-variant='b'] .hospitality__service {
+  padding-block: var(--sys-space-2);
+}
+
+[data-variant='b'] .hospitality__service-note {
+  display: none;
+}
+
+[data-variant='b'] .hospitality__group-summary {
+  padding-block: var(--sys-space-2);
+}

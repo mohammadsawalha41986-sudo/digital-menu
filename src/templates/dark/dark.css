@@ -1,0 +1,304 @@
+/*
+ * DARK — image mosaic on a derived dark ground.
+ *
+ * The ground is composited from the brand's own text colour rather than a
+ * hard-coded near-black, so a business whose brand text is deep green gets a
+ * green-black page and one whose text is warm brown gets a brown-black one.
+ * No literal colour appears here.
+ *
+ * Motion personality (§100): slow image scale on hover, nothing on load.
+ */
+
+.dark {
+  /* colour-mix keeps this a derivation of brand tokens, not a new palette. */
+  --dark-ground: color-mix(in srgb, var(--brand-color-text) 92%, black);
+  --dark-raised: color-mix(in srgb, var(--brand-color-text) 82%, black);
+  --dark-ink: color-mix(in srgb, var(--brand-color-background) 96%, white);
+  --dark-muted: color-mix(in srgb, var(--brand-color-background) 62%, transparent);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-6);
+  background: var(--dark-ground);
+  color: var(--dark-ink);
+  padding-block: var(--sys-space-5) var(--sys-space-9);
+  padding-inline: var(--sys-space-4);
+  min-block-size: 100dvh;
+}
+
+.dark__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+}
+
+.dark__header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+}
+
+.dark__logo {
+  max-block-size: 3rem;
+  inline-size: auto;
+  object-fit: contain;
+}
+
+.dark__locales {
+  display: flex;
+  gap: var(--sys-space-2);
+  margin-inline-start: auto;
+}
+
+.dark__locale {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-2);
+  color: var(--dark-muted);
+  font-size: var(--sys-font-size-xs);
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.dark__locale[data-active] {
+  color: var(--brand-color-accent);
+}
+
+.dark__title {
+  font-size: var(--sys-font-size-3xl);
+  letter-spacing: var(--sys-tracking-tight);
+  color: var(--dark-ink);
+}
+
+.dark__lede,
+.dark__empty,
+.dark__address,
+.dark__offer-note,
+.dark__download-note {
+  color: var(--dark-muted);
+  font-size: var(--sys-font-size-sm);
+  max-inline-size: 52ch;
+}
+
+.dark__category {
+  padding-block-start: var(--sys-space-5);
+}
+
+.dark__category-title,
+.dark__section-title {
+  font-size: var(--sys-font-size-xs);
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+  color: var(--brand-color-accent);
+  padding-block-end: var(--sys-space-3);
+}
+
+.dark__mosaic {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sys-space-2);
+}
+
+.dark__tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--brand-radius-md);
+  background: var(--dark-raised);
+  aspect-ratio: 3 / 4;
+  isolation: isolate;
+}
+
+.dark__tile[data-wide] {
+  grid-column: span 2;
+  aspect-ratio: 16 / 9;
+}
+
+.dark__tile-image {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  transition: transform var(--sys-duration-slow) var(--sys-ease-standard);
+}
+
+.dark__tile:hover .dark__tile-image {
+  transform: scale(1.04);
+}
+
+.dark__tile-placeholder {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  background: var(--dark-raised);
+}
+
+.dark__tile-caption {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  padding: var(--sys-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+  /* A scrim rather than a solid bar, so the photograph still reads. */
+  background: linear-gradient(to top, var(--dark-ground) 12%, transparent);
+  color: var(--dark-ink);
+}
+
+.dark__tile-name {
+  font-family: var(--brand-font-heading);
+  font-size: var(--sys-font-size-base);
+  color: inherit;
+}
+
+.dark__tile-meta {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.dark__tile-price {
+  color: var(--brand-color-accent);
+  font-size: var(--sys-font-size-sm);
+}
+
+.dark__tile-calories,
+.dark__tile-flag {
+  font-size: var(--sys-font-size-2xs);
+  color: var(--dark-muted);
+}
+
+.dark__offer-list,
+.dark__download-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+}
+
+.dark__offer {
+  display: flex;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-3);
+  border-radius: var(--brand-radius-md);
+  background: var(--dark-raised);
+  border-inline-start: 3px solid var(--brand-color-accent);
+}
+
+.dark__offer-image {
+  inline-size: 5rem;
+  block-size: 5rem;
+  border-radius: var(--brand-radius-sm);
+  object-fit: cover;
+}
+
+.dark__offer-title {
+  font-size: var(--sys-font-size-base);
+  color: var(--dark-ink);
+}
+
+.dark__offer-pricing {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.dark__offer-now {
+  color: var(--brand-color-accent);
+}
+
+.dark__offer-was {
+  color: var(--dark-muted);
+  font-size: var(--sys-font-size-sm);
+}
+
+.dark__offer-discount {
+  font-size: var(--sys-font-size-2xs);
+  color: var(--brand-color-accent);
+}
+
+.dark__download-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  min-block-size: var(--sys-tap-target);
+  padding: var(--sys-space-3);
+  border-radius: var(--brand-radius-md);
+  background: var(--dark-raised);
+  color: var(--dark-ink);
+  text-decoration: none;
+}
+
+.dark__download-meta,
+.dark__offer-cta,
+.dark__social-link {
+  color: var(--brand-color-accent);
+  font-size: var(--sys-font-size-sm);
+}
+
+.dark__contact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  padding-block-start: var(--sys-space-6);
+}
+
+.dark__actions,
+.dark__social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+}
+
+.dark__action {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-4);
+  border-radius: var(--brand-radius-md);
+  border: 1px solid var(--brand-color-accent);
+  color: var(--brand-color-accent);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+}
+
+.dark__platform {
+  font-size: var(--sys-font-size-xs);
+  color: var(--dark-muted);
+}
+
+@media (min-width: 48rem) {
+  .dark {
+    padding-inline: var(--sys-space-6);
+  }
+
+  .dark__mosaic {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dark__tile[data-wide] {
+    grid-column: span 2;
+  }
+}
+
+/* --- Layout variants ------------------------------------------------------ */
+
+[data-variant='b'] .dark__tile {
+  aspect-ratio: 1 / 1;
+}
+
+@media (min-width: 48rem) {
+  [data-variant='b'] .dark__mosaic {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

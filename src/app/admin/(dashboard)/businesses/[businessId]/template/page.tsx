@@ -4,7 +4,7 @@ import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { updateTemplateAction } from '@/server/admin/actions';
-import { listTemplates } from '@/templates/registry';
+import { SUGGESTED_TEMPLATES, listTemplates } from '@/templates/registry';
 import { TemplateForm } from './template-form';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,18 @@ export default async function TemplatePage({
     throw error;
   });
 
-  const templates = listTemplates().map((template) => ({
+  // Families the spec associates with this business type come first. A
+  // suggestion, never a restriction — any business may use any template (§16).
+  const suggested = SUGGESTED_TEMPLATES[business.type] ?? [];
+  const ordered = [...listTemplates()].sort((a, b) => {
+    const rank = (key: string) => {
+      const index = suggested.indexOf(key);
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+    };
+    return rank(a.key) - rank(b.key);
+  });
+
+  const templates = ordered.map((template) => ({
     key: template.key,
     label: template.label,
     description: template.description,

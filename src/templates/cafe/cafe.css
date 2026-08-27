@@ -1,0 +1,296 @@
+/*
+ * CAFÉ — compact tiles and underlined tabs.
+ *
+ * Motion personality (§100): light and playful, but only on interaction —
+ * a small lift on press. Nothing animates on load.
+ */
+
+.cafe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-5);
+  max-inline-size: 60rem;
+  margin-inline: auto;
+  padding-inline: var(--sys-space-4);
+  padding-block: var(--sys-space-6) var(--sys-space-9);
+}
+
+.cafe__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sys-space-2);
+  text-align: center;
+}
+
+.cafe__logo {
+  max-block-size: 3.5rem;
+  inline-size: auto;
+  object-fit: contain;
+}
+
+.cafe__title {
+  font-size: var(--sys-font-size-2xl);
+  color: var(--brand-color-primary);
+}
+
+.cafe__lede,
+.cafe__empty,
+.cafe__address,
+.cafe__offer-note,
+.cafe__download-note {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+  max-inline-size: 48ch;
+}
+
+.cafe__locales {
+  display: flex;
+  gap: var(--sys-space-3);
+}
+
+.cafe__locale {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+  text-decoration: none;
+}
+
+.cafe__locale[data-active] {
+  color: var(--brand-color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+  text-decoration-thickness: 2px;
+}
+
+.cafe__tabs {
+  display: flex;
+  gap: var(--sys-space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-block-end: 1px solid var(--brand-color-border);
+}
+
+.cafe__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cafe__tab {
+  flex: 0 0 auto;
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+  text-decoration: none;
+  border-block-end: 2px solid transparent;
+}
+
+.cafe__tab:hover {
+  color: var(--brand-color-primary);
+  border-block-end-color: var(--brand-color-accent);
+}
+
+.cafe__category {
+  padding-block-start: var(--sys-space-5);
+  scroll-margin-block-start: var(--sys-space-4);
+}
+
+.cafe__category-title,
+.cafe__section-title {
+  font-size: var(--sys-font-size-lg);
+  color: var(--brand-color-primary);
+  padding-block-end: var(--sys-space-3);
+}
+
+.cafe__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sys-space-3);
+}
+
+.cafe__tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+  padding: var(--sys-space-3);
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius-lg);
+  transition: transform var(--sys-duration-fast) var(--sys-ease-standard);
+}
+
+.cafe__tile:active {
+  transform: translateY(-2px);
+}
+
+.cafe__tile-image {
+  inline-size: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--brand-radius-md);
+}
+
+.cafe__tile-name {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-text);
+}
+
+.cafe__tile-size,
+.cafe__tile-calories,
+.cafe__tile-flag {
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+}
+
+.cafe__tile-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sys-space-2);
+  font-variant-numeric: tabular-nums;
+  margin-block-start: auto;
+}
+
+.cafe__tile-price {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-primary);
+}
+
+.cafe__offer-list,
+.cafe__download-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sys-space-3);
+}
+
+.cafe__offer {
+  display: flex;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-3);
+  background: var(--brand-color-surface);
+  border: 2px dashed var(--brand-color-accent);
+  border-radius: var(--brand-radius-lg);
+}
+
+.cafe__offer-image {
+  inline-size: 5rem;
+  block-size: 5rem;
+  object-fit: cover;
+  border-radius: var(--brand-radius-md);
+}
+
+.cafe__offer-title {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-primary);
+}
+
+.cafe__offer-pricing {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+
+.cafe__offer-was {
+  color: var(--brand-color-muted);
+  font-size: var(--sys-font-size-sm);
+}
+
+.cafe__offer-discount {
+  font-size: var(--sys-font-size-2xs);
+  padding-inline: var(--sys-space-2);
+  border-radius: 999px;
+  background: var(--brand-color-accent);
+  color: var(--brand-color-on-primary);
+}
+
+.cafe__download-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  min-block-size: var(--sys-tap-target);
+  padding: var(--sys-space-3);
+  border-radius: var(--brand-radius-lg);
+  border: 1px solid var(--brand-color-border);
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  text-decoration: none;
+}
+
+.cafe__download-meta,
+.cafe__offer-cta,
+.cafe__social-link {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-primary);
+}
+
+.cafe__contact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sys-space-3);
+  text-align: center;
+  padding-block-start: var(--sys-space-5);
+}
+
+.cafe__actions,
+.cafe__social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+  justify-content: center;
+}
+
+.cafe__action {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-4);
+  border-radius: 999px;
+  background: var(--brand-color-primary);
+  color: var(--brand-color-on-primary);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+}
+
+.cafe__platform {
+  text-align: center;
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+}
+
+@media (min-width: 48rem) {
+  .cafe__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .cafe__offer-list,
+  .cafe__download-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* --- Layout variants ------------------------------------------------------ */
+
+[data-variant='b'] .cafe__grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+[data-variant='b'] .cafe__tile-name {
+  font-size: var(--sys-font-size-sm);
+}
+
+@media (min-width: 48rem) {
+  [data-variant='b'] .cafe__grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}

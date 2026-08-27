@@ -135,8 +135,16 @@ describe.skipIf(!databaseReachable)('event recording', () => {
     await recordEventByPublicId({ publicId: DRAFT_ID, eventType: 'qr_scan', headers });
     await recordEventByPublicId({ publicId: 'ZZZZZZ', eventType: 'qr_scan', headers });
 
-    const scans = await prisma.analyticsEvent.count({ where: { eventType: 'qr_scan' } });
+    // Scoped to this fixture: other suites and E2E runs share the database and
+    // legitimately record scans of their own.
+    const scans = await prisma.analyticsEvent.count({
+      where: { businessId, eventType: 'qr_scan' },
+    });
     expect(scans).toBe(1);
+
+    // The draft and the unknown id wrote nothing anywhere.
+    const draft = await prisma.business.findUniqueOrThrow({ where: { publicId: DRAFT_ID } });
+    expect(await prisma.analyticsEvent.count({ where: { businessId: draft.id } })).toBe(0);
   });
 });
 

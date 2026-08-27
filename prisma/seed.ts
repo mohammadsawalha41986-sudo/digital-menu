@@ -30,6 +30,7 @@ interface SeedItem {
   descriptionEn?: string;
   priceMinor: number | null;
   calories?: number;
+  servingSize?: string;
   allergens?: string[];
   tags?: string[];
   featured?: boolean;
@@ -312,9 +313,303 @@ async function main() {
     });
   }
 
+  await seedShowcase(staff.id);
+
   console.log(
-    'Seed complete: /m/DEM001 (+ /b/olaya, /b/malaz), /m/DEM002 active; /m/DRAFT1 draft.',
+    [
+      'Seed complete.',
+      '  /m/DEM001  editorial  demo restaurant (+ /b/olaya, /b/malaz)',
+      '  /m/DEM002  editorial  Arabic-only café',
+      '  /m/DEM003  luxury     fine dining',
+      '  /m/DEM004  cafe       specialty roastery',
+      '  /m/DEM005  bold       burger',
+      '  /m/DEM006  casual     bakery',
+      '  /m/DEM007  hospitality salon (services, durations)',
+      '  /m/DRAFT1  draft — deliberately not public',
+    ].join('\n'),
   );
+}
+
+
+/**
+ * The six demo businesses the specification requires (§92, §141).
+ *
+ * Their purpose is the design QA in §140: placed side by side they must not
+ * look like the same website. Each therefore uses a different template family,
+ * a different palette, different typography and different content shape — the
+ * salon in particular is a service catalogue with durations, not a food menu
+ * (§94).
+ *
+ * All content is fictional and labelled as demo data (§145).
+ */
+async function seedShowcase(publishedById: string) {
+  const showcase = [
+    {
+      publicId: 'DEM003',
+      slug: 'demo-luxury-restaurant',
+      type: 'RESTAURANT' as const,
+      template: 'luxury',
+      variant: 'a',
+      nameAr: 'مطعم السرايا',
+      nameEn: 'Saraya Fine Dining',
+      descriptionAr: 'تجربة عشاء راقية. بيانات تجريبية.',
+      descriptionEn: 'A fine-dining concept. Demo data.',
+      brand: {
+        colorPrimary: '#1B1F23',
+        colorSecondary: '#3C4A52',
+        colorAccent: '#A98F57',
+        colorBackground: '#F5F3EE',
+        colorSurface: '#FFFFFF',
+        colorText: '#14171A',
+        colorMuted: '#6B7076',
+        colorBorder: '#DDD8CC',
+        fontHeading: 'system-serif',
+        fontBody: 'system-serif',
+        radiusScale: 'none',
+      },
+      categories: [
+        {
+          key: 'first',
+          nameAr: 'المقبلات',
+          nameEn: 'First Course',
+          items: [
+            { code: 'SR-001', nameAr: 'كريمة الكمأة', nameEn: 'Truffle Velouté', price: 8500, featured: true },
+            { code: 'SR-002', nameAr: 'سلطة الشمندر', nameEn: 'Beetroot & Goat Cheese', price: 7200 },
+          ],
+        },
+        {
+          key: 'main',
+          nameAr: 'الأطباق الرئيسية',
+          nameEn: 'Main Course',
+          items: [
+            { code: 'SR-010', nameAr: 'ضلع لحم', nameEn: 'Aged Short Rib', price: 21500, calories: 780 },
+            { code: 'SR-011', nameAr: 'سمك القاروص', nameEn: 'Line-caught Sea Bass', price: 18900 },
+          ],
+        },
+      ],
+    },
+    {
+      publicId: 'DEM004',
+      slug: 'demo-specialty-cafe',
+      type: 'CAFE' as const,
+      template: 'cafe',
+      variant: 'a',
+      nameAr: 'محمصة الرصيف',
+      nameEn: 'Curb Roastery',
+      descriptionAr: 'قهوة مختصة تُحمّص يومياً. بيانات تجريبية.',
+      descriptionEn: 'Specialty coffee, roasted daily. Demo data.',
+      brand: {
+        colorPrimary: '#2F5D50',
+        colorSecondary: '#7FA99B',
+        colorAccent: '#E07A3F',
+        colorBackground: '#FBF7F0',
+        colorSurface: '#FFFFFF',
+        colorText: '#1E2A26',
+        colorMuted: '#66756F',
+        colorBorder: '#E3DCD0',
+        fontHeading: 'system-sans',
+        fontBody: 'system-sans',
+        radiusScale: 'lg',
+      },
+      categories: [
+        {
+          key: 'espresso',
+          nameAr: 'الإسبريسو',
+          nameEn: 'Espresso',
+          items: [
+            { code: 'CB-001', nameAr: 'فلات وايت', nameEn: 'Flat White', price: 1900, serving: '180ml' },
+            { code: 'CB-002', nameAr: 'كورتادو', nameEn: 'Cortado', price: 1700, serving: '120ml' },
+            { code: 'CB-003', nameAr: 'أمريكانو', nameEn: 'Americano', price: 1500, serving: '240ml' },
+          ],
+        },
+        {
+          key: 'filter',
+          nameAr: 'التقطير',
+          nameEn: 'Filter',
+          items: [
+            { code: 'CB-010', nameAr: 'في60', nameEn: 'V60', price: 2400, serving: '250ml' },
+            { code: 'CB-011', nameAr: 'كولد برو', nameEn: 'Cold Brew', price: 2200, serving: '300ml' },
+          ],
+        },
+      ],
+    },
+    {
+      publicId: 'DEM005',
+      slug: 'demo-burger',
+      type: 'RESTAURANT' as const,
+      template: 'bold',
+      variant: 'a',
+      nameAr: 'برجر المحطة',
+      nameEn: 'Station Burger',
+      descriptionAr: 'برجر مشوي على الفحم. بيانات تجريبية.',
+      descriptionEn: 'Charcoal-grilled burgers. Demo data.',
+      brand: {
+        colorPrimary: '#B3202B',
+        colorSecondary: '#2B2B2B',
+        colorAccent: '#F2B705',
+        colorBackground: '#FFFFFF',
+        colorSurface: '#F7F7F7',
+        colorText: '#141414',
+        colorMuted: '#5C5C5C',
+        colorBorder: '#141414',
+        fontHeading: 'system-sans',
+        fontBody: 'system-sans',
+        radiusScale: 'none',
+      },
+      categories: [
+        {
+          key: 'burgers',
+          nameAr: 'البرجر',
+          nameEn: 'Burgers',
+          items: [
+            { code: 'ST-101', nameAr: 'الكلاسيكي', nameEn: 'The Classic', price: 3900, calories: 720, featured: true },
+            { code: 'ST-102', nameAr: 'المزدوج', nameEn: 'Double Stack', price: 5200, calories: 980 },
+            { code: 'ST-103', nameAr: 'الحار', nameEn: 'Hot One', price: 4300, calories: 760 },
+          ],
+        },
+      ],
+    },
+    {
+      publicId: 'DEM006',
+      slug: 'demo-bakery',
+      type: 'BAKERY' as const,
+      template: 'casual',
+      variant: 'a',
+      nameAr: 'مخبز الحي',
+      nameEn: 'Neighbourhood Bakery',
+      descriptionAr: 'يُخبز كل صباح. بيانات تجريبية.',
+      descriptionEn: 'Baked every morning. Demo data.',
+      brand: {
+        colorPrimary: '#8A5A2B',
+        colorSecondary: '#C79A6B',
+        colorAccent: '#D9534F',
+        colorBackground: '#FFF9F2',
+        colorSurface: '#FFFFFF',
+        colorText: '#2A1E14',
+        colorMuted: '#7A6A5C',
+        colorBorder: '#EADDCC',
+        fontHeading: 'system-serif',
+        fontBody: 'system-sans',
+        radiusScale: 'md',
+      },
+      categories: [
+        {
+          key: 'bread',
+          nameAr: 'الخبز',
+          nameEn: 'Bread',
+          items: [
+            { code: 'BK-001', nameAr: 'خبز العجين المخمر', nameEn: 'Sourdough', price: 1800 },
+            { code: 'BK-002', nameAr: 'باغيت', nameEn: 'Baguette', price: 900 },
+          ],
+        },
+        {
+          key: 'pastry',
+          nameAr: 'المعجنات',
+          nameEn: 'Pastry',
+          items: [
+            { code: 'BK-010', nameAr: 'كرواسون زبدة', nameEn: 'Butter Croissant', price: 1200, featured: true },
+            { code: 'BK-011', nameAr: 'بان أو شوكولا', nameEn: 'Pain au Chocolat', price: 1400 },
+          ],
+        },
+      ],
+    },
+    {
+      publicId: 'DEM007',
+      slug: 'demo-luxury-salon',
+      type: 'SALON' as const,
+      template: 'hospitality',
+      variant: 'a',
+      nameAr: 'صالون نور',
+      nameEn: 'Noor Salon',
+      descriptionAr: 'خدمات العناية والتجميل بالحجز المسبق. بيانات تجريبية.',
+      descriptionEn: 'Beauty and care services, by appointment. Demo data.',
+      brand: {
+        colorPrimary: '#4A2E4D',
+        colorSecondary: '#8E6C88',
+        colorAccent: '#C8A2C8',
+        colorBackground: '#FAF6FA',
+        colorSurface: '#FFFFFF',
+        colorText: '#241428',
+        colorMuted: '#6E5C70',
+        colorBorder: '#E6DAE6',
+        fontHeading: 'system-serif',
+        fontBody: 'system-sans',
+        radiusScale: 'lg',
+      },
+      // A salon is a service catalogue: durations, not calories (§94).
+      categories: [
+        {
+          key: 'hair',
+          nameAr: 'الشعر',
+          nameEn: 'Hair',
+          items: [
+            { code: 'NS-001', nameAr: 'قص وتصفيف', nameEn: 'Cut & Style', price: 18000, serving: '60 min' },
+            { code: 'NS-002', nameAr: 'صبغة كاملة', nameEn: 'Full Colour', price: 45000, serving: '150 min', featured: true },
+          ],
+        },
+        {
+          key: 'care',
+          nameAr: 'العناية',
+          nameEn: 'Treatments',
+          items: [
+            { code: 'NS-010', nameAr: 'عناية بالبشرة', nameEn: 'Facial', price: 26000, serving: '75 min' },
+            { code: 'NS-011', nameAr: 'مانيكير', nameEn: 'Manicure', price: 12000, serving: '45 min' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  for (const business of showcase) {
+    const payload = {
+      slug: business.slug,
+      type: business.type,
+      status: 'ACTIVE' as const,
+      defaultLocale: 'ar' as const,
+      currency: 'SAR',
+      nameAr: business.nameAr,
+      nameEn: business.nameEn,
+      descriptionAr: business.descriptionAr,
+      descriptionEn: business.descriptionEn,
+      templateKey: business.template,
+      variantKey: business.variant,
+      showPlatformFooter: true,
+    };
+
+    const row = await prisma.business.upsert({
+      where: { publicId: business.publicId },
+      update: payload,
+      create: { publicId: business.publicId, ...payload },
+    });
+
+    await prisma.brandTheme.upsert({
+      where: { businessId: row.id },
+      update: business.brand,
+      create: { businessId: row.id, ...business.brand },
+    });
+
+    await seedMenu(
+      row.id,
+      'main',
+      'القائمة',
+      'Menu',
+      business.categories.map((category) => ({
+        key: category.key,
+        nameAr: category.nameAr,
+        nameEn: category.nameEn,
+        items: category.items.map((item) => ({
+          code: item.code,
+          nameAr: item.nameAr,
+          nameEn: item.nameEn,
+          priceMinor: item.price,
+          calories: 'calories' in item ? (item.calories as number) : undefined,
+          servingSize: 'serving' in item ? (item.serving as string) : undefined,
+          featured: 'featured' in item ? (item.featured as boolean) : undefined,
+        })),
+      })),
+      publishedById,
+    );
+  }
 }
 
 async function seedMenu(
@@ -362,6 +657,8 @@ async function seedMenu(
           priceMinor: item.priceMinor,
           currency: 'SAR',
           calories: item.calories ?? null,
+          servingSizeAr: item.servingSize ?? null,
+          servingSizeEn: item.servingSize ?? null,
           allergens: item.allergens ?? [],
           tags: item.tags ?? [],
           isFeatured: item.featured ?? false,
