@@ -40,9 +40,14 @@ test('a public identifier resolves to a profile', async ({ page }) => {
   await expect(root).toHaveAttribute('data-template', 'editorial');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('مطعم النموذج');
 
-  // The published menu is visible; the draft menu is not.
-  await expect(page.getByText('المنيو الرئيسي')).toBeVisible();
-  await expect(page.getByText('قائمة موسمية')).toHaveCount(0);
+  // Published menu content is visible; the draft menu's is not. (With one
+  // published menu the Editorial template omits the menu title itself and
+  // leads with categories, so assert on the content rather than the heading.)
+  await expect(page.locator('[data-menu="main"]')).toBeVisible();
+  await expect(page.locator('[data-menu="seasonal"]')).toHaveCount(0);
+  // The category appears twice by design — once in the sticky index, once as
+  // the section heading — so target the heading.
+  await expect(page.getByRole('heading', { name: 'المقبلات' })).toBeVisible();
 });
 
 test("a visitor's device language is honoured when they have expressed no choice", async ({

@@ -48,7 +48,6 @@ describe.skipIf(!databaseReachable)('public profile resolution', () => {
   });
 
   it('does not serve a draft business', async () => {
-    // The row exists; it is simply not public (master spec §20 status model).
     const row = await prisma.business.findUnique({ where: { publicId: 'DRAFT1' } });
     expect(row).not.toBeNull();
     expect(await getPublicProfile('DRAFT1')).toBeNull();
@@ -59,7 +58,6 @@ describe.skipIf(!databaseReachable)('public profile resolution', () => {
     const keys = profile?.menus.map((menu) => menu.key);
 
     expect(keys).toContain('main');
-    // Seeded but in draft.
     expect(keys).not.toContain('seasonal');
     expect(profile?.menus[0]?.publishedVersion).toBe(1);
   });
@@ -78,5 +76,108 @@ describe.skipIf(!databaseReachable)('public profile resolution', () => {
   it('falls back to neutral brand tokens when no theme exists', async () => {
     const profile = await getPublicProfile('DEM002');
     expect(profile?.brand.colorPrimary).toBe('#1f2421');
+  });
+});
+
+describe.skipIf(!databaseReachable)('menu content', () => {
+  it('loads categories and items in their configured order', async () => {
+    const profile = await getPublicProfile('DEM001');
+    const menu = profile?.menus.find((entry) => entry.key === 'main');
+
+    expect(menu?.categories.map((category) => category.key)).toEqual([
+      'starters',
+      'mains',
+      'drinks',
+    ]);
+
+    const mains = menu?.categories.find((category) => category.key === 'mains');
+    expect(mains?.items.map((item) => item.code)).toEqual(['MN-001', 'MN-002', 'MN-003']);
+  });
+
+  it('carries prices as minor units and never invents a missing one', async () => {
+    const profile = await getPublicProfile('DEM001');
+    const items = profile?.menus[0]?.categories.flatMap((category) => category.items) ?? [];
+
+    const burger = items.find((item) => item.code === 'MN-001');
+    expect(burger?.priceMinor).toBe(4200);
+    expect(burger?.currency).toBe('SAR');
+
+    // An unpriced item stays unpriced.
+    const seasonal = items.find((item) => item.code === 'MN-003');
+    expect(seasonal?.priceMinor).toBeNull();
+  });
+
+  it('carries calories only where the business supplied them', async () => {
+    const profile = await getPublicProfile('DEM001');
+    const items = profile?.menus[0]?.categories.flatMap((category) => category.items) ?? [];
+
+    expect(items.find((item) => item.code === 'MN-001')?.calories).toBe(680);
+    // Water has none, and none is invented (GOALS I9).
+    expect(items.find((item) => item.code === 'DR-002')?.calories).toBeNull();
+  });
+
+  it('never serves a hidden item', async () => {
+    const profile = await getPublicProfile('DEM001');
+    const codes =
+      profile?.menus[0]?.categories.flatMap((category) =>
+        category.items.map((item) => item.code),
+      ) ?? [];
+
+    expect(codes).not.toContain('DR-003');
+  });
+
+  it('marks an unavailable item rather than dropping it', async () => {
+    const profile = await getPublicProfile('DEM001');
+    const items = profile?.menus[0]?.categories.flatMap((category) => category.items) ?? [];
+
+    expect(items.find((item) => item.code === 'MN-003')?.isUnavailable).toBe(true);
+    expect(items.find((item) => item.code === 'MN-001')?.isUnavailable).toBe(false);
+  });
+});
+
+describe.skipIf(!databaseReachable)('branch scoping', () => {
+  it('applies a branch price override without duplicating the menu', async () => {
+    const shared = await getPublicProfile('DEM001');
+    const olaya = await getPublicProfile('DEM001', { branchKey: 'olaya' });
+
+    const priceIn = (profile: Awaited<ReturnType<typeof getPublicProfile>>) =>
+      profile?.menus[0]?.categories
+        .flatMap((category) => category.items)
+        .find((item) => item.code === 'MN-001')?.priceMinor;
+
+    expect(priceIn(shared)).toBe(4200);
+    expect(priceIn(olaya)).toBe(4600);
+    expect(olaya?.activeBranchKey).toBe('olaya');
+  });
+
+  it('leaves other branches on the shared price', async () => {
+    const malaz = await getPublicProfile('DEM001', { branchKey: 'malaz' });
+    const price = malaz?.menus[0]?.categories
+      .flatMap((category) => category.items)
+      .find((item) => item.code === 'MN-001')?.priceMinor;
+
+    expect(price).toBe(4200);
+  });
+
+  it('prefers branch contact details when scoped to a branch', async () => {
+    const olaya = await getPublicProfile('DEM001', { branchKey: 'olaya' });
+    expect(olaya?.contact.phone).toBe('+966500000001');
+
+    const shared = await getPublicProfile('DEM001');
+    expect(shared?.contact.phone).toBe('+966500000000');
+  });
+
+  it('falls back to the business view for an unknown branch key', async () => {
+    // A renamed branch must not 404 a printed branch QR.
+    const profile = await getPublicProfile('DEM001', { branchKey: 'nonexistent' });
+    expect(profile).not.toBeNull();
+    expect(profile?.activeBranchKey).toBeNull();
+  });
+
+  it('cannot be pointed at another tenant’s branch', async () => {
+    // `DEM002` has no branches; naming one from another business changes nothing.
+    const profile = await getPublicProfile('DEM002', { branchKey: 'olaya' });
+    expect(profile?.activeBranchKey).toBeNull();
+    expect(profile?.branches).toHaveLength(0);
   });
 });

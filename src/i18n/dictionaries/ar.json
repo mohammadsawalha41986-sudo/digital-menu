@@ -1,11 +1,16 @@
 {
   "common": {
     "languageSwitcher": "اللغة",
-    "backToTop": "العودة إلى الأعلى"
+    "backToTop": "العودة إلى الأعلى",
+    "close": "إغلاق",
+    "skipToContent": "تخطي إلى المحتوى"
   },
   "profile": {
     "viewMenu": "تصفح المنيو",
+    "menus": "القوائم",
     "downloadMenu": "تحميل المنيو",
+    "viewPdfMenu": "عرض المنيو PDF",
+    "viewFullMenu": "عرض المنيو كاملاً",
     "contact": "تواصل معنا",
     "call": "اتصل بنا",
     "whatsapp": "واتساب",
@@ -13,7 +18,26 @@
     "offers": "العروض",
     "categories": "الأقسام",
     "downloads": "الملفات",
-    "menuComingSoon": "لم يتم نشر المنيو بعد"
+    "branches": "الفروع",
+    "allBranches": "كل الفروع",
+    "about": "عن المكان",
+    "workingHours": "أوقات العمل",
+    "ingredients": "المكونات",
+    "allergens": "مسببات الحساسية",
+    "unavailable": "غير متوفر حالياً",
+    "featured": "مميز",
+    "menuComingSoon": "لم يتم نشر المنيو بعد",
+    "poweredBy": "منيو رقمي من"
+  },
+  "allergens": {
+    "gluten": "الغلوتين",
+    "milk": "الحليب",
+    "egg": "البيض",
+    "nuts": "المكسرات",
+    "peanuts": "الفول السوداني",
+    "soy": "الصويا",
+    "fish": "الأسماك",
+    "shellfish": "المحار"
   },
   "errors": {
     "profileNotFoundTitle": "الصفحة غير متاحة",

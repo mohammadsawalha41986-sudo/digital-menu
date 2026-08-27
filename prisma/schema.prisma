@@ -113,12 +113,53 @@ model Business {
   /// Layout variant within the template family.
   variantKey  String @default("a")
 
+  /// --- Contact (master spec §20, §44). Empty fields hide their action. ---
+  phone         String?
+  whatsapp      String?
+  email         String?
+  website       String?
+  instagram     String?
+  tiktok        String?
+  facebook      String?
+  linkedin      String?
+  youtube       String?
+  googleMapsUrl String?
+  addressAr     String?
+  addressEn     String?
+  workingHours  Json?
+
+  /// Default currency for item prices (§36).
+  currency String @default("SAR")
+
+  /// --- SEO (§116). Profiles are not indexable unless explicitly enabled. ---
+  indexProfile      Boolean @default(false)
+  metaTitleAr       String?
+  metaTitleEn       String?
+  metaDescriptionAr String?
+  metaDescriptionEn String?
+  ogMediaId         String?
+
+  /// --- Service package (§156, §157) ---
+  servicePackage     ServicePackage @default(STANDARD)
+  packageStartsAt    DateTime?
+  packageEndsAt      DateTime?
+  /// Optional "Digital Menu by ..." footer (§147).
+  showPlatformFooter Boolean        @default(false)
+
+  logoMediaId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   memberships BusinessMembership[]
   brandTheme  BrandTheme?
   menus       Menu[]
+  branches    Branch[]
+  categories  MenuCategory[]
+  items       MenuItem[]
+  media       Media[]
+  logo        Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  ogImage     Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([createdAt])
@@ -163,7 +204,7 @@ model BrandTheme {
   fontHeading String @default("system-serif")
   fontBody    String @default("system-sans")
 
-  radiusScale String @default("md")
+  radiusScale String  @default("md")
   logoMediaId String?
 
   createdAt DateTime @default(now())
@@ -193,9 +234,10 @@ model Menu {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  business       Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  versions       MenuVersion[] @relation("MenuVersions")
-  currentVersion MenuVersion?  @relation("MenuCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  business       Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  categories     MenuCategory[]
+  versions       MenuVersion[]  @relation("MenuVersions")
+  currentVersion MenuVersion?   @relation("MenuCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
 
   @@unique([businessId, key])
   @@index([businessId, status])
@@ -223,4 +265,222 @@ model MenuVersion {
   @@unique([menuId, version])
   @@index([menuId, publishedAt])
   @@map("menu_versions")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 1 — content domain: branches, categories, items, media.
+// ---------------------------------------------------------------------------
+
+enum MediaKind {
+  LOGO
+  ITEM_IMAGE
+  CATEGORY_IMAGE
+  OFFER_IMAGE
+  GALLERY
+  DOCUMENT
+  OG_IMAGE
+}
+
+/// Item availability (master spec §83). `HIDDEN` removes the item from the
+/// public profile entirely; `UNAVAILABLE` may be shown as "currently
+/// unavailable" depending on business configuration.
+enum ItemAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  SEASONAL
+  HIDDEN
+}
+
+/// Service package (master spec §156). Gates optional capabilities such as
+/// analytics and platform-branding removal.
+enum ServicePackage {
+  BASIC
+  STANDARD
+  PREMIUM
+  ENTERPRISE
+}
+
+/// An uploaded asset. Rows are tenant-owned and reference a provider-agnostic
+/// storage key — never a vendor URL (master spec §56, §87).
+model Media {
+  id         String    @id @default(cuid())
+  businessId String
+  kind       MediaKind @default(ITEM_IMAGE)
+
+  /// Key understood by the active StorageProvider.
+  storageKey  String @unique
+  contentType String
+  sizeBytes   Int
+  width       Int?
+  height      Int?
+
+  /// Alt text is authored per language and never machine-generated.
+  altAr String?
+  altEn String?
+
+  /// Original upload filename, used to match Excel image-ZIP rows (§71).
+  originalName String?
+  checksum     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business        Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  logoOf          Business[]      @relation("BusinessLogo")
+  ogImageOf       Business[]      @relation("BusinessOgImage")
+  categoryImageOf MenuCategory[]
+  itemImageOf     MenuItem[]
+  itemGallery     MenuItemImage[]
+
+  @@index([businessId, kind])
+  @@map("media")
+}
+
+/// A physical location. Branches may override price and availability without
+/// duplicating the menu (master spec §84, §86).
+model Branch {
+  id         String @id @default(cuid())
+  businessId String
+  /// Stable, tenant-scoped path segment: `/m/{publicId}/b/{key}` (§85).
+  key        String
+
+  nameAr    String
+  nameEn    String?
+  addressAr String?
+  addressEn String?
+
+  phone         String?
+  whatsapp      String?
+  googleMapsUrl String?
+  /// Structured per-day opening hours; see src/server/business/hours.ts.
+  workingHours  Json?
+
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business  Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  overrides BranchItemOverride[]
+
+  @@unique([businessId, key])
+  @@index([businessId, isActive])
+  @@map("branches")
+}
+
+model MenuCategory {
+  id         String @id @default(cuid())
+  menuId     String
+  /// Denormalized tenant key so every content query can be scoped in one hop.
+  businessId String
+  key        String
+
+  nameAr        String
+  nameEn        String?
+  descriptionAr String?
+  descriptionEn String?
+
+  imageMediaId String?
+  sortOrder    Int     @default(0)
+  isActive     Boolean @default(true)
+  isFeatured   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  menu     Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  business Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  image    Media?     @relation(fields: [imageMediaId], references: [id], onDelete: SetNull)
+  items    MenuItem[]
+
+  @@unique([menuId, key])
+  @@index([businessId])
+  @@index([menuId, sortOrder])
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id         String @id @default(cuid())
+  categoryId String
+  businessId String
+
+  /// Stable, business-scoped item code. Exported to and matched from Excel so
+  /// bulk edits update rather than duplicate (master spec §66).
+  itemCode String
+
+  nameAr        String
+  nameEn        String?
+  descriptionAr String?
+  descriptionEn String?
+
+  /// Integer minor units (e.g. halalas). Money is never a float.
+  priceMinor Int?
+  currency   String @default("SAR")
+
+  /// Optional and only ever business-supplied. Never inferred (§37).
+  calories      Int?
+  servingSizeAr String?
+  servingSizeEn String?
+  ingredientsAr String?
+  ingredientsEn String?
+  /// Declared allergens only; no medical claims are derived (§38).
+  allergens     String[] @default([])
+  tags          String[] @default([])
+
+  imageMediaId String?
+  availability ItemAvailability @default(AVAILABLE)
+  isFeatured   Boolean          @default(false)
+  sortOrder    Int              @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category  MenuCategory         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  business  Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  image     Media?               @relation(fields: [imageMediaId], references: [id], onDelete: SetNull)
+  gallery   MenuItemImage[]
+  overrides BranchItemOverride[]
+
+  @@unique([businessId, itemCode])
+  @@index([categoryId, sortOrder])
+  @@index([businessId, availability])
+  @@map("menu_items")
+}
+
+model MenuItemImage {
+  id        String @id @default(cuid())
+  itemId    String
+  mediaId   String
+  sortOrder Int    @default(0)
+
+  item  MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  media Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, mediaId])
+  @@index([itemId, sortOrder])
+  @@map("menu_item_images")
+}
+
+/// Branch-level deviation from the shared menu (master spec §86). Absent row
+/// means the branch serves the business-level values.
+model BranchItemOverride {
+  id       String @id @default(cuid())
+  branchId String
+  itemId   String
+
+  priceMinor   Int?
+  availability ItemAvailability?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  item   MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, itemId])
+  @@map("branch_item_overrides")
 }

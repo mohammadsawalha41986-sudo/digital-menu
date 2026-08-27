@@ -1,13 +1,13 @@
 /*
- * Editorial template styles.
+ * EDITORIAL template styles.
  *
  * Reads only `--brand-*` and `--sys-*`. No literal colour, font family or
  * business-specific value appears here — that is what keeps the template
- * re-themable (GOALS I6).
+ * re-themable (GOALS I6), and a unit test enforces it.
  *
- * Every directional property is logical, so the same rules produce a native
- * RTL layout under `dir="rtl"` and a native LTR layout under `dir="ltr"`
- * without a mirrored stylesheet (GOALS I4).
+ * Every directional property is logical, so these rules produce a native RTL
+ * layout under `dir="rtl"` and a native LTR layout under `dir="ltr"` without a
+ * mirrored stylesheet (GOALS I4).
  */
 
 .editorial {
@@ -15,25 +15,41 @@
 
   display: flex;
   flex-direction: column;
-  gap: var(--sys-space-7);
   max-inline-size: var(--sys-content-max);
   margin-inline: auto;
   padding-inline: var(--sys-space-4);
-  padding-block: var(--sys-space-6) var(--sys-space-9);
+  padding-block: var(--sys-space-5) var(--sys-space-9);
 }
 
-.editorial__header {
+/* --- Masthead ------------------------------------------------------------ */
+
+.editorial__masthead {
   display: flex;
   flex-direction: column;
   gap: var(--sys-space-4);
   text-align: start;
+  padding-block-end: var(--sys-space-6);
+}
+
+.editorial__masthead-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-4);
+}
+
+.editorial__logo {
+  max-block-size: 3.5rem;
+  inline-size: auto;
+  object-fit: contain;
 }
 
 .editorial__locales {
   display: flex;
-  gap: var(--sys-space-3);
+  gap: var(--sys-space-2);
   align-items: center;
-  font-size: var(--sys-font-size-sm);
+  margin-inline-start: auto;
+  font-size: var(--sys-font-size-xs);
   letter-spacing: var(--sys-tracking-wide);
   text-transform: uppercase;
 }
@@ -66,44 +82,298 @@
   color: var(--brand-color-muted);
 }
 
-.editorial__section-title {
-  font-size: var(--sys-font-size-xs);
-  letter-spacing: var(--sys-tracking-wide);
-  text-transform: uppercase;
+.editorial__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+}
+
+.editorial__action {
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--sys-space-4);
+  border: 1px solid var(--brand-color-primary);
+  border-radius: var(--brand-radius-sm);
+  color: var(--brand-color-primary);
+  font-size: var(--sys-font-size-sm);
+  text-decoration: none;
+  transition:
+    background-color var(--sys-duration-fast) var(--sys-ease-standard),
+    color var(--sys-duration-fast) var(--sys-ease-standard);
+}
+
+.editorial__action:hover {
+  background-color: var(--brand-color-primary);
+  color: var(--brand-color-on-primary);
+}
+
+/* --- Category index ------------------------------------------------------ */
+
+.editorial__index {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 2;
+  background-color: var(--brand-color-background);
+  border-block: var(--editorial-rule);
+  margin-inline: calc(var(--sys-space-4) * -1);
+  padding-inline: var(--sys-space-4);
+}
+
+.editorial__index-list {
+  display: flex;
+  gap: var(--sys-space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Horizontal scroll follows the writing direction natively. */
+  overscroll-behavior-inline: contain;
+}
+
+.editorial__index-list::-webkit-scrollbar {
+  display: none;
+}
+
+.editorial__index-link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--sys-tap-target);
+  white-space: nowrap;
+  font-size: var(--sys-font-size-sm);
   color: var(--brand-color-muted);
+  text-decoration: none;
+}
+
+.editorial__index-link:hover {
+  color: var(--brand-color-primary);
+}
+
+/* --- Body ---------------------------------------------------------------- */
+
+.editorial__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-7);
+  padding-block-start: var(--sys-space-6);
+}
+
+.editorial__menu-title {
+  font-size: var(--sys-font-size-2xl);
+  color: var(--brand-color-primary);
+  padding-block-end: var(--sys-space-3);
+}
+
+.editorial__category {
+  padding-block-start: var(--sys-space-6);
+  scroll-margin-block-start: calc(var(--sys-tap-target) + var(--sys-space-4));
+}
+
+.editorial__category-head {
   padding-block-end: var(--sys-space-3);
   border-block-end: var(--editorial-rule);
 }
 
-.editorial__menu-list {
+.editorial__category-title {
+  font-size: var(--sys-font-size-xs);
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+  color: var(--brand-color-muted);
+}
+
+.editorial__category-note {
+  padding-block-start: var(--sys-space-2);
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+}
+
+.editorial__items {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.editorial__menu-item {
-  padding-block: var(--sys-space-4);
+.editorial__item {
   border-block-end: var(--editorial-rule);
 }
 
-.editorial__menu-title {
+.editorial__item-disclosure {
+  padding-block: var(--sys-space-4);
+}
+
+.editorial__item-disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+  min-block-size: var(--sys-tap-target);
+  display: flex;
+  align-items: center;
+}
+
+.editorial__item-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.editorial__item-row {
+  display: flex;
+  inline-size: 100%;
+  align-items: baseline;
+  gap: var(--sys-space-4);
+}
+
+.editorial__item-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sys-space-2);
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.editorial__item-name {
   font-family: var(--brand-font-heading);
-  font-size: var(--sys-font-size-xl);
+  font-size: var(--sys-font-size-lg);
   color: var(--brand-color-text);
 }
 
-.editorial__empty {
-  padding-block: var(--sys-space-5);
+.editorial__item-flag {
+  font-size: var(--sys-font-size-2xs);
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+  color: var(--brand-color-muted);
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius-sm);
+  padding-inline: var(--sys-space-2);
+}
+
+.editorial__item-meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sys-space-3);
+  flex: 0 0 auto;
+  /* The price aligns to the inline end in both directions. */
+  text-align: end;
+}
+
+.editorial__item-calories {
+  font-size: var(--sys-font-size-xs);
+  color: var(--brand-color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.editorial__item-price {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.editorial__item-disclosure [data-item-detail] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  padding-block-start: var(--sys-space-3);
+  animation: editorial-reveal var(--sys-duration-base) var(--sys-ease-entrance);
+}
+
+.editorial__item-description,
+.item-ingredients,
+.item-allergens {
+  max-inline-size: 60ch;
+  font-size: var(--sys-font-size-sm);
   color: var(--brand-color-muted);
 }
 
-/* Desktop is a widening of the mobile composition, not a separate design. */
+.editorial__item-image {
+  inline-size: 100%;
+  max-inline-size: 32rem;
+  border-radius: var(--brand-radius-md);
+  object-fit: cover;
+}
+
+.editorial__empty {
+  padding-block: var(--sys-space-6);
+  color: var(--brand-color-muted);
+}
+
+/* Editorial motion personality: a short mask-like reveal, nothing bouncy. */
+@keyframes editorial-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Footer -------------------------------------------------------------- */
+
+.editorial__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-5);
+  margin-block-start: var(--sys-space-8);
+  padding-block-start: var(--sys-space-5);
+  border-block-start: var(--editorial-rule);
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+}
+
+.editorial__footer-title {
+  font-size: var(--sys-font-size-xs);
+  letter-spacing: var(--sys-tracking-wide);
+  text-transform: uppercase;
+}
+
+.editorial__branch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sys-space-4);
+}
+
+.editorial__branch-name {
+  font-size: var(--sys-font-size-base);
+  color: var(--brand-color-text);
+}
+
+.editorial__branch-link,
+.editorial__social-link {
+  color: var(--brand-color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.editorial__social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-4);
+}
+
+.editorial__platform {
+  font-size: var(--sys-font-size-xs);
+}
+
+/* Desktop widens the mobile composition; it is not a separate design. */
 @media (min-width: 48rem) {
   .editorial {
     padding-inline: var(--sys-space-6);
   }
 
+  .editorial__index {
+    margin-inline: calc(var(--sys-space-6) * -1);
+    padding-inline: var(--sys-space-6);
+  }
+
   .editorial__title {
     font-size: var(--sys-font-size-4xl);
+  }
+
+  .editorial__branch-list {
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   }
 }

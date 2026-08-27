@@ -6,16 +6,99 @@ import type { BrandTokens } from '@/design/brand';
  *
  * Shaped deliberately: it carries no internal database ids. A template cannot
  * leak one into markup because it never receives one (master spec §122).
+ * Branch price and availability overrides are already applied, so a template
+ * never has to know the override rules (§86).
  */
 
-export interface PublicMenuSummary {
-  /** Tenant-scoped key such as "main" — safe to expose, not a database id. */
+export interface PublicImage {
+  url: string;
+  altAr: string | null;
+  altEn: string | null;
+  width: number | null;
+  height: number | null;
+}
+
+export interface PublicItem {
+  /** Business-scoped item code — stable, not a database id. */
+  code: string;
+  nameAr: string;
+  nameEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  /** Minor units, branch override already applied. */
+  priceMinor: number | null;
+  currency: string;
+  /** Only present when the business supplied it. Never inferred (§37). */
+  calories: number | null;
+  servingSizeAr: string | null;
+  servingSizeEn: string | null;
+  ingredientsAr: string | null;
+  ingredientsEn: string | null;
+  allergens: string[];
+  tags: string[];
+  isFeatured: boolean;
+  /** True when the item is served but currently out (§83). */
+  isUnavailable: boolean;
+  image: PublicImage | null;
+  gallery: PublicImage[];
+}
+
+export interface PublicCategory {
+  key: string;
+  nameAr: string;
+  nameEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  image: PublicImage | null;
+  isFeatured: boolean;
+  items: PublicItem[];
+}
+
+export interface PublicMenu {
   key: string;
   titleAr: string;
   titleEn: string | null;
-  /** Publication number of the version currently served, if published. */
   publishedVersion: number | null;
   publishedAt: Date | null;
+  categories: PublicCategory[];
+}
+
+export interface PublicBranch {
+  key: string;
+  nameAr: string;
+  nameEn: string | null;
+  addressAr: string | null;
+  addressEn: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  googleMapsUrl: string | null;
+  workingHours: unknown | null;
+}
+
+/** Contact channels. A null field means the action is hidden, not disabled (§44). */
+export interface PublicContact {
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  website: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  facebook: string | null;
+  linkedin: string | null;
+  youtube: string | null;
+  googleMapsUrl: string | null;
+  addressAr: string | null;
+  addressEn: string | null;
+  workingHours: unknown | null;
+}
+
+export interface PublicSeo {
+  indexProfile: boolean;
+  metaTitleAr: string | null;
+  metaTitleEn: string | null;
+  metaDescriptionAr: string | null;
+  metaDescriptionEn: string | null;
+  ogImage: PublicImage | null;
 }
 
 export interface PublicProfile {
@@ -23,18 +106,62 @@ export interface PublicProfile {
   publicId: string;
   businessType: string;
   defaultLocale: Locale;
+  currency: string;
 
   nameAr: string;
   nameEn: string | null;
   descriptionAr: string | null;
   descriptionEn: string | null;
+  logo: PublicImage | null;
 
   /** Structure selection, resolved against the in-code template registry. */
   templateKey: string;
   variantKey: string;
-
   /** Visual identity, emitted as CSS custom properties. */
   brand: BrandTokens;
 
-  menus: PublicMenuSummary[];
+  contact: PublicContact;
+  seo: PublicSeo;
+  showPlatformFooter: boolean;
+
+  branches: PublicBranch[];
+  /** The branch this view is scoped to, when the URL named one. */
+  activeBranchKey: string | null;
+
+  menus: PublicMenu[];
+  offers: PublicOffer[];
+  downloads: PublicDownload[];
+}
+
+export interface PublicOffer {
+  key: string;
+  titleAr: string;
+  titleEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  image: PublicImage | null;
+  originalPriceMinor: number | null;
+  offerPriceMinor: number | null;
+  discountPercent: number | null;
+  currency: string;
+  ctaLabelAr: string | null;
+  ctaLabelEn: string | null;
+  ctaUrl: string | null;
+  placement: string;
+  isFeatured: boolean;
+  endsAt: Date | null;
+}
+
+export interface PublicDownload {
+  key: string;
+  titleAr: string;
+  titleEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  /** Either a hosted file served by the platform or an external link (§51). */
+  kind: 'file' | 'link';
+  url: string;
+  fileSizeBytes: number | null;
+  contentType: string | null;
+  allowDownload: boolean;
 }

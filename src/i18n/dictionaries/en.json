@@ -1,11 +1,16 @@
 {
   "common": {
     "languageSwitcher": "Language",
-    "backToTop": "Back to top"
+    "backToTop": "Back to top",
+    "close": "Close",
+    "skipToContent": "Skip to content"
   },
   "profile": {
     "viewMenu": "View menu",
+    "menus": "Menus",
     "downloadMenu": "Download menu",
+    "viewPdfMenu": "View PDF menu",
+    "viewFullMenu": "View full menu",
     "contact": "Contact",
     "call": "Call",
     "whatsapp": "WhatsApp",
@@ -13,7 +18,26 @@
     "offers": "Offers",
     "categories": "Categories",
     "downloads": "Downloads",
-    "menuComingSoon": "The menu has not been published yet"
+    "branches": "Branches",
+    "allBranches": "All branches",
+    "about": "About",
+    "workingHours": "Opening hours",
+    "ingredients": "Ingredients",
+    "allergens": "Allergens",
+    "unavailable": "Currently unavailable",
+    "featured": "Featured",
+    "menuComingSoon": "The menu has not been published yet",
+    "poweredBy": "Digital menu by"
+  },
+  "allergens": {
+    "gluten": "Gluten",
+    "milk": "Milk",
+    "egg": "Egg",
+    "nuts": "Nuts",
+    "peanuts": "Peanuts",
+    "soy": "Soy",
+    "fish": "Fish",
+    "shellfish": "Shellfish"
   },
   "errors": {
     "profileNotFoundTitle": "This profile is unavailable",

@@ -369,3 +369,35 @@ development `[§134]`.
    retyped, and an ambiguous alphabet would produce collisions between distinct codes.
 6. **`?lang=` beats the business default.** An explicit visitor choice outranks a
    configured default.
+
+---
+
+## 15. Content domain (Phase 1)
+
+```
+Business ─┬─ Branch ── BranchItemOverride ──┐
+          ├─ Media                          │
+          └─ Menu ── MenuCategory ── MenuItem ── MenuItemImage
+                  └─ MenuVersion (publication pointer)
+```
+
+Decisions worth recording:
+
+- **`MenuItem.businessId` is denormalised.** Items reach their tenant through
+  `category → menu → business`, but every tenant-scoped query would then need a three-hop
+  join, and one missed hop is a cross-tenant leak. A direct `businessId` column makes the
+  scope a single predicate and gives the Excel importer (`@@unique([businessId, itemCode])`)
+  the key it matches on.
+- **`itemCode` is the stable public item identity**, business-scoped and human-writable. It
+  is what Excel exports carry and imports match, which is how a bulk price edit updates
+  rather than duplicates (§66).
+- **Branch overrides are rows, not menu copies.** A branch that changes one price gets one
+  `BranchItemOverride`; the shared menu is untouched (§86). The repository loads overrides
+  only when a branch is in scope, so the common case costs nothing.
+- **An unknown branch key degrades to the business view**, deliberately: a printed branch
+  QR must keep working after a branch is renamed or retired.
+- **Media rows own the storage key**, never a vendor URL. `/uploads/[...key]` serves local
+  objects and refuses any key with no `Media` row, so an object on disk cannot be fetched
+  by guessing a path (§108).
+- **Item detail is a native `<details>` disclosure.** No JavaScript, keyboard accessible,
+  works before hydration; each template styles it into a card, drawer or row (§39, §103).
