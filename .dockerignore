@@ -1,0 +1,13 @@
+# Build context hygiene. node_modules must not be copied: the build stage takes
+# them from the deps stage so the lockfile, not a developer's disk, decides.
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+storage
+test-results
+playwright-report
+coverage
+*.log

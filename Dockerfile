@@ -18,6 +18,18 @@ FROM base AS deps
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# --- Migrator --------------------------------------------------------------
+# A minimal, isolated Prisma CLI install. The standalone Next.js bundle traces
+# only what the server imports, so the CLI is absent from it, and Railway (like
+# any release-command host) needs `migrate deploy` to run inside this image
+# rather than from a developer's machine. Kept in its own directory so it can
+# never shadow the runtime's own @prisma/* packages. The version is read from
+# package.json so it cannot drift from the client.
+FROM base AS migrator
+COPY package.json ./
+RUN VERSION="$(node -p "require('./package.json').devDependencies.prisma")" \
+ && npm install --prefix /migrator --no-audit --no-fund --omit=dev "prisma@$VERSION"
+
 # --- Build -----------------------------------------------------------------
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
@@ -38,19 +50,25 @@ COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 
-# Migrations and the Prisma CLI dependencies are needed to run
-# `prisma migrate deploy` on release.
+# Migrations plus the isolated CLI that applies them on release.
 COPY --from=build --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=build --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=migrator --chown=nextjs:nodejs /migrator/node_modules ./migrator/node_modules
+COPY --chown=nextjs:nodejs docker/prisma.config.mjs ./migrator/prisma.config.mjs
+COPY --chown=nextjs:nodejs docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Local storage provider root; mount a volume here, or switch to R2.
-RUN mkdir -p /app/storage && chown nextjs:nodejs /app/storage
-VOLUME ["/app/storage"]
+# Local storage provider root. Mount a volume here (Railway volumes, a compose
+# volume, a host bind), or switch to R2. Deliberately no `VOLUME` instruction:
+# it makes the path an anonymous volume on hosts that honour it, and Railway
+# rejects the image outright.
+RUN mkdir -p /app/storage && chown nextjs:nodejs /app/storage \
+ && chmod +x /usr/local/bin/entrypoint.sh
 
-USER nextjs
+# No `USER` here: the entrypoint needs root briefly to take ownership of the
+# storage mount, then drops to uid 1001 before exec'ing the server. Nothing
+# serves traffic as root.
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

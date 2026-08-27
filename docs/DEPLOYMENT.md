@@ -9,7 +9,7 @@ workload behind a reverse proxy.
 ## The image
 
 Multi-stage `Dockerfile` producing a `next build --output standalone` runtime layer with
-no toolchain, no source and no dev dependencies, running as a non-root user, with a
+no toolchain, no source and no dev dependencies, serving as a non-root user, with a
 `HEALTHCHECK` hitting `/api/health`.
 
 **No secret is required at build time.** The database client is lazy behind a proxy
@@ -56,15 +56,48 @@ invalidates all of them. Decide the public hostname before the first client goes
 5. Persistent storage: mount a volume at `/app/storage` if using the local provider. With
    R2 no volume is needed.
 
+## Railway
+
+Railway builds the `Dockerfile` from the connected branch. Three of its constraints shape
+the image, and all three are handled:
+
+- **`VOLUME` is rejected.** Railway refuses an image containing a `VOLUME` instruction
+  (`dockerfile invalid: docker VOLUME at Line N is not supported, use Railway Volumes`).
+  The instruction is gone; attach a Railway Volume mounted at `/app/storage` instead.
+- **The proxy targets one port.** Set `PORT` to whatever the service domain targets. The
+  server reads `PORT`; the image defaults it to 3000.
+- **Volumes mount as root.** The entrypoint takes ownership of the storage root, then
+  drops to uid 1001 before exec'ing the server. Nothing serves traffic as root.
+
+Setup:
+
+1. Service → connect this repository and branch.
+2. Add PostgreSQL; set `DATABASE_URL` to `${{Postgres.DATABASE_URL}}`.
+3. Set `AUTH_SECRET`, `ANALYTICS_SALT`, `APP_URL`, `PUBLIC_URL`, `PORT`,
+   `STORAGE_PROVIDER=local`, `STORAGE_LOCAL_ROOT=/app/storage`.
+4. Attach a volume at `/app/storage`.
+5. Health check path `/api/health` (`railway.json` sets it).
+
+`PUBLIC_URL` on a `*.up.railway.app` domain is a decision, not a placeholder — see above.
+Move to the final custom domain **before** printing any QR code.
+
 ## Release procedure
 
-```bash
-npm run db:deploy   # apply migrations
-# then start/replace the container
-```
+Migrations run **before** the new image serves traffic, from inside the container that is
+about to serve it: `docker/entrypoint.sh` runs `prisma migrate deploy` and only then execs
+the server. A failed migration aborts the release, so the previous deployment keeps
+serving rather than a new one serving against a schema it does not match.
 
-Migrations run **before** the new image serves traffic. They ship inside the image, so this
-is a command in the release step, not a separate deployment artifact.
+The Prisma CLI is not part of the traced standalone bundle, so the image carries a minimal,
+isolated copy of it under `/app/migrator` (its own `node_modules` and an ESM
+`prisma.config.mjs`, so no TypeScript loader or dotenv is needed at runtime). The version is
+read from `package.json` at build time and cannot drift from the client.
+
+Applying migrations by hand, where a host offers no release step:
+
+```bash
+npm run db:deploy
+```
 
 `npm run db:status` verifies no drift; CI runs it on every push.
 
