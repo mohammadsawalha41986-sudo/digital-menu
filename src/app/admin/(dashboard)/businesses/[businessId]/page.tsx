@@ -56,6 +56,12 @@ export default async function BusinessPage({
             Template
           </Link>
           <Link
+            href={`/admin/businesses/${business.id}/data`}
+            className="admin__button admin__button--secondary"
+          >
+            Import / export
+          </Link>
+          <Link
             href={`/admin/businesses/${business.id}/offers`}
             className="admin__button admin__button--secondary"
           >

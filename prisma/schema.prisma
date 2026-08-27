@@ -82,6 +82,8 @@ model User {
   publishedMenues MenuVersion[]        @relation("MenuVersionPublisher")
   auditLogs       AuditLog[]
   uploadedFiles   PublicFileVersion[]
+  importBatches   ImportBatch[]
+  priceChanges    PriceHistory[]
 
   @@index([role])
   @@map("users")
@@ -155,19 +157,21 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships BusinessMembership[]
-  brandTheme  BrandTheme?
-  menus       Menu[]
-  branches    Branch[]
-  categories  MenuCategory[]
-  items       MenuItem[]
-  media       Media[]
-  qrCodes     QrCode[]
-  auditLogs   AuditLog[]
-  publicFiles PublicFile[]
-  offers      Offer[]
-  logo        Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
-  ogImage     Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
+  memberships   BusinessMembership[]
+  brandTheme    BrandTheme?
+  menus         Menu[]
+  branches      Branch[]
+  categories    MenuCategory[]
+  items         MenuItem[]
+  media         Media[]
+  qrCodes       QrCode[]
+  auditLogs     AuditLog[]
+  publicFiles   PublicFile[]
+  offers        Offer[]
+  importBatches ImportBatch[]
+  priceHistory  PriceHistory[]
+  logo          Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  ogImage       Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([createdAt])
@@ -707,4 +711,103 @@ model Offer {
   @@unique([businessId, key])
   @@index([businessId, isActive, startsAt, endsAt])
   @@map("offers")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 6 — bulk import/export, price history and rollback.
+// ---------------------------------------------------------------------------
+
+enum ImportStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum ImportRowOutcome {
+  CREATED
+  UPDATED
+  SKIPPED
+  ERROR
+}
+
+/// One import run (master spec §75).
+model ImportBatch {
+  id         String  @id @default(cuid())
+  businessId String
+  userId     String?
+
+  fileName String
+  status   ImportStatus @default(PENDING)
+
+  totalRows   Int @default(0)
+  createdRows Int @default(0)
+  updatedRows Int @default(0)
+  skippedRows Int @default(0)
+  errorRows   Int @default(0)
+
+  /// The column mapping actually used, kept so a run can be explained later.
+  mapping Json?
+
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+  rolledBackAt DateTime?
+
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user     User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  rows     ImportRow[]
+
+  @@index([businessId, createdAt])
+  @@map("import_batches")
+}
+
+/// One spreadsheet row and what happened to it.
+///
+/// `beforeState` is what makes rollback possible: it holds the item's values
+/// as they were *before* this row touched them (§76, §126).
+model ImportRow {
+  id      String @id @default(cuid())
+  batchId String
+
+  rowNumber Int
+  itemCode  String?
+  outcome   ImportRowOutcome
+
+  /// Operator-facing problem description for ERROR rows (§63).
+  errorColumn  String?
+  errorValue   String?
+  errorMessage String?
+
+  beforeState Json?
+  afterState  Json?
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, outcome])
+  @@map("import_rows")
+}
+
+/// Every price change, whatever made it (master spec §124).
+model PriceHistory {
+  id         String  @id @default(cuid())
+  businessId String
+  itemId     String?
+  itemCode   String
+
+  oldPriceMinor Int?
+  newPriceMinor Int?
+  currency      String
+
+  changedById String?
+  /// Set when the change came from an import, so a batch can be traced.
+  batchId     String?
+
+  createdAt DateTime @default(now())
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  changedBy User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([itemCode])
+  @@map("price_history")
 }
