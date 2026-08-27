@@ -412,3 +412,326 @@
     padding-inline: var(--sys-space-6);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Menu Studio
+   --------------------------------------------------------------------------- */
+
+.studio__projects {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sys-space-4);
+}
+
+@media (min-width: 60rem) {
+  .studio__projects {
+    grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  }
+}
+
+.studio__project {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  padding: var(--sys-space-4);
+  display: grid;
+  gap: var(--sys-space-3);
+  align-content: start;
+}
+
+.studio__project-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+}
+
+.studio__project-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.studio__meta {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sys-space-2);
+  font-size: 0.85rem;
+}
+
+.studio__meta dt {
+  color: var(--admin-muted);
+}
+
+.studio__meta dd {
+  margin: 0;
+}
+
+.studio__project-actions {
+  display: flex;
+  gap: var(--sys-space-2);
+  flex-wrap: wrap;
+}
+
+.studio__subhead {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--admin-muted);
+  margin-block: var(--sys-space-4) var(--sys-space-2);
+}
+
+.studio__identity {
+  display: grid;
+  gap: var(--sys-space-5);
+}
+
+@media (min-width: 52rem) {
+  .studio__identity {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.studio__swatches,
+.studio__palette,
+.studio__suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.studio__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+}
+
+.studio__swatches li {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+}
+
+.studio__swatch {
+  display: block;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--sys-radius-md-sm);
+  border: 1px solid var(--admin-border);
+}
+
+.studio__swatch--large {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.studio__palette li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--sys-space-2);
+  padding-block: 0.35rem;
+  border-block-end: 1px solid var(--admin-border);
+  font-size: 0.85rem;
+}
+
+.studio__palette-role {
+  text-transform: capitalize;
+}
+
+.studio__suggestions li {
+  display: grid;
+  gap: 0.15rem;
+  padding-block: var(--sys-space-2);
+  border-block-end: 1px solid var(--admin-border);
+  font-size: 0.85rem;
+}
+
+.studio__suggestions span {
+  color: var(--admin-muted);
+}
+
+/* --- The three-pane editor ------------------------------------------------ */
+
+.studio {
+  display: grid;
+  gap: var(--sys-space-4);
+}
+
+@media (min-width: 75rem) {
+  .studio {
+    /* Structure and design are fixed reading widths; the preview takes what is
+       left, because that is the pane whose width carries meaning. */
+    grid-template-columns: 18rem minmax(0, 1fr) 20rem;
+    align-items: start;
+  }
+}
+
+.studio__pane {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-surface);
+  padding: var(--sys-space-4);
+}
+
+@media (min-width: 75rem) {
+  .studio__pane--structure,
+  .studio__pane--design {
+    position: sticky;
+    inset-block-start: var(--sys-space-4);
+    max-block-size: calc(100dvh - 2 * var(--sys-space-4));
+    overflow-y: auto;
+  }
+}
+
+.studio__pane-title {
+  margin-block: 0 var(--sys-space-3);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--admin-muted);
+}
+
+.studio__tree,
+.studio__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.studio__tree--nested {
+  padding-inline-start: var(--sys-space-3);
+  border-inline-start: 1px solid var(--admin-border);
+  margin-inline-start: var(--sys-space-2);
+}
+
+.studio__category {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+  margin-block: var(--sys-space-3) var(--sys-space-1);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.studio__category-count {
+  color: var(--admin-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.studio__item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+  padding-block: 0.3rem;
+  font-size: 0.82rem;
+  border-block-end: 1px solid var(--admin-border);
+}
+
+.studio__item-meta {
+  display: flex;
+  gap: var(--sys-space-2);
+  align-items: center;
+  color: var(--admin-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.studio__item-flag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-sm);
+  padding-inline: 0.3rem;
+}
+
+.studio__margin {
+  font-weight: 600;
+}
+
+.studio__margin--low {
+  color: #b3261e;
+}
+
+.studio__margin--healthy {
+  color: var(--admin-ink);
+}
+
+.studio__margin--high {
+  color: #1b6b3a;
+}
+
+.studio__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-3);
+  align-items: center;
+  justify-content: space-between;
+  margin-block-end: var(--sys-space-3);
+}
+
+.studio__device-switch {
+  display: inline-flex;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-sm);
+  overflow: hidden;
+}
+
+.studio__device {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--admin-ink);
+}
+
+.studio__device[aria-pressed='true'] {
+  background: var(--admin-ink);
+  color: var(--admin-surface);
+}
+
+.studio__open {
+  font-size: 0.8rem;
+}
+
+.studio__frame {
+  overflow: auto;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  padding: var(--sys-space-3);
+  display: grid;
+  justify-items: center;
+}
+
+.studio__iframe {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-sm);
+  background: #fff;
+  max-inline-size: 100%;
+}
+
+/* Print preview reads as a sheet, so its proportions are legible as a page. */
+.studio__frame--print {
+  background: #6b7280;
+}
+
+.admin__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  padding-block: 0.2rem;
+}
+
+.admin__fieldset {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-sm);
+  padding: var(--sys-space-3);
+  margin-block: var(--sys-space-3);
+}

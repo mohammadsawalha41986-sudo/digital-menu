@@ -43,6 +43,9 @@ export default async function BusinessPage({
           </p>
         </div>
         <nav className="admin__actions" aria-label="Business sections">
+          <Link href={`/admin/businesses/${business.id}/studio`} className="admin__button">
+            Menu Studio
+          </Link>
           <Link href={`/admin/businesses/${business.id}/menus`} className="admin__button admin__button--secondary">
             Menus ({business.menus.length})
           </Link>

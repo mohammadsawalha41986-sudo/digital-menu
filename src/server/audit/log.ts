@@ -42,6 +42,15 @@ export type AuditAction =
   | 'import.executed'
   | 'import.rolled_back'
   | 'export.executed'
+  | 'brand.analysed'
+  | 'brand.overridden'
+  | 'brand.applied'
+  | 'design.updated'
+  | 'modifier_group.created'
+  | 'modifier_group.updated'
+  | 'modifier_group.deleted'
+  | 'item.modifiers_changed'
+  | 'items.bulk_updated'
   | 'user.signed_in';
 
 export interface AuditEntry {
