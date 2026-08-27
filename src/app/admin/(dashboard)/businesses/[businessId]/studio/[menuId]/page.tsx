@@ -8,6 +8,7 @@ import { getMenuDesign } from '@/server/menu-studio/design';
 import { MENU_THEMES } from '@/menu-studio/themes';
 import { computeMargin, summariseMargins } from '@/server/menu-studio/margin';
 import { StudioEditor } from './editor';
+import { BulkEdit } from './bulk-edit';
 
 export const dynamic = 'force-dynamic';
 
@@ -158,6 +159,25 @@ export default async function StudioEditorPage({
           averageRatio: costs.averageRatio,
         }}
         currency={business.currency}
+      />
+
+      <BulkEdit
+        businessId={business.id}
+        currency={business.currency}
+        categories={menu.categories.map((category) => ({
+          key: category.key,
+          name: category.nameEn ?? category.nameAr,
+        }))}
+        rows={menu.categories.flatMap((category) =>
+          category.items.map((item) => ({
+            code: item.itemCode,
+            name: item.nameEn ?? item.nameAr,
+            category: category.nameEn ?? category.nameAr,
+            price: item.priceMinor,
+            availability: item.availability,
+            tags: item.tags,
+          })),
+        )}
       />
     </>
   );

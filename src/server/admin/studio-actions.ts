@@ -8,6 +8,7 @@ import { invalidateProfile } from '@/server/profile/cache';
 import { updateMenuDesign } from '@/server/menu-studio/design';
 import { saveModifierGroup, setItemModifiers, deleteModifierGroup } from '@/server/menu-studio/modifiers';
 import { analyseLogo, applyBrandPreset, overrideBrandPreset } from '@/server/brand/service';
+import { bulkEditItems, type BulkChange } from '@/server/menu-studio/bulk';
 import type { ActionState } from './actions';
 
 /**
@@ -217,5 +218,66 @@ export async function setItemModifiersAction(
 
     await revalidateStudio(businessId);
     return 'Item modifiers saved';
+  });
+}
+
+/**
+ * Bulk edit (§27).
+ *
+ * The result says what actually happened — how many rows changed and which
+ * codes matched nothing — because a bulk tool that reports "done" while
+ * skipping half its input is how a menu goes quietly wrong.
+ */
+export async function bulkEditAction(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const businessId = String(formData.get('businessId') ?? '');
+  const codes = formData.getAll('itemCode').map(String);
+
+  return run(async () => {
+    const operation = String(formData.get('operation') ?? '');
+    const value = String(formData.get('value') ?? '').trim();
+
+    const change = ((): BulkChange => {
+      switch (operation) {
+        case 'category':
+          return { kind: 'category', categoryKey: value };
+        case 'availability':
+          if (value !== 'AVAILABLE' && value !== 'UNAVAILABLE' && value !== 'HIDDEN') {
+            throw new Error('Choose an availability.');
+          }
+          return { kind: 'availability', availability: value };
+        case 'feature':
+          return { kind: 'featured', featured: value === 'true' };
+        case 'add-tag':
+          return { kind: 'tags', add: value.split(',') };
+        case 'remove-tag':
+          return { kind: 'tags', remove: value.split(',') };
+        case 'set-price': {
+          const amount = Number(value);
+          if (!Number.isFinite(amount) || amount < 0) throw new Error('Enter a price such as 42.50.');
+          return { kind: 'price', mode: 'set', value: Math.round(amount * 100) };
+        }
+        case 'adjust-price': {
+          const percent = Number(value);
+          if (!Number.isFinite(percent)) throw new Error('Enter a percentage such as 10 or -5.');
+          return { kind: 'price', mode: 'adjust-percent', value: percent };
+        }
+        case 'delete':
+          return { kind: 'delete' };
+        default:
+          throw new Error('Choose what to change.');
+      }
+    })();
+
+    const result = await bulkEditItems(user, businessId, codes, change);
+    await revalidateStudio(businessId);
+
+    const missing =
+      result.missing.length > 0 ? ` · not found: ${result.missing.join(', ')}` : '';
+
+    return `${result.changed} ${result.changed === 1 ? 'item' : 'items'} changed${missing}`;
   });
 }

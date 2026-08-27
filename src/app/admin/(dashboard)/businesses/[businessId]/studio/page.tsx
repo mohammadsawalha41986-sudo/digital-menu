@@ -5,10 +5,12 @@ import { getBusinessForAdmin } from '@/server/admin/business-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { prisma } from '@/server/db/client';
 import { getBrandPreset } from '@/server/brand/service';
+import { listModifierGroups } from '@/server/menu-studio/modifiers';
 import { listMedia } from '@/server/media/service';
 import { resolveTheme, suggestThemes } from '@/menu-studio/themes';
 import { summariseMargins } from '@/server/menu-studio/margin';
 import { BrandIdentityPanel } from './brand-panel';
+import { ModifiersPanel } from './modifiers-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,7 +35,7 @@ export default async function StudioPage({
     throw error;
   });
 
-  const [menus, preset, media] = await Promise.all([
+  const [menus, preset, media, modifierGroups] = await Promise.all([
     prisma.menu.findMany({
       where: { businessId: business.id },
       orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
@@ -50,6 +52,7 @@ export default async function StudioPage({
     }),
     getBrandPreset(user, business.id),
     listMedia(user, business.id),
+    listModifierGroups(user, business.id),
   ]);
 
   const suggestions = preset ? suggestThemes(preset.mood, preset.tone) : [];
@@ -76,6 +79,24 @@ export default async function StudioPage({
           key: entry.theme.key,
           label: entry.theme.label,
           reason: entry.reason,
+        }))}
+      />
+
+      <ModifiersPanel
+        businessId={business.id}
+        currency={business.currency}
+        groups={modifierGroups.map((group) => ({
+          key: group.key,
+          nameAr: group.nameAr,
+          nameEn: group.nameEn,
+          minSelect: group.minSelect,
+          maxSelect: group.maxSelect,
+          options: group.options.map((option) => ({
+            key: option.key,
+            nameAr: option.nameAr,
+            nameEn: option.nameEn,
+            priceDeltaMinor: option.priceDeltaMinor,
+          })),
         }))}
       />
 
