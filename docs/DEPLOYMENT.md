@@ -68,6 +68,10 @@ the image, and all three are handled:
   server reads `PORT`; the image defaults it to 3000.
 - **Volumes mount as root.** The entrypoint takes ownership of the storage root, then
   drops to uid 1001 before exec'ing the server. Nothing serves traffic as root.
+- **The server must bind 0.0.0.0.** The Next.js standalone server binds to `$HOSTNAME`,
+  which the container runtime sets to the container id; the proxy then cannot connect and
+  the deployment never turns healthy even though the log says ready. The entrypoint
+  exports `HOSTNAME=0.0.0.0`.
 
 Setup:
 
@@ -92,6 +96,10 @@ The Prisma CLI is not part of the traced standalone bundle, so the image carries
 isolated copy of it under `/app/migrator` (its own `node_modules` and an ESM
 `prisma.config.mjs`, so no TypeScript loader or dotenv is needed at runtime). The version is
 read from `package.json` at build time and cannot drift from the client.
+
+Prisma's CLI prints an OpenSSL detection warning on `node:22-bookworm-slim`. Migrations
+apply correctly regardless — the client uses the `pg` driver adapter at runtime and needs
+no engine binary — but installing `openssl` in the runtime stage silences it.
 
 Applying migrations by hand, where a host offers no release step:
 
