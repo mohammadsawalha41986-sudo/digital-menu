@@ -157,21 +157,22 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships   BusinessMembership[]
-  brandTheme    BrandTheme?
-  menus         Menu[]
-  branches      Branch[]
-  categories    MenuCategory[]
-  items         MenuItem[]
-  media         Media[]
-  qrCodes       QrCode[]
-  auditLogs     AuditLog[]
-  publicFiles   PublicFile[]
-  offers        Offer[]
-  importBatches ImportBatch[]
-  priceHistory  PriceHistory[]
-  logo          Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
-  ogImage       Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
+  memberships     BusinessMembership[]
+  brandTheme      BrandTheme?
+  menus           Menu[]
+  branches        Branch[]
+  categories      MenuCategory[]
+  items           MenuItem[]
+  media           Media[]
+  qrCodes         QrCode[]
+  auditLogs       AuditLog[]
+  publicFiles     PublicFile[]
+  offers          Offer[]
+  importBatches   ImportBatch[]
+  priceHistory    PriceHistory[]
+  analyticsEvents AnalyticsEvent[]
+  logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  ogImage         Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([createdAt])
@@ -810,4 +811,44 @@ model PriceHistory {
   @@index([businessId, createdAt])
   @@index([itemCode])
   @@map("price_history")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 7 — analytics.
+// ---------------------------------------------------------------------------
+
+enum DeviceCategory {
+  MOBILE
+  TABLET
+  DESKTOP
+  UNKNOWN
+}
+
+/// A single recorded interaction (master spec §109, §110, §113).
+///
+/// Deliberately thin. There is no IP column, no user agent string and no
+/// cookie identifier — only a salted daily hash that cannot be reversed and
+/// stops being linkable at midnight.
+model AnalyticsEvent {
+  id         String  @id @default(cuid())
+  businessId String
+  branchKey  String?
+
+  /// e.g. profile_view, qr_scan, item_view, download_click, contact_whatsapp.
+  eventType String
+  /// Item code, category key, file key — never an internal id.
+  targetKey String?
+
+  device      DeviceCategory @default(UNKNOWN)
+  locale      String?
+  /// Salted, rotating hash used only to count unique visitors within a day.
+  visitorHash String?
+
+  createdAt DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+  @@index([businessId, eventType, createdAt])
+  @@map("analytics_events")
 }

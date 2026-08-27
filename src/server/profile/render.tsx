@@ -1,4 +1,5 @@
 import { cookies, headers } from 'next/headers';
+import { after } from 'next/server';
 import { brandTokensToStyle } from '@/design/brand';
 import {
   LOCALE_COOKIE,
@@ -9,6 +10,8 @@ import {
 } from '@/i18n/config';
 import { getDictionary } from '@/i18n/dictionary';
 import { resolveTemplate } from '@/templates/registry';
+import { looksLikeQrScan, recordEventByPublicId } from '@/server/analytics/record';
+import { AnalyticsScript } from './analytics-script';
 import type { PublicProfile } from './types';
 
 /**
@@ -41,6 +44,31 @@ export async function renderProfile(profile: PublicProfile, searchParams: Search
   const direction = directionOf(locale);
   const dictionary = getDictionary(locale);
   const { definition } = resolveTemplate(profile.templateKey, profile.variantKey);
+  const headerStore = await headers();
+
+  // Recorded after the response is sent, so counting never delays the menu
+  // and never turns a failed write into an error page (master spec §112).
+  after(async () => {
+    await recordEventByPublicId({
+      publicId: profile.publicId,
+      eventType: profile.activeBranchKey ? 'branch_view' : 'profile_view',
+      branchKey: profile.activeBranchKey,
+      locale,
+      headers: headerStore,
+    });
+
+    // A camera app sends no referrer, so a first-party navigation with none
+    // is very likely a scan. A heuristic, and documented as one.
+    if (looksLikeQrScan(headerStore)) {
+      await recordEventByPublicId({
+        publicId: profile.publicId,
+        eventType: 'qr_scan',
+        branchKey: profile.activeBranchKey,
+        locale,
+        headers: headerStore,
+      });
+    }
+  });
 
   return (
     <div
@@ -57,6 +85,7 @@ export async function renderProfile(profile: PublicProfile, searchParams: Search
       style={brandTokensToStyle(profile.brand)}
     >
       {definition.render({ profile, locale, direction, dictionary })}
+      <AnalyticsScript publicId={profile.publicId} branchKey={profile.activeBranchKey} locale={locale} />
     </div>
   );
 }

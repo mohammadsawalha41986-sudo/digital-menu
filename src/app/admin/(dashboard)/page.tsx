@@ -7,10 +7,9 @@ import { listBusinessesForUser } from '@/server/admin/business-service';
  * Dashboard home (master spec §19).
  *
  * Every number on this page is a live `count` against the database, scoped to
- * what the acting user may see. None is hard-coded, and none is estimated —
- * a dashboard that invents figures is worse than one that shows zero.
- * Scan and view metrics arrive with the analytics engine in Phase 7 and are
- * labelled as pending rather than shown as zero, which would read as data.
+ * what the acting user may see. None is hard-coded and none is estimated — a
+ * dashboard that invents figures is worse than one showing a small true number,
+ * because staff quote these to clients.
  */
 
 export const dynamic = 'force-dynamic';
@@ -21,11 +20,21 @@ export default async function DashboardPage() {
 
   const visibleIds = businesses.map((business) => business.id);
 
-  const [activeProfiles, branches, menus, items, recentAudits] = await Promise.all([
+  const [activeProfiles, branches, menus, items, profileViews, qrScans, recentAudits] =
+    await Promise.all([
     prisma.business.count({ where: { id: { in: visibleIds }, status: 'ACTIVE' } }),
     prisma.branch.count({ where: { businessId: { in: visibleIds } } }),
     prisma.menu.count({ where: { businessId: { in: visibleIds }, status: 'ACTIVE' } }),
     prisma.menuItem.count({ where: { businessId: { in: visibleIds } } }),
+    prisma.analyticsEvent.count({
+      where: {
+        businessId: { in: visibleIds },
+        eventType: { in: ['profile_view', 'branch_view'] },
+      },
+    }),
+    prisma.analyticsEvent.count({
+      where: { businessId: { in: visibleIds }, eventType: 'qr_scan' },
+    }),
     prisma.auditLog.findMany({
       where: { businessId: { in: visibleIds } },
       orderBy: { createdAt: 'desc' },
@@ -39,7 +48,7 @@ export default async function DashboardPage() {
         user: { select: { name: true } },
       },
     }),
-  ]);
+    ]);
 
   return (
     <>
@@ -61,6 +70,8 @@ export default async function DashboardPage() {
         <Metric label="Branches" value={branches} />
         <Metric label="Published menus" value={menus} />
         <Metric label="Items" value={items} />
+        <Metric label="Profile views" value={profileViews} />
+        <Metric label="QR scans" value={qrScans} />
       </section>
 
       <section className="admin__panel">
@@ -101,13 +112,7 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <section className="admin__panel">
-        <h2 className="admin__panel-title">Not yet measured</h2>
-        <p className="admin__empty">
-          QR scans, profile views and engagement metrics begin recording when the analytics
-          engine ships (Phase 7). They are omitted here rather than shown as zero.
-        </p>
-      </section>
+
     </>
   );
 }
