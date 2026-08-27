@@ -158,6 +158,7 @@ model Business {
   categories  MenuCategory[]
   items       MenuItem[]
   media       Media[]
+  qrCodes     QrCode[]
   logo        Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   ogImage     Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
@@ -366,6 +367,7 @@ model Branch {
 
   business  Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
   overrides BranchItemOverride[]
+  qrCodes   QrCode[]
 
   @@unique([businessId, key])
   @@index([businessId, isActive])
@@ -483,4 +485,49 @@ model BranchItemOverride {
 
   @@unique([branchId, itemId])
   @@map("branch_item_overrides")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 2 — permanent QR codes.
+// ---------------------------------------------------------------------------
+
+enum QrArtworkStyle {
+  PLAIN
+  WITH_LOGO
+  WITH_NAME
+  WITH_PROMPT
+}
+
+/// A saved QR configuration (master spec §12).
+///
+/// The row stores *artwork*, never the destination: the destination is derived
+/// from the business's public id and the branch key every time it is rendered,
+/// so it cannot drift from the printed code. Deleting this row does not
+/// invalidate anything already printed — the code still resolves.
+model QrCode {
+  id         String  @id @default(cuid())
+  businessId String
+  /// Null for the business-level code.
+  branchId   String?
+
+  label      String
+  artwork    QrArtworkStyle @default(PLAIN)
+  foreground String         @default("#111111")
+  background String         @default("#FFFFFF")
+  sizePx     Int            @default(512)
+
+  /// Last validation outcome, so admin can surface a warning without
+  /// re-rendering (§13).
+  lastValidatedAt DateTime?
+  lastContrast    Float?
+  lastOk          Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  branch   Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("qr_codes")
 }
