@@ -4,6 +4,7 @@ import { prisma } from '@/server/db/client';
 import { getStorage } from '@/server/storage';
 import type {
   PublicCategory,
+  PublicDownload,
   PublicImage,
   PublicItem,
   PublicMenu,
@@ -91,6 +92,22 @@ export async function getPublicProfile(
           whatsapp: true,
           googleMapsUrl: true,
           workingHours: true,
+        },
+      },
+      publicFiles: {
+        // Only rows staff explicitly published reach a visitor (§108).
+        where: { isPublic: true },
+        orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+        select: {
+          key: true,
+          kind: true,
+          titleAr: true,
+          titleEn: true,
+          descriptionAr: true,
+          descriptionEn: true,
+          externalUrl: true,
+          allowDownload: true,
+          currentVersion: { select: { sizeBytes: true, contentType: true } },
         },
       },
       menus: {
@@ -211,10 +228,49 @@ export async function getPublicProfile(
     })),
     activeBranchKey: activeBranch?.key ?? null,
     menus: business.menus.map((menu): PublicMenu => toMenu(menu, overrides)),
-    // Offers and downloads arrive in Phases 5 and 4; the shape exists now so
-    // templates can be written against a stable contract.
+    // Offers arrive in Phase 5; the shape exists now so templates can be
+    // written against a stable contract.
     offers: [],
-    downloads: [],
+    downloads: business.publicFiles.flatMap((file): PublicDownload[] => {
+      if (file.kind === 'LINK') {
+        return file.externalUrl
+          ? [
+              {
+                key: file.key,
+                titleAr: file.titleAr,
+                titleEn: file.titleEn,
+                descriptionAr: file.descriptionAr,
+                descriptionEn: file.descriptionEn,
+                kind: 'link' as const,
+                url: file.externalUrl,
+                fileSizeBytes: null,
+                contentType: null,
+                allowDownload: true,
+              },
+            ]
+          : [];
+      }
+
+      // A published file with no current version would render as a broken
+      // link; drop it instead (§120).
+      if (!file.currentVersion) return [];
+
+      return [
+        {
+          key: file.key,
+          titleAr: file.titleAr,
+          titleEn: file.titleEn,
+          descriptionAr: file.descriptionAr,
+          descriptionEn: file.descriptionEn,
+          kind: 'file' as const,
+          // The permanent per-file path — never a storage URL (§48).
+          url: `/f/${business.publicId}/${file.key}`,
+          fileSizeBytes: file.currentVersion.sizeBytes,
+          contentType: file.currentVersion.contentType,
+          allowDownload: file.allowDownload,
+        },
+      ];
+    }),
   };
 }
 

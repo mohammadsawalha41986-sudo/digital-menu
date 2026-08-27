@@ -36,6 +36,7 @@ export type AuditAction =
   | 'offer.deleted'
   | 'file.uploaded'
   | 'file.replaced'
+  | 'file.updated'
   | 'file.deleted'
   | 'qr.generated'
   | 'import.executed'

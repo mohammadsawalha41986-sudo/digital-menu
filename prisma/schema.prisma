@@ -81,6 +81,7 @@ model User {
   memberships     BusinessMembership[]
   publishedMenues MenuVersion[]        @relation("MenuVersionPublisher")
   auditLogs       AuditLog[]
+  uploadedFiles   PublicFileVersion[]
 
   @@index([role])
   @@map("users")
@@ -163,6 +164,7 @@ model Business {
   media       Media[]
   qrCodes     QrCode[]
   auditLogs   AuditLog[]
+  publicFiles PublicFile[]
   logo        Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   ogImage     Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
@@ -566,4 +568,80 @@ model AuditLog {
   @@index([businessId, createdAt])
   @@index([entity, entityId])
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// PHASE 4 — public files, PDF menus and external links.
+// ---------------------------------------------------------------------------
+
+enum PublicFileKind {
+  /// A file the platform hosts and serves.
+  FILE
+  /// A link to a menu the business already hosts elsewhere (§51).
+  LINK
+}
+
+/// A file or link the business has explicitly published (master spec §53, §107).
+///
+/// Not a general file store: only rows marked `isPublic` are reachable, and
+/// the public route refuses anything else (§108).
+model PublicFile {
+  id         String @id @default(cuid())
+  businessId String
+  /// Stable, tenant-scoped key used in the public download path.
+  key        String
+
+  kind PublicFileKind @default(FILE)
+
+  titleAr       String
+  titleEn       String?
+  descriptionAr String?
+  descriptionEn String?
+
+  /// Set for LINK rows.
+  externalUrl String?
+
+  /// Current version for FILE rows. Only this version is public (§50).
+  currentVersionId String? @unique
+
+  isPublic      Boolean @default(false)
+  allowDownload Boolean @default(true)
+  sortOrder     Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business       Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  versions       PublicFileVersion[] @relation("FileVersions")
+  currentVersion PublicFileVersion?  @relation("FileCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  @@unique([businessId, key])
+  @@index([businessId, isPublic, sortOrder])
+  @@map("public_files")
+}
+
+/// An uploaded revision. Replacing a PDF adds a version and repoints the
+/// pointer; the public URL and the QR are untouched (§48, §50).
+model PublicFileVersion {
+  id     String @id @default(cuid())
+  fileId String
+
+  version Int
+
+  /// Provider-agnostic key; never a vendor URL.
+  storageKey   String  @unique
+  contentType  String
+  sizeBytes    Int
+  originalName String?
+  checksum     String?
+
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  file       PublicFile  @relation("FileVersions", fields: [fileId], references: [id], onDelete: Cascade)
+  currentOf  PublicFile? @relation("FileCurrentVersion")
+  uploadedBy User?       @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@unique([fileId, version])
+  @@map("public_file_versions")
 }

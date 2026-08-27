@@ -55,6 +55,12 @@ export default async function BusinessPage({
           <Link href={`/admin/businesses/${business.id}/template`} className="admin__button admin__button--secondary">
             Template
           </Link>
+          <Link
+            href={`/admin/businesses/${business.id}/files`}
+            className="admin__button admin__button--secondary"
+          >
+            Files
+          </Link>
           <Link href={`/admin/businesses/${business.id}/qr`} className="admin__button">
             QR codes
           </Link>

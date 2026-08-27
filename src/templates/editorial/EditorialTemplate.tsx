@@ -195,6 +195,48 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
         ))}
       </main>
 
+      {profile.downloads.length > 0 ? (
+        <section className="editorial__downloads" aria-labelledby="downloads-heading">
+          <h2 id="downloads-heading" className="editorial__section-title">
+            {dictionary.profile.downloads}
+          </h2>
+          <ul className="editorial__download-list">
+            {profile.downloads.map((download) => (
+              <li key={download.key} className="editorial__download">
+                <a
+                  href={download.url}
+                  className="editorial__download-link"
+                  data-download={download.key}
+                  data-event={download.kind === 'link' ? 'external_menu' : 'download_click'}
+                  {...(download.kind === 'link'
+                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    : {})}
+                >
+                  <Localized
+                    field={{ ar: download.titleAr, en: download.titleEn }}
+                    locale={locale}
+                    className="editorial__download-title"
+                  />
+                  <span className="editorial__download-meta">
+                    {download.kind === 'link'
+                      ? dictionary.profile.viewFullMenu
+                      : download.allowDownload
+                        ? dictionary.profile.downloadMenu
+                        : dictionary.profile.viewPdfMenu}
+                  </span>
+                </a>
+                <Localized
+                  field={{ ar: download.descriptionAr, en: download.descriptionEn }}
+                  locale={locale}
+                  as="p"
+                  className="editorial__download-note"
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <footer className="editorial__footer">
         {profile.branches.length > 0 ? (
           <section className="editorial__branches">

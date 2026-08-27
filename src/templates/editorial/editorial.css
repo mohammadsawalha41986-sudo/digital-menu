@@ -309,6 +309,52 @@
   }
 }
 
+/* --- Downloads ------------------------------------------------------------ */
+
+.editorial__downloads {
+  margin-block-start: var(--sys-space-7);
+}
+
+.editorial__download-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.editorial__download {
+  border-block-end: var(--editorial-rule);
+  padding-block: var(--sys-space-4);
+}
+
+.editorial__download-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  min-block-size: var(--sys-tap-target);
+  text-decoration: none;
+}
+
+.editorial__download-title {
+  font-family: var(--brand-font-heading);
+  font-size: var(--sys-font-size-lg);
+  color: var(--brand-color-text);
+}
+
+.editorial__download-meta {
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.editorial__download-note {
+  padding-block-start: var(--sys-space-1);
+  font-size: var(--sys-font-size-sm);
+  color: var(--brand-color-muted);
+}
+
 /* --- Footer -------------------------------------------------------------- */
 
 .editorial__footer {
