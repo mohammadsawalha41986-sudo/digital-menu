@@ -67,6 +67,8 @@ COPY --from=build --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=migrator --chown=nextjs:nodejs /migrator/node_modules ./migrator/node_modules
 COPY --chown=nextjs:nodejs docker/prisma.config.mjs ./migrator/prisma.config.mjs
 COPY --chown=nextjs:nodejs docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+# Sits in /app so it resolves `pg` from the standalone bundle's node_modules.
+COPY --chown=nextjs:nodejs docker/bootstrap-admin.mjs ./bootstrap-admin.mjs
 
 # Local storage provider root. Mount a volume here (Railway volumes, a compose
 # volume, a host bind), or switch to R2. Deliberately no `VOLUME` instruction:

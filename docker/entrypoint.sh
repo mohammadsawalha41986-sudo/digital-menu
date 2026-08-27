@@ -26,6 +26,9 @@ echo "-> applying database migrations"
 node /app/migrator/node_modules/prisma/build/index.js \
   migrate deploy --config /app/migrator/prisma.config.mjs
 
+echo "-> checking the staff account"
+node /app/bootstrap-admin.mjs
+
 # The Next.js standalone server binds to $HOSTNAME, and container runtimes set
 # that variable to the container id. Resolving it reaches one interface at
 # best, so the platform's proxy cannot connect and the deployment never turns

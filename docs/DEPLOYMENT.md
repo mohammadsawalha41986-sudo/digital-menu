@@ -80,7 +80,9 @@ Setup:
 3. Set `AUTH_SECRET`, `ANALYTICS_SALT`, `APP_URL`, `PUBLIC_URL`, `PORT`,
    `STORAGE_PROVIDER=local`, `STORAGE_LOCAL_ROOT=/app/storage`.
 4. Attach a volume at `/app/storage`.
-5. Health check path `/api/health` (`railway.json` sets it).
+5. Set `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` for the first staff
+   account (see below).
+6. Health check path `/api/health` (`railway.json` sets it).
 
 `PUBLIC_URL` on a `*.up.railway.app` domain is a decision, not a placeholder — see above.
 Move to the final custom domain **before** printing any QR code.
@@ -100,6 +102,23 @@ read from `package.json` at build time and cannot drift from the client.
 Prisma's CLI prints an OpenSSL detection warning on `node:22-bookworm-slim`. Migrations
 apply correctly regardless — the client uses the `pg` driver adapter at runtime and needs
 no engine binary — but installing `openssl` in the runtime stage silences it.
+
+### The first staff account
+
+Migrations create tables, not people, so a fresh deployment has no way in. The release
+entrypoint runs `docker/bootstrap-admin.mjs`, which creates one `SUPER_ADMIN` from
+`BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` (minimum 12 characters).
+
+It never resets an existing account's password — an operator's login survives a redeploy —
+never prints the password, and treats absent configuration as "nothing to do" rather than
+an error. Once the account exists the two variables can be removed.
+
+It hashes without importing the application's TypeScript, because the runtime image has no
+toolchain for it. `tests/unit/bootstrap-admin.test.ts` holds the two implementations to the
+same format, so a change to one that breaks the other fails the build.
+
+The seed (`npm run db:seed`) is a development fixture: it creates demo businesses. Do not
+run it against production.
 
 Applying migrations by hand, where a host offers no release step:
 
