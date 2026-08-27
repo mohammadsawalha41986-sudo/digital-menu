@@ -24,8 +24,8 @@ blob-report/
 .playwright/
 
 # local storage provider root
-storage/
-!storage/.gitkeep
+/storage/
+!/storage/.gitkeep
 
 # environment — never commit real secrets
 .env

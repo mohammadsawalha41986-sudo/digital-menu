@@ -40,7 +40,15 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate the Prisma client, then compile. `output: 'standalone'` in
 # next.config.ts emits a self-contained server bundle.
-RUN npx prisma generate && npm run build
+#
+# The placeholder DATABASE_URL is a build-time artefact and nothing else: the
+# root prisma.config.ts resolves the datasource eagerly, and code generation
+# reads the schema, never the database. It is not baked into the image — the
+# runtime takes DATABASE_URL from the environment, and boots with no database
+# reachable only to fail its health check loudly.
+RUN DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build" \
+    npx prisma generate \
+ && npm run build
 
 # --- Runtime ---------------------------------------------------------------
 FROM base AS runtime
