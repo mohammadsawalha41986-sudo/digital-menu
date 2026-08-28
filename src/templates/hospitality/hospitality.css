@@ -39,12 +39,12 @@
 }
 
 .hospitality__locale[data-active] {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .hospitality__title {
   font-size: var(--sys-font-size-2xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .hospitality__lede,
@@ -123,7 +123,7 @@
 .hospitality__group-title {
   font-family: var(--brand-font-heading);
   font-size: var(--sys-font-size-lg);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .hospitality__group-count {
@@ -176,7 +176,7 @@
 
 .hospitality__service-price {
   font-size: var(--sys-font-size-base);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   white-space: nowrap;
 }
 
@@ -190,7 +190,7 @@
   justify-content: center;
   border-radius: var(--brand-radius-md);
   border: 1px solid var(--brand-color-primary);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   font-size: var(--sys-font-size-sm);
   text-decoration: none;
 }
@@ -230,7 +230,7 @@
 
 .hospitality__offer-title {
   font-size: var(--sys-font-size-base);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .hospitality__offer-pricing {
@@ -247,7 +247,7 @@
 
 .hospitality__offer-discount {
   font-size: var(--sys-font-size-2xs);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .hospitality__download-link {
@@ -266,7 +266,7 @@
 .hospitality__download-meta,
 .hospitality__offer-cta,
 .hospitality__social-link {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   font-size: var(--sys-font-size-sm);
 }
 

@@ -43,7 +43,7 @@
 
 .modern__title {
   font-size: var(--sys-font-size-lg);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -126,7 +126,7 @@
 
 .modern__menu-title {
   font-size: var(--sys-font-size-xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .modern__category {
@@ -228,7 +228,7 @@
   flex: 0 0 auto;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   white-space: nowrap;
 }
 
@@ -281,7 +281,7 @@
 
 .modern__offer-now {
   font-weight: 600;
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .modern__offer-was {
@@ -319,7 +319,7 @@
 .modern__offer-cta,
 .modern__social-link {
   font-size: var(--sys-font-size-sm);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .modern__contact {

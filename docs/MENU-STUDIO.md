@@ -133,3 +133,58 @@ exists in this repository, and this platform records no orders. Food cost is
 stored where a business enters it and margin is computed from it; demand,
 campaign performance and "top-performing item" are not shown, because the data
 to compute them honestly is not here.
+
+## The guided flow
+
+The detailed screens (businesses → menus → media → template → brand → files)
+are still there and unchanged. They are no longer the way in.
+
+`/admin/create` asks for a name. Everything after it happens at
+`/admin/build/{id}/{step}` with the live preview beside it:
+
+| Step | Screen | What it writes |
+|---|---|---|
+| 1 | Name, type, currency | `createBusiness` — slug, public id, locale and brand row derived |
+| 2 | Logo | `uploadMedia` → `assignMedia` → `analyseLogo` → `applyBrandPreset` |
+| 3 | Style | `updateTemplate` + `updateMenuDesign` |
+| 4 | Description, address, contact | `updateBusiness` |
+| 5 | Paste, import or build | `createMenu` / `createCategory` / `upsertItem`, or the existing importer |
+| 6 | Photos | `uploadMediaAction` / `assignMediaAction` |
+| 7 | Builder | `upsertItemAction` / `createCategoryAction` |
+| 8 | QR & link | `renderQr` — reads only |
+| 9 | Connect | `updateBusiness` |
+| 10 | Review & publish | `publishMenu` then `updateBusiness` status |
+
+No new model, no second media path, no second QR, no second template engine.
+Every write above is a service that already existed.
+
+### The preview is the page
+
+`/admin/preview/{id}` renders the real profile through the real render path —
+same query, same read model, same templates, same brand tokens. It differs from
+the public URL in exactly two ways: it can see a draft business and unpublished
+menus, and it records no analytics, so an owner checking their own work twenty
+times does not appear as twenty customers.
+
+It deliberately sits outside the dashboard route group. Inside it, the preview
+inherited the admin sidebar, so every style card showed a picture of the admin
+panel wrapped around a sliver of menu.
+
+### What building this exposed
+
+Three defects that had nothing to do with the wizard, found by driving the flow
+in a browser and by measuring rather than looking:
+
+- **The admin rendered right-to-left** for anyone whose browser did not ask for
+  English, because document direction is negotiated for *visitors* and Arabic is
+  the default. The admin is now pinned to LTR; business content inside it still
+  carries its own direction per field.
+- **A link styled as a primary button was invisible** — `.admin a` and
+  `.admin__button` have equal specificity, so accent-coloured text landed on an
+  accent-coloured background.
+- **Brand colours used as text could be unreadable.** Templates set headings,
+  prices and rules in the brand's own primary or accent — fine on a pale page,
+  1.65:1 on a dark one. The palette now carries `--brand-color-*-text` variants
+  pushed to 4.5:1 against that business's background, keeping the hue, and
+  `e2e/design-qa.spec.ts` measures every demo in both languages to keep it that
+  way.

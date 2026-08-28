@@ -66,14 +66,14 @@
 }
 
 .editorial__locale[data-active] {
-  color: var(--brand-color-primary);
-  border-block-end-color: var(--brand-color-accent);
+  color: var(--brand-color-primary-text);
+  border-block-end-color: var(--brand-color-accent-text);
 }
 
 .editorial__title {
   font-size: var(--sys-font-size-3xl);
   letter-spacing: var(--sys-tracking-tight);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .editorial__lede {
@@ -95,7 +95,7 @@
   padding-inline: var(--sys-space-4);
   border: 1px solid var(--brand-color-primary);
   border-radius: var(--brand-radius-sm);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   font-size: var(--sys-font-size-sm);
   text-decoration: none;
   transition:
@@ -104,7 +104,7 @@
 }
 
 .editorial__action:hover {
-  background-color: var(--brand-color-primary);
+  background-color: var(--brand-color-primary-text);
   color: var(--brand-color-on-primary);
 }
 
@@ -147,7 +147,7 @@
 
 .editorial__offer-title {
   font-size: var(--sys-font-size-xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .editorial__offer-note {
@@ -177,7 +177,7 @@
 .editorial__offer-discount {
   font-size: var(--sys-font-size-xs);
   letter-spacing: var(--sys-tracking-wide);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
   border: 1px solid var(--brand-color-accent);
   border-radius: var(--brand-radius-sm);
   padding-inline: var(--sys-space-2);
@@ -188,7 +188,7 @@
   min-block-size: var(--sys-tap-target);
   display: inline-flex;
   align-items: center;
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   font-size: var(--sys-font-size-sm);
   text-decoration: underline;
   text-underline-offset: 0.2em;
@@ -241,7 +241,7 @@
 }
 
 .editorial__index-link:hover {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 /* --- Body ---------------------------------------------------------------- */
@@ -255,7 +255,7 @@
 
 .editorial__menu-title {
   font-size: var(--sys-font-size-2xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   padding-block-end: var(--sys-space-3);
 }
 
@@ -357,7 +357,7 @@
 
 .editorial__item-price {
   font-size: var(--sys-font-size-base);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -438,7 +438,7 @@
 
 .editorial__download-meta {
   font-size: var(--sys-font-size-sm);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
@@ -483,7 +483,7 @@
 
 .editorial__branch-link,
 .editorial__social-link {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }

@@ -53,6 +53,7 @@ export async function uploadMediaAction(
     });
 
     revalidatePath(`/admin/businesses/${businessId}/media`);
+    revalidatePath(`/admin/build/${businessId}`, 'layout');
     invalidateProfile(publicId);
 
     return { ok: true, message: 'Image uploaded' };
@@ -96,6 +97,8 @@ export async function assignMediaAction(
 
     revalidatePath(`/admin/businesses/${businessId}/media`);
     revalidatePath(`/admin/businesses/${businessId}/menus`);
+    revalidatePath(`/admin/build/${businessId}`, 'layout');
+    revalidatePath(`/admin/preview/${businessId}`);
     revalidatePath(`/m/${publicId}`);
     invalidateProfile(publicId);
 

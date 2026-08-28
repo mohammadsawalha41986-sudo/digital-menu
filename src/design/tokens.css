@@ -104,6 +104,15 @@
   --brand-color-muted: #6b7280;
   --brand-color-border: #e5e1d8;
   --brand-color-on-primary: #ffffff;
+  --brand-color-on-accent: #16181a;
+  /*
+   * Brand colours used as *text*. The profile root overrides these with values
+   * pushed to at least 4.5:1 against that business's own background; the
+   * defaults here keep a page sensible before any brand is applied.
+   */
+  --brand-color-primary-text: #1f2421;
+  --brand-color-accent-text: #7a5f14;
+  --brand-color-secondary-text: #2f6a4f;
 
   --brand-font-heading: var(--sys-font-stack-serif);
   --brand-font-body: var(--sys-font-stack-sans);
@@ -132,6 +141,19 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+}
+
+/*
+ * The profile root carries the business's brand tokens as inline custom
+ * properties, but `body` sits *above* it and resolved its own colour from the
+ * platform defaults. Anything inside a template that inherits rather than
+ * setting its own colour therefore came out near-black — invisible on a dark
+ * brand. Applying the tokens where they are defined fixes every such case at
+ * once, including ones no template author thought to override.
+ */
+[data-profile-root] {
+  background: var(--brand-color-background);
+  color: var(--brand-color-text);
 }
 
 body {

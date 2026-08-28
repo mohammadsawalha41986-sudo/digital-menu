@@ -39,7 +39,20 @@ export async function resolveRequestLocale(
   });
 }
 
-export async function renderProfile(profile: PublicProfile, searchParams: SearchParams) {
+export interface RenderProfileOptions {
+  /**
+   * Staff previewing their own work. Suppresses analytics — an operator
+   * checking a draft twenty times must not appear as twenty customer visits,
+   * which would make the numbers on the analytics screen a lie (GOALS I9).
+   */
+  preview?: boolean;
+}
+
+export async function renderProfile(
+  profile: PublicProfile,
+  searchParams: SearchParams,
+  options: RenderProfileOptions = {},
+) {
   const locale = await resolveRequestLocale(searchParams, profile.defaultLocale);
   const direction = directionOf(locale);
   const dictionary = getDictionary(locale);
@@ -48,7 +61,7 @@ export async function renderProfile(profile: PublicProfile, searchParams: Search
 
   // Recorded after the response is sent, so counting never delays the menu
   // and never turns a failed write into an error page (master spec §112).
-  after(async () => {
+  if (!options.preview) after(async () => {
     await recordEventByPublicId({
       publicId: profile.publicId,
       eventType: profile.activeBranchKey ? 'branch_view' : 'profile_view',
@@ -82,11 +95,14 @@ export async function renderProfile(profile: PublicProfile, searchParams: Search
       data-variant={variant.key}
       data-locale={locale}
       data-branch={profile.activeBranchKey ?? undefined}
+      data-preview={options.preview ? '' : undefined}
       // Brand identity enters as CSS custom properties here and nowhere else.
       style={brandTokensToStyle(profile.brand)}
     >
       {definition.render({ profile, locale, direction, dictionary })}
-      <AnalyticsScript publicId={profile.publicId} branchKey={profile.activeBranchKey} locale={locale} />
+      {options.preview ? null : (
+        <AnalyticsScript publicId={profile.publicId} branchKey={profile.activeBranchKey} locale={locale} />
+      )}
     </div>
   );
 }

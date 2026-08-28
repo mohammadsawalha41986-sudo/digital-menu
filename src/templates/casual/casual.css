@@ -51,13 +51,13 @@
 }
 
 .casual__locale[data-active] {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   font-weight: 600;
 }
 
 .casual__title {
   font-size: var(--sys-font-size-2xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .casual__lede,
@@ -122,7 +122,7 @@
 .casual__category-title,
 .casual__section-title {
   font-size: var(--sys-font-size-xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   padding-block-end: var(--sys-space-3);
 }
 
@@ -176,7 +176,7 @@
 .casual__item-price {
   font-size: var(--sys-font-size-lg);
   font-weight: 600;
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .casual__item-calories,
@@ -204,7 +204,7 @@
 
 .casual__offer-title {
   font-size: var(--sys-font-size-lg);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .casual__offer-pricing {
@@ -225,7 +225,7 @@
 
 .casual__offer-discount {
   font-size: var(--sys-font-size-sm);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
   font-weight: 600;
 }
 
@@ -249,7 +249,7 @@
 .casual__download-meta,
 .casual__offer-cta,
 .casual__social-link {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .casual__contact {

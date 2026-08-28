@@ -17,9 +17,14 @@ export default async function BusinessesPage() {
             {businesses.length} {businesses.length === 1 ? 'profile' : 'profiles'} you can manage.
           </p>
         </div>
-        <Link href="/admin/businesses/new" className="admin__button">
-          Create business
-        </Link>
+        <div className="admin__actions">
+          <Link href="/admin/create" className="admin__button">
+            Create digital menu
+          </Link>
+          <Link href="/admin/businesses/new" className="admin__button admin__button--secondary">
+            Detailed form
+          </Link>
+        </div>
       </header>
 
       <section className="admin__panel">

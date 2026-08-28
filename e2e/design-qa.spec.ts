@@ -192,3 +192,100 @@ test('no family renders an empty card for a business that lacks the data', async
     expect(emptyContainers, demo.publicId).toEqual([]);
   }
 });
+
+test('every family keeps its text readable against the brand it is given', async ({ page }) => {
+  /*
+   * A brand is measured from a restaurant's logo, so the platform cannot know
+   * in advance whether a menu will be pale or nearly black. Templates set
+   * headings, prices and rules in the brand's own colours, which is what makes
+   * a menu look like the restaurant — and what made a deep-green brand render
+   * its prices at 1.65:1 on a dark page until the palette started carrying
+   * readable variants of those colours.
+   *
+   * This walks the rendered text of every demo, in both languages, and holds it
+   * to the 4.5:1 body-text ratio.
+   */
+  for (const demo of DEMOS) {
+    for (const lang of ['ar', 'en'] as const) {
+      await page.goto(`/m/${demo.publicId}?lang=${lang}`);
+
+      const failures = await page.evaluate(() => {
+        /** Parses rgb(), rgba() and color(srgb …) into 0–255 channels. */
+        const channels = (value: string): [number, number, number] | null => {
+          const srgb = /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(value);
+          if (srgb) {
+            return [
+              Number(srgb[1]) * 255,
+              Number(srgb[2]) * 255,
+              Number(srgb[3]) * 255,
+            ];
+          }
+
+          const rgb = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(value);
+          return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : null;
+        };
+
+        const luminance = (value: string): number | null => {
+          const parsed = channels(value);
+          if (!parsed) return null;
+
+          const linear = (channel: number) => {
+            const s = channel / 255;
+            return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+          };
+
+          return 0.2126 * linear(parsed[0]) + 0.7152 * linear(parsed[1]) + 0.0722 * linear(parsed[2]);
+        };
+
+        const opaqueBackground = (element: Element): string => {
+          let node: Element | null = element;
+
+          while (node) {
+            const background = getComputedStyle(node).backgroundColor;
+            if (background && !/rgba\([^)]*,\s*0\)$/.test(background) && background !== 'transparent') {
+              return background;
+            }
+            node = node.parentElement;
+          }
+
+          return 'rgb(255, 255, 255)';
+        };
+
+        const root = document.querySelector('[data-profile-root]');
+        if (!root) return [];
+
+        const results: { text: string; ratio: number; className: string }[] = [];
+
+        for (const element of root.querySelectorAll('a, button, h1, h2, h3, p, span, li, dt, dd, code')) {
+          if (element.children.length > 0) continue;
+
+          const text = element.textContent?.trim();
+          if (!text) continue;
+
+          const style = getComputedStyle(element);
+          if (style.visibility === 'hidden' || style.display === 'none') continue;
+
+          const foreground = luminance(style.color);
+          const background = luminance(opaqueBackground(element));
+          if (foreground === null || background === null) continue;
+
+          const [lighter, darker] =
+            foreground > background ? [foreground, background] : [background, foreground];
+          const ratio = (lighter + 0.05) / (darker + 0.05);
+
+          if (ratio < 4.5) {
+            results.push({
+              text: text.slice(0, 24),
+              ratio: Number(ratio.toFixed(2)),
+              className: String(element.className),
+            });
+          }
+        }
+
+        return results;
+      });
+
+      expect(failures, `${demo.publicId} (${lang})`).toEqual([]);
+    }
+  }
+});

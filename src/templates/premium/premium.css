@@ -73,7 +73,7 @@
   font-size: var(--sys-font-size-2xs);
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .premium__feature {
@@ -119,7 +119,7 @@
 
 .premium__feature-price {
   font-size: var(--sys-font-size-xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .premium__feature-calories,
@@ -165,7 +165,7 @@
 }
 
 .premium__entry-price {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .premium__offer-list,
@@ -204,7 +204,7 @@
 
 .premium__offer-now {
   font-size: var(--sys-font-size-lg);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .premium__offer-was {
@@ -214,7 +214,7 @@
 .premium__offer-discount {
   font-size: var(--sys-font-size-2xs);
   letter-spacing: var(--sys-tracking-wide);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .premium__download-link {
@@ -240,7 +240,7 @@
   font-size: var(--sys-font-size-xs);
   letter-spacing: var(--sys-tracking-wide);
   text-transform: uppercase;
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .premium__contact {

@@ -45,8 +45,39 @@ export async function getPublicProfile(
   // arbitrary strings to the data layer (master spec §127).
   if (!publicId) return null;
 
+  return loadProfile({ publicId, status: 'ACTIVE' }, options);
+}
+
+/**
+ * The same profile, for a business that is not public yet.
+ *
+ * The builder has to show a draft while it is being built, and the only
+ * honest preview is the real one — so this reuses the identical query, the
+ * identical mapping and (through renderProfile) the identical components. The
+ * *only* difference is that it matches on the internal id and does not require
+ * ACTIVE status.
+ *
+ * It performs no authorisation of its own: every caller resolves the business
+ * through the tenant context first, and the route that uses it requires staff
+ * with a grant. Nothing here is reachable from a public URL.
+ */
+export async function getProfileForPreview(
+  businessId: string,
+  options: GetPublicProfileOptions = {},
+): Promise<PublicProfile | null> {
+  // Unpublished menus are included here and nowhere else: a builder that shows
+  // nothing until the first publish is a builder nobody can use. The public
+  // path cannot reach this argument.
+  return loadProfile({ id: businessId }, options, { includeUnpublished: true });
+}
+
+async function loadProfile(
+  where: { publicId: string; status: 'ACTIVE' } | { id: string },
+  options: GetPublicProfileOptions = {},
+  internal: { includeUnpublished?: boolean } = {},
+): Promise<PublicProfile | null> {
   const business = await prisma.business.findFirst({
-    where: { publicId, status: 'ACTIVE' },
+    where,
     select: {
       id: true,
       publicId: true,
@@ -137,8 +168,11 @@ export async function getPublicProfile(
       },
       menus: {
         // Only menus that are active *and* carry a published version reach a
-        // visitor. A draft menu is invisible even though its rows exist.
-        where: { status: 'ACTIVE', currentVersion: { isNot: null } },
+        // visitor. A draft menu is invisible even though its rows exist —
+        // except in the staff preview, which exists to show work in progress.
+        where: internal.includeUnpublished
+          ? {}
+          : { status: 'ACTIVE', currentVersion: { isNot: null } },
         orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
         select: {
           key: true,

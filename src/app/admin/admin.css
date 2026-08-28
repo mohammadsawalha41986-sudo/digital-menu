@@ -30,7 +30,13 @@
   font-family: var(--sys-font-stack-sans);
 }
 
-.admin a {
+/*
+ * Ordinary admin links take the accent colour. A link *styled as a button*
+ * must not: `.admin a` and `.admin__button` have the same specificity, so the
+ * one declared later won, and a primary button rendered as an anchor came out
+ * accent-on-accent — a solid green rectangle with invisible text.
+ */
+.admin a:not(.admin__button) {
   color: var(--admin-accent);
 }
 
@@ -795,4 +801,458 @@
 .studio__project,
 .admin__panel {
   min-inline-size: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   The guided builder.
+
+   Two columns on a desktop — the step on the inline start, the live menu on
+   the inline end — collapsing to one on a phone, where the preview follows the
+   step rather than competing with it for width.
+   --------------------------------------------------------------------------- */
+
+.build {
+  display: grid;
+  gap: var(--sys-space-5);
+}
+
+.build__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-3);
+  justify-content: space-between;
+  align-items: end;
+}
+
+.build__header-actions {
+  display: flex;
+  gap: var(--sys-space-2);
+  flex-wrap: wrap;
+}
+
+.build__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--admin-muted);
+}
+
+.build__title {
+  margin-block: var(--sys-space-2) 0;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.build__title--compact {
+  font-size: clamp(1.25rem, 3vw, 1.6rem);
+}
+
+.build__lede {
+  margin-block: var(--sys-space-2) 0;
+  color: var(--admin-muted);
+  max-inline-size: 42ch;
+}
+
+.build__body {
+  display: grid;
+  gap: var(--sys-space-5);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .build__body {
+    grid-template-columns: 13rem minmax(0, 1fr) minmax(0, 24rem);
+  }
+}
+
+@media (min-width: 100rem) {
+  .build__body {
+    grid-template-columns: 14rem minmax(0, 1fr) minmax(0, 28rem);
+  }
+}
+
+.build--single .build__main {
+  max-inline-size: 42rem;
+  margin-inline: auto;
+}
+
+.build__main {
+  display: grid;
+  gap: var(--sys-space-4);
+  min-inline-size: 0;
+}
+
+/* --- Step rail ------------------------------------------------------------ */
+
+.build__rail ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.build__rail-link {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr;
+  gap: var(--sys-space-2);
+  align-items: start;
+  padding: var(--sys-space-2);
+  border-radius: var(--sys-radius-md-sm);
+  text-decoration: none;
+  color: inherit;
+}
+
+.build__rail-link:hover {
+  background: var(--admin-bg);
+}
+
+.build__rail-link[aria-current='step'] {
+  background: var(--admin-ink);
+  color: var(--admin-surface);
+}
+
+.build__rail-number {
+  display: grid;
+  place-items: center;
+  inline-size: 1.6rem;
+  block-size: 1.6rem;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.build__rail-title {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.build__rail-summary {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* --- Step surfaces -------------------------------------------------------- */
+
+.build__card {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-surface);
+  padding: var(--sys-space-4);
+  display: grid;
+  gap: var(--sys-space-3);
+  min-inline-size: 0;
+  /* Rows keep their own height. Without this, a card sitting beside a taller
+     one stretches its rows to match and the content drifts apart. */
+  align-content: start;
+}
+
+.build__card > * {
+  min-inline-size: 0;
+}
+
+.build__stack {
+  display: grid;
+  gap: var(--sys-space-4);
+}
+
+.build__step-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.build__step-subtitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.build__input--lead {
+  font-size: 1.15rem;
+  padding-block: 0.6rem;
+}
+
+.build__actions {
+  display: flex;
+  gap: var(--sys-space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.build__actions--split {
+  justify-content: space-between;
+}
+
+.build__cta {
+  padding-inline: var(--sys-space-5);
+}
+
+.build__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+  flex-wrap: wrap;
+}
+
+.build__facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  gap: var(--sys-space-3);
+}
+
+.build__facts dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--admin-muted);
+}
+
+.build__facts dd {
+  margin: 0;
+}
+
+.build__paste {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+/* --- Thumbnails ----------------------------------------------------------- */
+
+.build__thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: var(--sys-space-2);
+}
+
+.build__thumbs img {
+  inline-size: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--sys-radius-md-sm);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+}
+
+.build__thumb {
+  display: block;
+  cursor: pointer;
+  position: relative;
+}
+
+/* The radio stays in the accessibility tree and keeps keyboard focus; the
+   picture is the visible control. */
+.build__thumb input {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-start: 0.25rem;
+  z-index: 1;
+}
+
+.build__thumb:has(input:checked) img {
+  outline: 3px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+.build__thumb:has(input:focus-visible) img {
+  outline: 3px solid var(--admin-ink);
+  outline-offset: 2px;
+}
+
+/* --- Style picker --------------------------------------------------------- */
+
+.build__styles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+  gap: var(--sys-space-3);
+}
+
+.build__style {
+  display: grid;
+  gap: 0.35rem;
+  padding: var(--sys-space-2);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  cursor: pointer;
+  position: relative;
+}
+
+.build__style[data-selected] {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px var(--admin-accent);
+}
+
+.build__style input {
+  position: absolute;
+  inset-block-start: var(--sys-space-2);
+  inset-inline-start: var(--sys-space-2);
+  z-index: 1;
+}
+
+/* The card shows a real render, scaled down. Pointer events are off so the
+   whole card stays one click target. */
+.build__style-frame {
+  display: block;
+  block-size: 12rem;
+  overflow: hidden;
+  border-radius: var(--sys-radius-md-sm);
+  border: 1px solid var(--admin-border);
+  background: #fff;
+}
+
+.build__style-frame iframe {
+  inline-size: 390px;
+  block-size: 620px;
+  border: 0;
+  transform: scale(0.46);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.build__style-name {
+  font-weight: 600;
+}
+
+.build__style-note {
+  font-size: 0.8rem;
+  color: var(--admin-muted);
+}
+
+/* --- Builder -------------------------------------------------------------- */
+
+.build__builder {
+  display: grid;
+  gap: var(--sys-space-4);
+}
+
+@media (min-width: 48rem) {
+  .build__builder {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.build__sections {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.build__item-button {
+  inline-size: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+  align-items: baseline;
+  padding: 0.4rem 0.5rem;
+  border: 0;
+  border-radius: var(--sys-radius-md-sm);
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: start;
+  cursor: pointer;
+  color: inherit;
+}
+
+.build__item-button:hover {
+  background: var(--admin-bg);
+}
+
+.build__item-button[aria-pressed='true'] {
+  background: var(--admin-ink);
+  color: var(--admin-surface);
+}
+
+.build__inline-form {
+  display: grid;
+  gap: var(--sys-space-3);
+  padding-block-start: var(--sys-space-3);
+  border-block-start: 1px solid var(--admin-border);
+}
+
+/* --- QR and review -------------------------------------------------------- */
+
+.build__qr {
+  display: grid;
+  gap: var(--sys-space-4);
+  align-items: start;
+}
+
+@media (min-width: 40rem) {
+  .build__qr {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+.build__qr-art svg {
+  inline-size: 12rem;
+  block-size: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-sm);
+  background: #fff;
+}
+
+.build__qr-details {
+  display: grid;
+  gap: var(--sys-space-2);
+}
+
+.build__url code {
+  overflow-wrap: anywhere;
+}
+
+.build__review {
+  display: grid;
+  gap: var(--sys-space-4);
+  align-items: start;
+}
+
+@media (min-width: 40rem) {
+  .build__review {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+.build__review-logo {
+  inline-size: 5rem;
+  block-size: 5rem;
+  object-fit: contain;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-sm);
+  background: var(--admin-bg);
+}
+
+/* --- Preview pane --------------------------------------------------------- */
+
+.build__preview {
+  display: grid;
+  gap: var(--sys-space-2);
+  min-inline-size: 0;
+}
+
+@media (min-width: 64rem) {
+  .build__preview {
+    position: sticky;
+    inset-block-start: var(--sys-space-4);
+  }
+}
+
+.build__preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+  justify-content: space-between;
+}
+
+.build__frame {
+  overflow: auto;
+  max-inline-size: 100%;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-bg);
+  padding: var(--sys-space-2);
+  display: grid;
+  justify-items: center;
 }

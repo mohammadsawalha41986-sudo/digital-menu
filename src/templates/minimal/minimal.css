@@ -139,7 +139,7 @@
 
 .minimal__offer-discount {
   font-size: var(--sys-font-size-xs);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 /* This family shows no photography at all — see the component comment. */

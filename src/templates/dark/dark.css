@@ -64,7 +64,7 @@
 }
 
 .dark__locale[data-active] {
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .dark__title {
@@ -92,7 +92,7 @@
   font-size: var(--sys-font-size-xs);
   letter-spacing: var(--sys-tracking-wide);
   text-transform: uppercase;
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
   padding-block-end: var(--sys-space-3);
 }
 
@@ -164,7 +164,7 @@
 }
 
 .dark__tile-price {
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
   font-size: var(--sys-font-size-sm);
 }
 
@@ -213,7 +213,7 @@
 }
 
 .dark__offer-now {
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .dark__offer-was {
@@ -223,7 +223,7 @@
 
 .dark__offer-discount {
   font-size: var(--sys-font-size-2xs);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .dark__download-link {
@@ -242,7 +242,7 @@
 .dark__download-meta,
 .dark__offer-cta,
 .dark__social-link {
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
   font-size: var(--sys-font-size-sm);
 }
 
@@ -267,7 +267,7 @@
   padding-inline: var(--sys-space-4);
   border-radius: var(--brand-radius-md);
   border: 1px solid var(--brand-color-accent);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
   font-size: var(--sys-font-size-sm);
   text-decoration: none;
 }

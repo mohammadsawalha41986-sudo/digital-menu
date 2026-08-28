@@ -58,8 +58,11 @@ export default async function DashboardPage() {
           <p className="admin__subtitle">Managed profiles across the platform.</p>
         </div>
         <div className="admin__actions">
-          <Link href="/admin/businesses/new" className="admin__button">
-            Create business
+          <Link href="/admin/create" className="admin__button">
+            Create digital menu
+          </Link>
+          <Link href="/admin/businesses/new" className="admin__button admin__button--secondary">
+            Detailed form
           </Link>
         </div>
       </header>

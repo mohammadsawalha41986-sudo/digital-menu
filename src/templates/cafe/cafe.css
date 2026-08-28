@@ -31,7 +31,7 @@
 
 .cafe__title {
   font-size: var(--sys-font-size-2xl);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .cafe__lede,
@@ -59,7 +59,7 @@
 }
 
 .cafe__locale[data-active] {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   text-decoration: underline;
   text-underline-offset: 0.3em;
   text-decoration-thickness: 2px;
@@ -90,8 +90,8 @@
 }
 
 .cafe__tab:hover {
-  color: var(--brand-color-primary);
-  border-block-end-color: var(--brand-color-accent);
+  color: var(--brand-color-primary-text);
+  border-block-end-color: var(--brand-color-accent-text);
 }
 
 .cafe__category {
@@ -102,7 +102,7 @@
 .cafe__category-title,
 .cafe__section-title {
   font-size: var(--sys-font-size-lg);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   padding-block-end: var(--sys-space-3);
 }
 
@@ -159,7 +159,7 @@
 
 .cafe__tile-price {
   font-size: var(--sys-font-size-base);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .cafe__offer-list,
@@ -189,7 +189,7 @@
 
 .cafe__offer-title {
   font-size: var(--sys-font-size-base);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .cafe__offer-pricing {
@@ -230,7 +230,7 @@
 .cafe__offer-cta,
 .cafe__social-link {
   font-size: var(--sys-font-size-sm);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .cafe__contact {

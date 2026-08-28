@@ -77,6 +77,10 @@ function revalidateBusiness(businessId: string, publicId?: string) {
   revalidatePath(`/admin/businesses/${businessId}`);
   revalidatePath('/admin/businesses');
   revalidatePath('/admin');
+  // The guided builder is another view of the same business, and its live
+  // preview is only honest if a write here refreshes it too.
+  revalidatePath(`/admin/build/${businessId}`, 'layout');
+  revalidatePath(`/admin/preview/${businessId}`);
 
   if (publicId) {
     revalidatePath(`/m/${publicId}`);

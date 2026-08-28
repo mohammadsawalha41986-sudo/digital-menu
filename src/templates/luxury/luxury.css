@@ -47,7 +47,7 @@
 }
 
 .luxury__locale[data-active] {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .luxury__logo {
@@ -61,7 +61,7 @@
   /* Wide tracking is the family's signature; it reads as engraved. */
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   animation: luxury-fade var(--luxury-fade) var(--sys-ease-standard) both;
 }
 
@@ -90,7 +90,7 @@
   font-size: var(--sys-font-size-xs);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .luxury__category {
@@ -155,7 +155,7 @@
 
 .luxury__item-price {
   font-size: var(--sys-font-size-lg);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   letter-spacing: 0.06em;
 }
 
@@ -173,7 +173,7 @@
   font-size: var(--sys-font-size-xs);
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
   padding-block-end: var(--sys-space-4);
 }
 
@@ -204,7 +204,7 @@
 .luxury__offer-title {
   font-size: var(--sys-font-size-lg);
   letter-spacing: 0.06em;
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 
 .luxury__offer-note,
@@ -236,13 +236,13 @@
 .luxury__offer-discount {
   font-size: var(--sys-font-size-2xs);
   letter-spacing: var(--sys-tracking-wide);
-  color: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 
 .luxury__offer-cta,
 .luxury__download-link,
 .luxury__social-link {
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   text-decoration: none;
   border-block-end: 1px solid var(--brand-color-accent);
   padding-block-end: 2px;
@@ -291,7 +291,7 @@
   align-items: center;
   padding-inline: var(--sys-space-5);
   border: 1px solid var(--brand-color-accent);
-  color: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
   font-size: var(--sys-font-size-xs);
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -300,7 +300,7 @@
 }
 
 .luxury__action:hover {
-  background-color: var(--brand-color-accent);
+  background-color: var(--brand-color-accent-text);
   color: var(--brand-color-on-primary);
 }
 
