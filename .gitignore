@@ -4,24 +4,30 @@ node_modules/
 .pnp.js
 
 # next.js
-.next/
-out/
+/.next/
+/out/
 next-env.d.ts
 
-# production
-build/
-dist/
+# Build output.
+#
+# Anchored, and so is everything below that names a directory. An unanchored
+# pattern matches at *every* depth: `build/` silently swallowed
+# src/app/admin/(dashboard)/build/, and `storage/` did the same to
+# src/server/storage/ before it. Both looked fine locally — the files were on
+# disk — and both produced a repository that could not build.
+/build/
+/dist/
 
 # generated
-src/generated/
+/src/generated/
 *.tsbuildinfo
 
 # testing
-coverage/
-test-results/
-playwright-report/
-blob-report/
-.playwright/
+/coverage/
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
 
 # local storage provider root
 /storage/
