@@ -353,3 +353,25 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Opening hours — loud, like everything else here: a filled badge and heavy
+   numerals, because in this family the state is a headline, not a footnote. */
+.bold__hours { margin-block: var(--sys-space-7); }
+.bold__hours-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-3); }
+.bold__hours-badge {
+  display: inline-block; padding: 0.35em 0.9em;
+  background: var(--brand-muted); color: var(--brand-background);
+  font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.bold__hours-state[data-open='true'] .bold__hours-badge { background: var(--brand-accent); }
+.bold__hours-detail { font-weight: 700; }
+.bold__hours-list {
+  margin-block-start: var(--sys-space-4);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--sys-space-3);
+}
+.bold__hours-row { border-block-start: 3px solid var(--brand-text); padding-block-start: var(--sys-space-2); }
+.bold__hours-row[data-today] { border-block-start-color: var(--brand-accent); }
+.bold__hours-day { font-weight: 800; text-transform: uppercase; font-size: 0.8rem; }
+.bold__hours-times { font-variant-numeric: tabular-nums; }
+.bold__hours-intervals { list-style: none; margin: 0; padding: 0; }

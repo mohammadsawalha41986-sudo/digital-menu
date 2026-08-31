@@ -46,6 +46,96 @@ interface SeedCategory {
   items: SeedItem[];
 }
 
+/**
+ * Opening-hour patterns for the demo businesses (§74, §134).
+ *
+ * Each is shaped like the trade it belongs to: a fine-dining room opens only
+ * for dinner and runs past midnight, a bakery starts before dawn and closes
+ * mid-afternoon, a salon shuts one day a week. Six identical weeks would make
+ * the six demos read as one business again, which is exactly what §174 tests.
+ */
+type SeedHours = {
+  timezone: string;
+  days: Record<string, { closed: boolean; intervals: { opens: string; closes: string }[] }>;
+};
+
+const RIYADH = 'Asia/Riyadh';
+
+function week(
+  pattern: Partial<Record<string, { opens: string; closes: string }[] | 'closed'>>,
+): SeedHours {
+  const days: SeedHours['days'] = {};
+
+  for (const [day, value] of Object.entries(pattern)) {
+    days[day] =
+      value === 'closed'
+        ? { closed: true, intervals: [] }
+        : { closed: false, intervals: value ?? [] };
+  }
+
+  return { timezone: RIYADH, days };
+}
+
+const EVERY_DAY = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+function sameEveryDay(intervals: { opens: string; closes: string }[]): SeedHours {
+  return week(Object.fromEntries(EVERY_DAY.map((day) => [day, intervals])));
+}
+
+/** Dinner only, running past midnight at the weekend. */
+const FINE_DINING_HOURS = week({
+  sunday: [{ opens: '18:00', closes: '23:30' }],
+  monday: 'closed',
+  tuesday: [{ opens: '18:00', closes: '23:30' }],
+  wednesday: [{ opens: '18:00', closes: '23:30' }],
+  thursday: [{ opens: '18:00', closes: '01:00' }],
+  friday: [{ opens: '18:00', closes: '01:00' }],
+  saturday: [{ opens: '18:00', closes: '23:30' }],
+});
+
+/** Long single shift, seven days — the café pattern. */
+const CAFE_HOURS = sameEveryDay([{ opens: '07:00', closes: '23:00' }]);
+
+/** Late-night burger trade. */
+const BURGER_HOURS = sameEveryDay([{ opens: '12:00', closes: '02:00' }]);
+
+/** Bakers start early and are gone by mid-afternoon. */
+const BAKERY_HOURS = week({
+  sunday: [{ opens: '05:30', closes: '15:00' }],
+  monday: [{ opens: '05:30', closes: '15:00' }],
+  tuesday: [{ opens: '05:30', closes: '15:00' }],
+  wednesday: [{ opens: '05:30', closes: '15:00' }],
+  thursday: [{ opens: '05:30', closes: '15:00' }],
+  friday: 'closed',
+  saturday: [{ opens: '06:30', closes: '13:00' }],
+});
+
+/** A salon: split shift around the afternoon break, closed on Friday. */
+const SALON_HOURS = week({
+  sunday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  monday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  tuesday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  wednesday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  thursday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '22:00' }],
+  friday: 'closed',
+  saturday: [{ opens: '12:00', closes: '21:00' }],
+});
+
+/**
+ * One branch keeping different hours from its business — the reason hours are
+ * stored per branch at all. Olaya serves later than the main location.
+ */
+const LATE_BRANCH_HOURS = sameEveryDay([
+  { opens: '12:00', closes: '15:30' },
+  { opens: '18:00', closes: '01:00' },
+]);
+
+/** Family restaurant: lunch and dinner, with the kitchen closed between. */
+const RESTAURANT_HOURS = sameEveryDay([
+  { opens: '12:00', closes: '15:30' },
+  { opens: '18:00', closes: '23:59' },
+]);
+
 async function main() {
   const staff = await provisionStaffUser();
 
@@ -71,6 +161,7 @@ async function main() {
     addressAr: 'الرياض، المملكة العربية السعودية',
     addressEn: 'Riyadh, Saudi Arabia',
     showPlatformFooter: true,
+    workingHours: RESTAURANT_HOURS,
   } as const;
 
   const business = await prisma.business.upsert({
@@ -111,6 +202,7 @@ async function main() {
     descriptionEn: null,
     templateKey: 'editorial',
     variantKey: 'a',
+    workingHours: CAFE_HOURS,
   } as const;
 
   const arabicOnly = await prisma.business.upsert({
@@ -145,7 +237,11 @@ async function main() {
   // exercised by the demo data.
   const olaya = await prisma.branch.upsert({
     where: { businessId_key: { businessId: business.id, key: 'olaya' } },
-    update: { phone: '+966500000001', whatsapp: '+966500000001' },
+    update: {
+      phone: '+966500000001',
+      whatsapp: '+966500000001',
+      workingHours: LATE_BRANCH_HOURS,
+    },
     create: {
       businessId: business.id,
       key: 'olaya',
@@ -156,6 +252,7 @@ async function main() {
       phone: '+966500000001',
       whatsapp: '+966500000001',
       googleMapsUrl: 'https://maps.google.com/?q=24.6944,46.6856',
+      workingHours: LATE_BRANCH_HOURS,
       sortOrder: 0,
     },
   });
@@ -346,6 +443,7 @@ async function seedShowcase(publishedById: string) {
   const showcase = [
     {
       publicId: 'DEM003',
+      hours: FINE_DINING_HOURS,
       slug: 'demo-luxury-restaurant',
       type: 'RESTAURANT' as const,
       template: 'luxury',
@@ -390,6 +488,7 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM004',
+      hours: CAFE_HOURS,
       slug: 'demo-specialty-cafe',
       type: 'CAFE' as const,
       template: 'cafe',
@@ -435,6 +534,7 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM005',
+      hours: BURGER_HOURS,
       slug: 'demo-burger',
       type: 'RESTAURANT' as const,
       template: 'bold',
@@ -471,6 +571,7 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM006',
+      hours: BAKERY_HOURS,
       slug: 'demo-bakery',
       type: 'BAKERY' as const,
       template: 'casual',
@@ -515,6 +616,7 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM007',
+      hours: SALON_HOURS,
       slug: 'demo-luxury-salon',
       type: 'SALON' as const,
       template: 'hospitality',
@@ -574,6 +676,7 @@ async function seedShowcase(publishedById: string) {
       templateKey: business.template,
       variantKey: business.variant,
       showPlatformFooter: true,
+      workingHours: business.hours,
     };
 
     const row = await prisma.business.upsert({

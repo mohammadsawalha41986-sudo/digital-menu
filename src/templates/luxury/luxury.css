@@ -343,3 +343,27 @@
 [data-variant='b'] .luxury {
   --luxury-measure: 42rem;
 }
+
+/* Opening hours — set as a quiet, wide-tracked table, in keeping with the
+   family's restraint. The badge is a hairline rule and small caps, never a
+   coloured pill. */
+.luxury__hours { margin-block: var(--sys-space-7); }
+.luxury__hours-state {
+  display: flex; align-items: baseline; gap: var(--sys-space-3);
+  padding-block-end: var(--sys-space-3);
+  border-block-end: 1px solid var(--brand-border);
+}
+.luxury__hours-badge {
+  font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--brand-muted);
+}
+.luxury__hours-state[data-open='true'] .luxury__hours-badge { color: var(--brand-accent); }
+.luxury__hours-detail { font-size: 0.85rem; color: var(--brand-muted); }
+.luxury__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
+.luxury__hours-row {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-4);
+  align-items: baseline; font-size: 0.9rem;
+}
+.luxury__hours-row[data-today] { color: var(--brand-text); font-weight: 500; }
+.luxury__hours-day { color: var(--brand-muted); letter-spacing: 0.06em; }
+.luxury__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }

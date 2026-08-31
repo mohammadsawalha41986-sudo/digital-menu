@@ -545,3 +545,24 @@
 [data-variant='c'] .editorial__body {
   gap: var(--sys-space-5);
 }
+
+/* Opening hours — set like a masthead colophon: rules, small caps, asymmetry. */
+.editorial__hours { margin-block: var(--sys-space-7); }
+.editorial__hours-state {
+  display: flex; align-items: baseline; gap: var(--sys-space-3);
+  padding-block: var(--sys-space-2);
+  border-block: 1px solid var(--brand-border);
+}
+.editorial__hours-badge {
+  font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-muted);
+}
+.editorial__hours-state[data-open='true'] .editorial__hours-badge { color: var(--brand-text); }
+.editorial__hours-detail { font-size: 0.85rem; font-style: italic; color: var(--brand-muted); }
+.editorial__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
+.editorial__hours-row {
+  display: grid; grid-template-columns: 8rem 1fr; gap: var(--sys-space-4); align-items: baseline;
+  font-size: 0.9rem;
+}
+.editorial__hours-row[data-today] { font-weight: 600; }
+.editorial__hours-day { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-muted); }
+.editorial__hours-intervals { list-style: none; margin: 0; padding: 0; }

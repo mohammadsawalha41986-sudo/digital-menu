@@ -309,3 +309,23 @@
 [data-variant='b'] .casual__item-image {
   max-inline-size: 16rem;
 }
+
+/* Opening hours — warm and chunky, sitting in the same card rhythm as items. */
+.casual__hours { margin-block: var(--sys-space-6); }
+.casual__hours-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-2); }
+.casual__hours-badge {
+  border-radius: 0.5rem; padding: 0.35em 0.8em; font-weight: 700; font-size: 0.85rem;
+  background: color-mix(in srgb, var(--brand-muted) 15%, transparent); color: var(--brand-muted);
+}
+.casual__hours-state[data-open='true'] .casual__hours-badge {
+  background: var(--brand-accent); color: var(--brand-background);
+}
+.casual__hours-detail { font-size: 0.85rem; color: var(--brand-muted); }
+.casual__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
+.casual__hours-row {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-3);
+  padding: var(--sys-space-2) var(--sys-space-3);
+  background: var(--brand-surface); border-radius: 0.5rem;
+}
+.casual__hours-row[data-today] { outline: 2px solid var(--brand-accent); }
+.casual__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }

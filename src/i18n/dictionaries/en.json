@@ -44,5 +44,24 @@
     "profileNotFoundBody": "We could not find this profile. Check the link, or scan the QR code again.",
     "genericTitle": "Something went wrong",
     "genericBody": "Please try again in a moment."
+  },
+  "hours": {
+    "openNow": "Open now",
+    "closedNow": "Closed",
+    "closesAt": "Closes {time}",
+    "opensAt": "Opens {time}",
+    "opensDayAt": "Opens {day} at {time}",
+    "closedAllDay": "Closed",
+    "openAllHours": "Open 24 hours",
+    "today": "Today"
+  },
+  "weekdays": {
+    "sunday": "Sunday",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday"
   }
 }

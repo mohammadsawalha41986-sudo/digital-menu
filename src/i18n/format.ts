@@ -47,3 +47,32 @@ export function formatDate(date: Date, locale: Locale, timeZone = 'UTC'): string
     timeZone,
   }).format(date);
 }
+
+/**
+ * Renders a stored `HH:MM` as a clock time in the visitor's locale — so an
+ * English reader gets "5:00 PM" and an Arabic reader gets the form their
+ * locale uses, from one stored value.
+ *
+ * The date carrying the time is arbitrary and never shown; only the
+ * hour and minute are formatted.
+ */
+export function formatClock(time: string, locale: Locale): string {
+  const [hours, minutes] = time.split(':').map(Number);
+
+  if (
+    hours === undefined ||
+    minutes === undefined ||
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes)
+  ) {
+    return time;
+  }
+
+  const carrier = new Date(Date.UTC(2000, 0, 1, hours, minutes));
+
+  return new Intl.DateTimeFormat(`${bcp47Of(locale)}-u-nu-${NUMBERING_SYSTEM}`, {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  }).format(carrier);
+}

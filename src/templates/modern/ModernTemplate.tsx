@@ -7,7 +7,12 @@ import {
   ProfileImage,
 } from '../shared/primitives';
 import { composeProfile } from '../shared/composition';
-import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
+import {
+  ContactSection,
+  DownloadsSection,
+  HoursSection,
+  OffersSection,
+} from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
 
@@ -188,6 +193,19 @@ export function ModernTemplate({ profile, locale, dictionary }: TemplateRenderPr
           dictionary={dictionary}
           prefix="modern"
         />
+
+        <HoursSection
+
+          hours={profile.contact.workingHours}
+
+          locale={locale}
+
+          dictionary={dictionary}
+
+          prefix="modern"
+
+        />
+
 
         <ContactSection
           actions={composition.contactActions}

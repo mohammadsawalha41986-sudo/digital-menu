@@ -322,3 +322,16 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* Opening hours — restrained, with the state carried by weight rather than by
+   colour, and generous leading between rows. */
+.premium__hours { margin-block: var(--sys-space-7); }
+.premium__hours-state { display: flex; align-items: baseline; gap: var(--sys-space-3); }
+.premium__hours-badge { font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-muted); }
+.premium__hours-state[data-open='true'] .premium__hours-badge { color: var(--brand-text); font-weight: 600; }
+.premium__hours-detail { font-size: 0.85rem; color: var(--brand-muted); }
+.premium__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-3); }
+.premium__hours-row { display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-4); align-items: baseline; }
+.premium__hours-row[data-today] { font-weight: 600; }
+.premium__hours-day { color: var(--brand-muted); font-size: 0.9rem; }
+.premium__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; font-variant-numeric: tabular-nums; }

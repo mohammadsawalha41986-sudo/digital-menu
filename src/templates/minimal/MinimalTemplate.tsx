@@ -1,6 +1,11 @@
 import { Localized, LocaleSwitcher, Price } from '../shared/primitives';
 import { composeProfile } from '../shared/composition';
-import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
+import {
+  ContactSection,
+  DownloadsSection,
+  HoursSection,
+  OffersSection,
+} from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
 
@@ -117,6 +122,19 @@ export function MinimalTemplate({ profile, locale, dictionary }: TemplateRenderP
         dictionary={dictionary}
         prefix="minimal"
       />
+
+      <HoursSection
+
+        hours={profile.contact.workingHours}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="minimal"
+
+      />
+
 
       <ContactSection
         actions={composition.contactActions}

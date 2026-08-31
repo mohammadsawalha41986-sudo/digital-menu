@@ -294,3 +294,25 @@
     grid-template-columns: repeat(6, 1fr);
   }
 }
+
+/* Opening hours — friendly and rounded, matching the café's card language. */
+.cafe__hours { margin-block: var(--sys-space-6); }
+.cafe__hours-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-2); }
+.cafe__hours-badge {
+  border-radius: 999px; padding: 0.3em 0.85em;
+  background: color-mix(in srgb, var(--brand-muted) 18%, transparent);
+  color: var(--brand-muted); font-size: 0.85rem; font-weight: 600;
+}
+.cafe__hours-state[data-open='true'] .cafe__hours-badge {
+  background: color-mix(in srgb, var(--brand-accent) 20%, transparent);
+  color: var(--brand-accent);
+}
+.cafe__hours-detail { font-size: 0.85rem; color: var(--brand-muted); }
+.cafe__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
+.cafe__hours-row {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-3);
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border-radius: var(--brand-radius, 0.75rem);
+}
+.cafe__hours-row[data-today] { background: color-mix(in srgb, var(--brand-accent) 10%, transparent); }
+.cafe__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }

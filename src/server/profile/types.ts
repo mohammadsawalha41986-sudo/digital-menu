@@ -1,5 +1,6 @@
 import type { Locale } from '@/i18n/config';
 import type { BrandTokens } from '@/design/brand';
+import type { WorkingHours } from '@/server/business/hours';
 
 /**
  * The read model a public profile renders from.
@@ -93,7 +94,7 @@ export interface PublicBranch {
   phone: string | null;
   whatsapp: string | null;
   googleMapsUrl: string | null;
-  workingHours: unknown | null;
+  workingHours: WorkingHours | null;
 }
 
 /** Contact channels. A null field means the action is hidden, not disabled (§44). */
@@ -110,7 +111,12 @@ export interface PublicContact {
   googleMapsUrl: string | null;
   addressAr: string | null;
   addressEn: string | null;
-  workingHours: unknown | null;
+  /**
+   * Parsed, not raw JSON. The read model is where a stored shape becomes a
+   * rendered one; a template should never be handed something it has to
+   * validate before it can draw it.
+   */
+  workingHours: WorkingHours | null;
 }
 
 export interface PublicSeo {

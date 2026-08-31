@@ -1,6 +1,11 @@
 import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../shared/primitives';
 import { composeProfile } from '../shared/composition';
-import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
+import {
+  ContactSection,
+  DownloadsSection,
+  HoursSection,
+  OffersSection,
+} from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
 
@@ -143,6 +148,19 @@ export function BoldTemplate({ profile, locale, dictionary }: TemplateRenderProp
         dictionary={dictionary}
         prefix="bold"
       />
+
+      <HoursSection
+
+        hours={profile.contact.workingHours}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="bold"
+
+      />
+
 
       <ContactSection
         actions={composition.contactActions}

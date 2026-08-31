@@ -2,6 +2,15 @@ import type { ReactNode } from 'react';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionary';
 import type { PublicDownload, PublicOffer } from '@/server/profile/types';
+import {
+  WEEKDAYS,
+  hasPublishedHours,
+  localNow,
+  openStateOf,
+  type Weekday,
+  type WorkingHours,
+} from '@/server/business/hours';
+import { formatClock } from '@/i18n/format';
 import { Localized, Price, ProfileImage } from './primitives';
 
 /**
@@ -234,6 +243,103 @@ export function ContactSection({
       ) : null}
 
       {children}
+    </section>
+  );
+}
+
+/**
+ * Opening hours, with a live open/closed badge (master spec §21, §44, §74).
+ *
+ * The state is computed on the server in the *business's* timezone, so the
+ * page arrives already knowing the answer — no client clock, no hydration
+ * flash, and correct for a visitor in another country.
+ *
+ * Times are rendered as locale-formatted clock times rather than as the stored
+ * `HH:MM`, so an Arabic visitor sees Arabic numerals where the locale calls
+ * for them. A day the business marked closed says so; a day it never described
+ * is simply absent, per the rule that missing data hides its field.
+ */
+export function HoursSection({
+  hours,
+  locale,
+  dictionary,
+  prefix,
+  heading = true,
+}: {
+  hours: WorkingHours | null;
+  locale: Locale;
+  dictionary: Dictionary;
+  prefix: string;
+  heading?: boolean;
+}) {
+  if (!hasPublishedHours(hours)) return null;
+
+  const state = openStateOf(hours);
+  const today = localNow(hours.timezone)?.weekday ?? null;
+
+  const days = WEEKDAYS.map((day) => ({ day, entry: hours.days[day] })).filter(
+    (row): row is { day: Weekday; entry: NonNullable<typeof row.entry> } => Boolean(row.entry),
+  );
+
+  return (
+    <section className={`${prefix}__hours`} aria-labelledby={`${prefix}-hours`}>
+      {heading ? (
+        <h2 id={`${prefix}-hours`} className={`${prefix}__section-title`}>
+          {dictionary.profile.workingHours}
+        </h2>
+      ) : null}
+
+      {state.status !== 'unknown' ? (
+        <p
+          className={`${prefix}__hours-state`}
+          data-open={state.status === 'open' ? 'true' : 'false'}
+        >
+          <span className={`${prefix}__hours-badge`}>
+            {state.status === 'open' ? dictionary.hours.openNow : dictionary.hours.closedNow}
+          </span>
+          <span className={`${prefix}__hours-detail`}>
+            {state.status === 'open'
+              ? dictionary.hours.closesAt.replace('{time}', formatClock(state.closesAt, locale))
+              : state.opensAt === null
+                ? ''
+                : state.opensDay === today
+                  ? dictionary.hours.opensAt.replace(
+                      '{time}',
+                      formatClock(state.opensAt, locale),
+                    )
+                  : dictionary.hours.opensDayAt
+                      .replace('{day}', dictionary.weekdays[state.opensDay])
+                      .replace('{time}', formatClock(state.opensAt, locale))}
+          </span>
+        </p>
+      ) : null}
+
+      <dl className={`${prefix}__hours-list`}>
+        {days.map(({ day, entry }) => (
+          <div
+            key={day}
+            className={`${prefix}__hours-row`}
+            {...(day === today ? { 'data-today': '' } : {})}
+          >
+            <dt className={`${prefix}__hours-day`}>{dictionary.weekdays[day]}</dt>
+            <dd className={`${prefix}__hours-times`}>
+              {entry.closed || entry.intervals.length === 0 ? (
+                dictionary.hours.closedAllDay
+              ) : (
+                <ul className={`${prefix}__hours-intervals`}>
+                  {entry.intervals.map((interval) => (
+                    <li key={`${interval.opens}-${interval.closes}`}>
+                      <time>{formatClock(interval.opens, locale)}</time>
+                      {' – '}
+                      <time>{formatClock(interval.closes, locale)}</time>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

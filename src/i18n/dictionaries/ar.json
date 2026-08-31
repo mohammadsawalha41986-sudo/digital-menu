@@ -44,5 +44,24 @@
     "profileNotFoundBody": "لم نتمكن من العثور على هذا الملف. تأكد من الرابط أو أعد مسح رمز الاستجابة السريعة.",
     "genericTitle": "حدث خطأ غير متوقع",
     "genericBody": "يرجى المحاولة مرة أخرى بعد قليل."
+  },
+  "hours": {
+    "openNow": "مفتوح الآن",
+    "closedNow": "مغلق",
+    "closesAt": "يغلق {time}",
+    "opensAt": "يفتح {time}",
+    "opensDayAt": "يفتح {day} الساعة {time}",
+    "closedAllDay": "مغلق",
+    "openAllHours": "مفتوح ٢٤ ساعة",
+    "today": "اليوم"
+  },
+  "weekdays": {
+    "sunday": "الأحد",
+    "monday": "الاثنين",
+    "tuesday": "الثلاثاء",
+    "wednesday": "الأربعاء",
+    "thursday": "الخميس",
+    "friday": "الجمعة",
+    "saturday": "السبت"
   }
 }

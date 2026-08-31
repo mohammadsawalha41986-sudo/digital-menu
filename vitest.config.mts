@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     // Playwright owns e2e/.
     exclude: ['e2e/**', 'node_modules/**'],
     // Integration tests read DATABASE_URL from the local .env, exactly as the

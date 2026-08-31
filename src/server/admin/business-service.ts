@@ -11,6 +11,8 @@ import {
   type AuthenticatedUser,
 } from '@/server/tenancy/context';
 import { isValidTemplateSelection } from '@/templates/registry';
+import { parseWorkingHours, type WorkingHours } from '@/server/business/hours';
+import { Prisma } from '@/generated/prisma/client';
 import type {
   branchSchema,
   brandSchema,
@@ -614,3 +616,99 @@ export function canEdit(role: Parameters<typeof roleAtLeast>[0]): boolean {
 }
 
 export { isValidPublicId };
+
+// --- Working hours ---------------------------------------------------------
+
+/**
+ * Sets opening hours for the business, or for one of its branches.
+ *
+ * Hours are the one piece of contact data that goes stale fastest — Ramadan,
+ * a public holiday, a kitchen closing early — so this is a MANAGER-level
+ * operation that writes an audit entry naming what changed, and nothing more:
+ * it deliberately touches no other field on the record.
+ *
+ * `null` clears the hours, which is how a business stops publishing a schedule
+ * it can no longer keep. That is a real operation, not an error.
+ */
+export async function updateWorkingHours(
+  user: AuthenticatedUser,
+  businessId: string,
+  target: { kind: 'business' } | { kind: 'branch'; branchId: string },
+  hours: WorkingHours | null,
+) {
+  const context = await requireTenantContext(user, businessId, 'MANAGER');
+
+  if (target.kind === 'business') {
+    const updated = await prisma.business.update({
+      where: { id: context.businessId },
+      data: { workingHours: hours ?? Prisma.DbNull },
+      select: { id: true, publicId: true },
+    });
+
+    await recordAudit({
+      action: 'business.hours_updated',
+      entity: 'business',
+      entityId: updated.id,
+      businessId: context.businessId,
+      userId: user.id,
+      metadata: { cleared: hours === null },
+    });
+
+    return updated;
+  }
+
+  // The branch id arrives from a form, so it is scoped before it is trusted:
+  // updateMany with a businessId filter cannot cross a tenant boundary even if
+  // the id belongs to somebody else's branch (GOALS I8).
+  const result = await prisma.branch.updateMany({
+    where: { id: target.branchId, businessId: context.businessId },
+    data: { workingHours: hours ?? Prisma.DbNull },
+  });
+
+  if (result.count === 0) throw new TenantAccessError();
+
+  const business = await prisma.business.findUniqueOrThrow({
+    where: { id: context.businessId },
+    select: { id: true, publicId: true },
+  });
+
+  await recordAudit({
+    action: 'branch.hours_updated',
+    entity: 'branch',
+    entityId: target.branchId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { cleared: hours === null },
+  });
+
+  return business;
+}
+
+/** Everything the hours editor needs, in one scoped read. */
+export async function getHoursForAdmin(user: AuthenticatedUser, businessId: string) {
+  const context = await requireTenantContext(user, businessId, 'VIEWER');
+
+  const business = await prisma.business.findUniqueOrThrow({
+    where: { id: context.businessId },
+    select: {
+      id: true,
+      publicId: true,
+      nameAr: true,
+      nameEn: true,
+      workingHours: true,
+      branches: {
+        orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+        select: { id: true, key: true, nameAr: true, nameEn: true, workingHours: true },
+      },
+    },
+  });
+
+  return {
+    ...business,
+    workingHours: parseWorkingHours(business.workingHours),
+    branches: business.branches.map((branch) => ({
+      ...branch,
+      workingHours: parseWorkingHours(branch.workingHours),
+    })),
+  };
+}

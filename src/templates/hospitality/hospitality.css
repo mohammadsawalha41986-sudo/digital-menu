@@ -296,3 +296,31 @@
 [data-variant='b'] .hospitality__group-summary {
   padding-block: var(--sys-space-2);
 }
+
+/* Opening hours — this family leads with practical detail, so hours get the
+   most prominent treatment of any template: a full-width panel. */
+.hospitality__hours {
+  margin-block: var(--sys-space-6);
+  padding: var(--sys-space-5); background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+}
+.hospitality__hours-state {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-3);
+  padding-block-end: var(--sys-space-3); border-block-end: 1px solid var(--brand-border);
+}
+.hospitality__hours-badge {
+  padding: 0.35em 0.9em; font-weight: 700; font-size: 0.85rem;
+  background: color-mix(in srgb, var(--brand-muted) 15%, transparent); color: var(--brand-muted);
+}
+.hospitality__hours-state[data-open='true'] .hospitality__hours-badge {
+  background: var(--brand-accent); color: var(--brand-background);
+}
+.hospitality__hours-detail { font-size: 0.9rem; }
+.hospitality__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
+.hospitality__hours-row {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-4);
+  padding-block: var(--sys-space-2);
+}
+.hospitality__hours-row[data-today] { font-weight: 700; }
+.hospitality__hours-day { color: var(--brand-muted); }
+.hospitality__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; font-variant-numeric: tabular-nums; }

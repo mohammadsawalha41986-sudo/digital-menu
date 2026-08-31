@@ -302,3 +302,25 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* Opening hours — a lit badge against the dark ground; the open state is the
+   only place this family spends colour. */
+.dark__hours { margin-block: var(--sys-space-6); }
+.dark__hours-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-3); }
+.dark__hours-badge {
+  padding: 0.3em 0.8em; border: 1px solid var(--brand-border);
+  color: var(--brand-muted); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.dark__hours-state[data-open='true'] .dark__hours-badge {
+  border-color: var(--brand-accent); color: var(--brand-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-accent) 30%, transparent);
+}
+.dark__hours-detail { color: var(--brand-muted); font-size: 0.85rem; }
+.dark__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
+.dark__hours-row {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-3);
+  padding-block: var(--sys-space-2); border-block-end: 1px solid var(--brand-border);
+  font-size: 0.9rem;
+}
+.dark__hours-row[data-today] { color: var(--brand-accent); }
+.dark__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; font-variant-numeric: tabular-nums; }

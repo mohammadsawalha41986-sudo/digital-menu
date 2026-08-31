@@ -4,6 +4,7 @@ import { prisma } from '@/server/db/client';
 import { getStorage } from '@/server/storage';
 import { discountPercent, liveOfferWhere } from '@/server/offers/scheduling';
 import { resolveDesign, type DesignRowLike } from '@/menu-studio/resolve';
+import { parseWorkingHours } from '@/server/business/hours';
 import type {
   PublicCategory,
   PublicDownload,
@@ -279,7 +280,7 @@ async function loadProfile(
       googleMapsUrl: activeBranch?.googleMapsUrl ?? business.googleMapsUrl,
       addressAr: activeBranch?.addressAr ?? business.addressAr,
       addressEn: activeBranch?.addressEn ?? business.addressEn,
-      workingHours: activeBranch?.workingHours ?? business.workingHours,
+      workingHours: parseWorkingHours(activeBranch?.workingHours ?? business.workingHours),
     },
     seo: {
       indexProfile: business.indexProfile,
@@ -298,7 +299,7 @@ async function loadProfile(
       phone: branch.phone,
       whatsapp: branch.whatsapp,
       googleMapsUrl: branch.googleMapsUrl,
-      workingHours: branch.workingHours,
+      workingHours: parseWorkingHours(branch.workingHours),
     })),
     activeBranchKey: activeBranch?.key ?? null,
     menus: business.menus.map((menu): PublicMenu => toMenu(menu, overrides)),

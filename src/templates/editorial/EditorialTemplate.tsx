@@ -12,6 +12,7 @@ import {
 } from '../shared/primitives';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
+import { HoursSection } from '../shared/sections';
 
 /**
  * EDITORIAL — type-led, rule-separated, restrained.
@@ -346,6 +347,13 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
             </ul>
           </section>
         ) : null}
+
+        <HoursSection
+          hours={profile.contact.workingHours}
+          locale={locale}
+          dictionary={dictionary}
+          prefix="editorial"
+        />
 
         {hasContent(
           { ar: profile.contact.addressAr, en: profile.contact.addressEn },
