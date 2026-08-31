@@ -136,6 +136,53 @@ const RESTAURANT_HOURS = sameEveryDay([
   { opens: '18:00', closes: '23:59' },
 ]);
 
+/**
+ * Demo offers, one per placement (§115).
+ *
+ * The three placements are three different designs, so the demo has to carry
+ * all three or the difference is unprovable: a hero the page leads with, a
+ * banner strip that announces without displacing, and an ordinary section
+ * entry. Windows are left open — an offer whose demo expires silently is a
+ * support ticket, not a demonstration.
+ */
+async function seedOffers(
+  businessId: string,
+  offers: {
+    key: string;
+    titleAr: string;
+    titleEn: string;
+    descriptionAr?: string;
+    descriptionEn?: string;
+    placement: 'HERO' | 'BANNER' | 'SECTION' | 'FEATURED';
+    originalPriceMinor?: number;
+    offerPriceMinor?: number;
+    discountPercent?: number;
+    sortOrder?: number;
+  }[],
+) {
+  for (const offer of offers) {
+    const payload = {
+      businessId,
+      titleAr: offer.titleAr,
+      titleEn: offer.titleEn,
+      descriptionAr: offer.descriptionAr ?? null,
+      descriptionEn: offer.descriptionEn ?? null,
+      placement: offer.placement,
+      originalPriceMinor: offer.originalPriceMinor ?? null,
+      offerPriceMinor: offer.offerPriceMinor ?? null,
+      discountPercent: offer.discountPercent ?? null,
+      isActive: true,
+      sortOrder: offer.sortOrder ?? 0,
+    };
+
+    await prisma.offer.upsert({
+      where: { businessId_key: { businessId, key: offer.key } },
+      update: payload,
+      create: { key: offer.key, ...payload },
+    });
+  }
+}
+
 async function main() {
   const staff = await provisionStaffUser();
 
@@ -379,6 +426,41 @@ async function main() {
   ];
 
   await seedMenu(business.id, 'main', 'المنيو الرئيسي', 'Main Menu', restaurantMenu, staff.id);
+
+  // All three placements on one profile, so the difference is visible at once.
+  await seedOffers(business.id, [
+    {
+      key: 'family-night',
+      titleAr: 'ليلة العائلة',
+      titleEn: 'Family Night',
+      descriptionAr: 'طبقان رئيسيان ومقبلات ومشروبان.',
+      descriptionEn: 'Two mains, a starter and two drinks.',
+      placement: 'HERO',
+      originalPriceMinor: 18000,
+      offerPriceMinor: 12600,
+      discountPercent: 30,
+    },
+    {
+      key: 'weekday-lunch',
+      titleAr: 'غداء أيام الأسبوع',
+      titleEn: 'Weekday lunch',
+      placement: 'BANNER',
+      offerPriceMinor: 3900,
+      sortOrder: 1,
+    },
+    {
+      key: 'coffee-with-dessert',
+      titleAr: 'قهوة مع الحلى',
+      titleEn: 'Coffee with dessert',
+      descriptionAr: 'مع أي طبق حلى.',
+      descriptionEn: 'With any dessert.',
+      placement: 'SECTION',
+      originalPriceMinor: 2600,
+      offerPriceMinor: 1800,
+      discountPercent: 31,
+      sortOrder: 2,
+    },
+  ]);
   await seedMenu(arabicOnly.id, 'main', 'قائمة المشروبات', null, cafeMenu, staff.id);
 
   // A draft menu on an active business: present in the database, invisible.
@@ -443,6 +525,17 @@ async function seedShowcase(publishedById: string) {
   const showcase = [
     {
       publicId: 'DEM003',
+      offer: {
+        key: 'tasting-menu',
+        titleAr: 'قائمة التذوق',
+        titleEn: 'Tasting menu',
+        descriptionAr: 'سبعة أطباق من المطبخ.',
+        descriptionEn: 'Seven courses from the kitchen.',
+        placement: 'HERO' as const,
+        originalPriceMinor: 45000,
+        offerPriceMinor: 38000,
+        discountPercent: 16,
+      },
       hours: FINE_DINING_HOURS,
       slug: 'demo-luxury-restaurant',
       type: 'RESTAURANT' as const,
@@ -488,6 +581,13 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM004',
+      offer: {
+        key: 'morning-filter',
+        titleAr: 'قهوة الصباح',
+        titleEn: 'Morning filter',
+        placement: 'BANNER' as const,
+        offerPriceMinor: 1200,
+      },
       hours: CAFE_HOURS,
       slug: 'demo-specialty-cafe',
       type: 'CAFE' as const,
@@ -534,6 +634,17 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM005',
+      offer: {
+        key: 'double-thursday',
+        titleAr: 'خميس الدبل',
+        titleEn: 'Double Thursday',
+        descriptionAr: 'قطعة لحم إضافية بلا زيادة.',
+        descriptionEn: 'An extra patty at no extra cost.',
+        placement: 'HERO' as const,
+        discountPercent: 50,
+        originalPriceMinor: 4800,
+        offerPriceMinor: 2400,
+      },
       hours: BURGER_HOURS,
       slug: 'demo-burger',
       type: 'RESTAURANT' as const,
@@ -571,6 +682,15 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM006',
+      offer: {
+        key: 'end-of-day-bread',
+        titleAr: 'خبز آخر اليوم',
+        titleEn: 'End-of-day bread',
+        placement: 'BANNER' as const,
+        discountPercent: 40,
+        originalPriceMinor: 1800,
+        offerPriceMinor: 1080,
+      },
       hours: BAKERY_HOURS,
       slug: 'demo-bakery',
       type: 'BAKERY' as const,
@@ -616,6 +736,17 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM007',
+      offer: {
+        key: 'midweek-package',
+        titleAr: 'باقة منتصف الأسبوع',
+        titleEn: 'Midweek package',
+        descriptionAr: 'قص وتصفيف وعناية.',
+        descriptionEn: 'Cut, styling and care.',
+        placement: 'SECTION' as const,
+        originalPriceMinor: 42000,
+        offerPriceMinor: 33000,
+        discountPercent: 21,
+      },
       hours: SALON_HOURS,
       slug: 'demo-luxury-salon',
       type: 'SALON' as const,
@@ -690,6 +821,8 @@ async function seedShowcase(publishedById: string) {
       update: business.brand,
       create: { businessId: row.id, ...business.brand },
     });
+
+    if (business.offer) await seedOffers(row.id, [business.offer]);
 
     await seedMenu(
       row.id,

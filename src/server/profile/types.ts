@@ -3,6 +3,14 @@ import type { BrandTokens } from '@/design/brand';
 import type { WorkingHours } from '@/server/business/hours';
 
 /**
+ * HERO    — one offer, given the top of the page, inside or beside the hero.
+ * BANNER  — a slim full-width strip; several may run at once.
+ * SECTION — the ordinary offers block, further down.
+ * FEATURED— the default: the offers section, but promoted within it.
+ */
+export type OfferPlacement = 'HERO' | 'BANNER' | 'SECTION' | 'FEATURED';
+
+/**
  * The read model a public profile renders from.
  *
  * Shaped deliberately: it carries no internal database ids. A template cannot
@@ -174,7 +182,12 @@ export interface PublicOffer {
   ctaLabelAr: string | null;
   ctaLabelEn: string | null;
   ctaUrl: string | null;
-  placement: string;
+  /**
+   * Where the template should place this offer. Not a hint: each value gets a
+   * genuinely different presentation, which is the whole reason the column
+   * exists (master spec §115, §35).
+   */
+  placement: OfferPlacement;
   isFeatured: boolean;
   endsAt: Date | null;
 }

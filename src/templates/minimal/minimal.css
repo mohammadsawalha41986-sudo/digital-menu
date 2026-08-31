@@ -209,3 +209,26 @@
 .minimal__hours-row[data-today] { font-weight: 600; }
 .minimal__hours-day { color: var(--brand-muted); }
 .minimal__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }
+
+/* --- Offer placement ------------------------------------------------------
+   HERO, BANNER and SECTION are three different designs, not three sizes of
+   one. Each family answers them in its own language (§35, §115). */
+
+/* HERO — type only, even when an image exists: the image sits below, small. */
+.minimal__hero-offer { margin-block-end: var(--sys-space-6); display: grid; gap: var(--sys-space-3); }
+.minimal__hero-offer-image { inline-size: 100%; max-block-size: 12rem; object-fit: cover; order: 2; }
+.minimal__hero-offer-body { display: grid; gap: var(--sys-space-1); }
+.minimal__hero-offer-discount { font-size: 1rem; color: var(--brand-muted); }
+.minimal__hero-offer-title { font-size: clamp(1.1rem, 4vw, 1.5rem); font-weight: 500; }
+.minimal__hero-offer-note { color: var(--brand-muted); font-size: 0.9rem; }
+.minimal__hero-offer-was { opacity: 0.5; margin-inline-end: 0.5em; }
+.minimal__hero-offer-cta { justify-self: start; text-decoration: underline; text-underline-offset: 0.25em; font-size: 0.9rem; }
+
+/* BANNER — a single line of text with a rule under it. Nothing more. */
+.minimal__offer-banners { display: grid; gap: 0; margin-block-end: var(--sys-space-5); }
+.minimal__offer-banner {
+  display: flex; justify-content: space-between; gap: var(--sys-space-3);
+  padding-block: var(--sys-space-2); border-block-end: 1px solid var(--brand-border);
+  font-size: 0.88rem;
+}
+.minimal__offer-banner-discount { color: var(--brand-text); }

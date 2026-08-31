@@ -3,7 +3,9 @@ import { composeProfile } from '../shared/composition';
 import {
   ContactSection,
   DownloadsSection,
+  HeroOffer,
   HoursSection,
+  OfferBanners,
   OffersSection,
 } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
@@ -61,8 +63,32 @@ export function LuxuryTemplate({ profile, locale, dictionary }: TemplateRenderPr
         />
       </header>
 
+      <HeroOffer
+
+        offer={composition.offers.hero}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="luxury"
+
+      />
+
+
+      <OfferBanners
+
+        offers={composition.offers.banners}
+
+        locale={locale}
+
+        prefix="luxury"
+
+      />
+
+
       <OffersSection
-        offers={profile.offers}
+        offers={composition.offers.section}
         locale={locale}
         dictionary={dictionary}
         prefix="luxury"

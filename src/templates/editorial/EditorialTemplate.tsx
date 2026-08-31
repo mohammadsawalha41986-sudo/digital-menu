@@ -12,7 +12,8 @@ import {
 } from '../shared/primitives';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
-import { HoursSection } from '../shared/sections';
+import { HeroOffer, HoursSection, OfferBanners } from '../shared/sections';
+import { splitOffersByPlacement } from '../shared/composition';
 
 /**
  * EDITORIAL — type-led, rule-separated, restrained.
@@ -29,6 +30,7 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
   const socialLinks = buildSocialLinks(profile.contact);
   const menus = profile.menus;
   const categories = menus.flatMap((menu) => menu.categories);
+  const offers = splitOffersByPlacement(profile.offers);
 
   return (
     <article className="editorial">
@@ -80,13 +82,17 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
         ) : null}
       </header>
 
-      {profile.offers.length > 0 ? (
+      <HeroOffer offer={offers.hero} locale={locale} dictionary={dictionary} prefix="editorial" />
+
+      <OfferBanners offers={offers.banners} locale={locale} prefix="editorial" />
+
+      {offers.section.length > 0 ? (
         <section className="editorial__offers" aria-labelledby="offers-heading">
           <h2 id="offers-heading" className="editorial__section-title">
             {dictionary.profile.offers}
           </h2>
           <ul className="editorial__offer-list">
-            {profile.offers.map((offer) => (
+            {offers.section.map((offer) => (
               <li key={offer.key} className="editorial__offer" data-offer={offer.key}>
                 <div className="editorial__offer-body">
                   <Localized

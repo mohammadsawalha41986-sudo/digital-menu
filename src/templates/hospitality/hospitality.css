@@ -324,3 +324,31 @@
 .hospitality__hours-row[data-today] { font-weight: 700; }
 .hospitality__hours-day { color: var(--brand-muted); }
 .hospitality__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; font-variant-numeric: tabular-nums; }
+
+/* --- Offer placement ------------------------------------------------------
+   HERO, BANNER and SECTION are three different designs, not three sizes of
+   one. Each family answers them in its own language (§35, §115). */
+
+/* HERO — a practical panel: image left, details right, CTA obvious. */
+.hospitality__hero-offer {
+  margin-block-end: var(--sys-space-6); display: grid; gap: 0;
+  border: 1px solid var(--brand-border); background: var(--brand-surface);
+}
+@media (min-width: 44rem) { .hospitality__hero-offer { grid-template-columns: 1fr 1.2fr; } }
+.hospitality__hero-offer-image { inline-size: 100%; block-size: 100%; min-block-size: 11rem; object-fit: cover; }
+.hospitality__hero-offer-body { padding: var(--sys-space-5); display: grid; gap: var(--sys-space-2); align-content: center; justify-items: start; }
+.hospitality__hero-offer-discount { background: var(--brand-accent); color: var(--brand-background); padding: 0.25em 0.7em; font-weight: 700; }
+.hospitality__hero-offer-title { font-size: clamp(1.2rem, 4.5vw, 1.8rem); }
+.hospitality__hero-offer-was { opacity: 0.55; margin-inline-end: 0.5em; }
+.hospitality__hero-offer-now { font-size: 1.25rem; font-weight: 700; }
+.hospitality__hero-offer-cta { background: var(--brand-accent); color: var(--brand-background); padding: 0.65em 1.4em; font-weight: 600; }
+
+/* BANNER — a bordered notice, the same shape as the hours panel. */
+.hospitality__offer-banners { display: grid; gap: var(--sys-space-2); margin-block-end: var(--sys-space-5); }
+.hospitality__offer-banner {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--sys-space-3);
+  border: 1px solid var(--brand-border); border-inline-start-width: 4px;
+  border-inline-start-color: var(--brand-accent);
+  padding: var(--sys-space-3);
+}
+.hospitality__offer-banner-discount { color: var(--brand-accent); font-weight: 700; }

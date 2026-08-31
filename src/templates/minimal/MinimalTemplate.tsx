@@ -3,7 +3,9 @@ import { composeProfile } from '../shared/composition';
 import {
   ContactSection,
   DownloadsSection,
+  HeroOffer,
   HoursSection,
+  OfferBanners,
   OffersSection,
 } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
@@ -49,8 +51,32 @@ export function MinimalTemplate({ profile, locale, dictionary }: TemplateRenderP
         className="minimal__lede"
       />
 
+      <HeroOffer
+
+        offer={composition.offers.hero}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="minimal"
+
+      />
+
+
+      <OfferBanners
+
+        offers={composition.offers.banners}
+
+        locale={locale}
+
+        prefix="minimal"
+
+      />
+
+
       <OffersSection
-        offers={profile.offers}
+        offers={composition.offers.section}
         locale={locale}
         dictionary={dictionary}
         prefix="minimal"

@@ -3,7 +3,9 @@ import { composeProfile } from '../shared/composition';
 import {
   ContactSection,
   DownloadsSection,
+  HeroOffer,
   HoursSection,
+  OfferBanners,
   OffersSection,
 } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
@@ -47,8 +49,32 @@ export function PremiumTemplate({ profile, locale, dictionary }: TemplateRenderP
         />
       </header>
 
+      <HeroOffer
+
+        offer={composition.offers.hero}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="premium"
+
+      />
+
+
+      <OfferBanners
+
+        offers={composition.offers.banners}
+
+        locale={locale}
+
+        prefix="premium"
+
+      />
+
+
       <OffersSection
-        offers={profile.offers}
+        offers={composition.offers.section}
         locale={locale}
         dictionary={dictionary}
         prefix="premium"

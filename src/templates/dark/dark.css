@@ -324,3 +324,33 @@
 }
 .dark__hours-row[data-today] { color: var(--brand-accent); }
 .dark__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; font-variant-numeric: tabular-nums; }
+
+/* --- Offer placement ------------------------------------------------------
+   HERO, BANNER and SECTION are three different designs, not three sizes of
+   one. Each family answers them in its own language (§35, §115). */
+
+/* HERO — a lit panel: the image dimmed hard, the discount glowing. */
+.dark__hero-offer { position: relative; margin-block-end: var(--sys-space-6); border: 1px solid var(--brand-border); }
+.dark__hero-offer-image { inline-size: 100%; block-size: clamp(12rem, 42vw, 20rem); object-fit: cover; filter: brightness(0.45) saturate(1.1); }
+.dark__hero-offer-body { position: absolute; inset: 0; display: grid; align-content: center; gap: var(--sys-space-2); padding: var(--sys-space-5); }
+.dark__hero-offer:not(:has(.dark__hero-offer-image)) .dark__hero-offer-body { position: static; }
+.dark__hero-offer-discount {
+  font-size: clamp(2.5rem, 13vw, 5.5rem); line-height: 0.9; font-weight: 700; color: var(--brand-accent);
+  text-shadow: 0 0 2.5rem color-mix(in srgb, var(--brand-accent) 45%, transparent);
+}
+.dark__hero-offer-title { font-size: clamp(1.2rem, 5vw, 2rem); }
+.dark__hero-offer-note { color: var(--brand-muted); max-inline-size: 36ch; }
+.dark__hero-offer-was { opacity: 0.55; margin-inline-end: 0.5em; }
+.dark__hero-offer-now { color: var(--brand-accent); font-size: 1.25rem; }
+.dark__hero-offer-cta { justify-self: start; border: 1px solid var(--brand-accent); color: var(--brand-accent); padding: 0.55em 1.3em; }
+
+/* BANNER — a thin lit rule, like a strip light above the menu. */
+.dark__offer-banners { display: grid; gap: 1px; margin-block-end: var(--sys-space-5); }
+.dark__offer-banner {
+  display: flex; justify-content: space-between; gap: var(--sys-space-3);
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border-inline-start: 2px solid var(--brand-accent);
+  background: color-mix(in srgb, var(--brand-accent) 8%, transparent);
+  font-size: 0.9rem;
+}
+.dark__offer-banner-discount { color: var(--brand-accent); font-weight: 600; }

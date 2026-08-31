@@ -343,3 +343,164 @@ export function HoursSection({
     </section>
   );
 }
+
+/**
+ * HERO placement — one offer given the top of the page.
+ *
+ * Deliberately not a smaller `OffersSection`: it is a single figure with the
+ * image running full-bleed behind the copy, no heading above it, and the
+ * discount rendered as the largest number in the composition. A business that
+ * chose HERO asked for the offer to *be* the first thing, and the markup has
+ * to make that possible for the stylesheet.
+ */
+export function HeroOffer({
+  offer,
+  locale,
+  dictionary,
+  prefix,
+}: {
+  offer: PublicOffer | null;
+  locale: Locale;
+  dictionary: Dictionary;
+  prefix: string;
+}) {
+  if (!offer) return null;
+
+  return (
+    <section
+      className={`${prefix}__hero-offer`}
+      data-offer={offer.key}
+      data-placement="hero"
+      aria-label={dictionary.profile.offers}
+    >
+      {offer.image ? (
+        <ProfileImage
+          image={offer.image}
+          locale={locale}
+          className={`${prefix}__hero-offer-image`}
+          sizes="100vw"
+        />
+      ) : null}
+
+      <div className={`${prefix}__hero-offer-body`}>
+        {offer.discountPercent !== null ? (
+          <p className={`${prefix}__hero-offer-discount`} data-discount="">
+            −{offer.discountPercent}%
+          </p>
+        ) : null}
+
+        <Localized
+          field={{ ar: offer.titleAr, en: offer.titleEn }}
+          locale={locale}
+          as="h2"
+          className={`${prefix}__hero-offer-title`}
+        />
+        <Localized
+          field={{ ar: offer.descriptionAr, en: offer.descriptionEn }}
+          locale={locale}
+          as="p"
+          className={`${prefix}__hero-offer-note`}
+        />
+
+        <p className={`${prefix}__hero-offer-pricing`}>
+          {offer.originalPriceMinor !== null ? (
+            <s className={`${prefix}__hero-offer-was`}>
+              <Price
+                minor={offer.originalPriceMinor}
+                currency={offer.currency}
+                locale={locale}
+              />
+            </s>
+          ) : null}
+          <Price
+            minor={offer.offerPriceMinor}
+            currency={offer.currency}
+            locale={locale}
+            className={`${prefix}__hero-offer-now`}
+          />
+        </p>
+
+        {offer.ctaUrl ? (
+          <a
+            href={offer.ctaUrl}
+            className={`${prefix}__hero-offer-cta`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-event="offer_cta"
+          >
+            <Localized
+              field={{ ar: offer.ctaLabelAr, en: offer.ctaLabelEn }}
+              locale={locale}
+            />
+          </a>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * BANNER placement — slim, full-width strips.
+ *
+ * One line of type per offer, no image, no heading: this is the announcement
+ * that runs above the menu without displacing it ("Free delivery on Thursdays").
+ * Several can run at once, which is why it is a list and HERO is not.
+ */
+export function OfferBanners({
+  offers,
+  locale,
+  prefix,
+}: {
+  offers: PublicOffer[];
+  locale: Locale;
+  prefix: string;
+}) {
+  if (offers.length === 0) return null;
+
+  return (
+    <aside className={`${prefix}__offer-banners`} data-placement="banner">
+      {offers.map((offer) => {
+        const body = (
+          <>
+            <Localized
+              field={{ ar: offer.titleAr, en: offer.titleEn }}
+              locale={locale}
+              as="span"
+              className={`${prefix}__offer-banner-title`}
+            />
+            {offer.discountPercent !== null ? (
+              <span className={`${prefix}__offer-banner-discount`} data-discount="">
+                −{offer.discountPercent}%
+              </span>
+            ) : (
+              <Price
+                minor={offer.offerPriceMinor}
+                currency={offer.currency}
+                locale={locale}
+                className={`${prefix}__offer-banner-price`}
+              />
+            )}
+          </>
+        );
+
+        return offer.ctaUrl ? (
+          <a
+            key={offer.key}
+            className={`${prefix}__offer-banner`}
+            data-offer={offer.key}
+            href={offer.ctaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-event="offer_cta"
+          >
+            {body}
+          </a>
+        ) : (
+          <p key={offer.key} className={`${prefix}__offer-banner`} data-offer={offer.key}>
+            {body}
+          </p>
+        );
+      })}
+    </aside>
+  );
+}

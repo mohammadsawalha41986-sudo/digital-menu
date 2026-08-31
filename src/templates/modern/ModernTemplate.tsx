@@ -10,7 +10,9 @@ import { composeProfile } from '../shared/composition';
 import {
   ContactSection,
   DownloadsSection,
+  HeroOffer,
   HoursSection,
+  OfferBanners,
   OffersSection,
 } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
@@ -78,8 +80,32 @@ export function ModernTemplate({ profile, locale, dictionary }: TemplateRenderPr
           className="modern__lede"
         />
 
+        <HeroOffer
+
+          offer={composition.offers.hero}
+
+          locale={locale}
+
+          dictionary={dictionary}
+
+          prefix="modern"
+
+        />
+
+
+        <OfferBanners
+
+          offers={composition.offers.banners}
+
+          locale={locale}
+
+          prefix="modern"
+
+        />
+
+
         <OffersSection
-          offers={profile.offers}
+          offers={composition.offers.section}
           locale={locale}
           dictionary={dictionary}
           prefix="modern"

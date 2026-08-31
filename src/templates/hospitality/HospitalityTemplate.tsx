@@ -3,7 +3,9 @@ import { composeProfile } from '../shared/composition';
 import {
   ContactSection,
   DownloadsSection,
+  HeroOffer,
   HoursSection,
+  OfferBanners,
   OffersSection,
 } from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
@@ -83,8 +85,32 @@ export function HospitalityTemplate({ profile, locale, dictionary }: TemplateRen
         </section>
       ) : null}
 
+      <HeroOffer
+
+        offer={composition.offers.hero}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="hospitality"
+
+      />
+
+
+      <OfferBanners
+
+        offers={composition.offers.banners}
+
+        locale={locale}
+
+        prefix="hospitality"
+
+      />
+
+
       <OffersSection
-        offers={profile.offers}
+        offers={composition.offers.section}
         locale={locale}
         dictionary={dictionary}
         prefix="hospitality"

@@ -316,3 +316,31 @@
 }
 .cafe__hours-row[data-today] { background: color-mix(in srgb, var(--brand-accent) 10%, transparent); }
 .cafe__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }
+
+/* --- Offer placement ------------------------------------------------------
+   HERO, BANNER and SECTION are three different designs, not three sizes of
+   one. Each family answers them in its own language (§35, §115). */
+
+/* HERO — a warm rounded card, image on top, price as a friendly badge. */
+.cafe__hero-offer {
+  margin-block-end: var(--sys-space-6); overflow: hidden;
+  border-radius: var(--brand-radius, 1rem); background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+}
+.cafe__hero-offer-image { inline-size: 100%; block-size: clamp(11rem, 38vw, 18rem); object-fit: cover; }
+.cafe__hero-offer-body { padding: var(--sys-space-5); display: grid; gap: var(--sys-space-2); justify-items: start; }
+.cafe__hero-offer-discount { border-radius: 999px; background: var(--brand-accent); color: var(--brand-background); padding: 0.3em 0.9em; font-weight: 700; }
+.cafe__hero-offer-title { font-size: clamp(1.2rem, 5vw, 1.9rem); }
+.cafe__hero-offer-was { opacity: 0.6; margin-inline-end: 0.5em; }
+.cafe__hero-offer-now { font-size: 1.3rem; font-weight: 700; color: var(--brand-accent); }
+.cafe__hero-offer-cta { border-radius: 999px; background: var(--brand-primary, var(--brand-text)); color: var(--brand-background); padding: 0.6em 1.4em; font-weight: 600; }
+
+/* BANNER — a rounded pill strip, the same family as the category chips. */
+.cafe__offer-banners { display: flex; flex-wrap: wrap; gap: var(--sys-space-2); margin-block-end: var(--sys-space-5); }
+.cafe__offer-banner {
+  display: inline-flex; align-items: center; gap: var(--sys-space-2);
+  border-radius: 999px; padding: 0.45em 1em;
+  background: color-mix(in srgb, var(--brand-accent) 14%, transparent);
+  font-size: 0.9rem;
+}
+.cafe__offer-banner-discount { font-weight: 700; color: var(--brand-accent); }
