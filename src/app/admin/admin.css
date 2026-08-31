@@ -1430,3 +1430,13 @@
   color: var(--admin-muted, #6b7176);
   padding-block-start: 0.2rem;
 }
+
+/* Before-and-after pairs in the audit log read as a list, not a sentence. */
+.admin__changes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}

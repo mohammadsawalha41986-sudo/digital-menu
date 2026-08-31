@@ -55,6 +55,9 @@ export default async function BusinessPage({
           <Link href={`/admin/businesses/${business.id}/review`} className="admin__button admin__button--secondary">
             Client review
           </Link>
+          <Link href={`/admin/businesses/${business.id}/history`} className="admin__button admin__button--secondary">
+            History
+          </Link>
           <Link href={`/admin/businesses/${business.id}/nutrition`} className="admin__button admin__button--secondary">
             Nutrition
           </Link>

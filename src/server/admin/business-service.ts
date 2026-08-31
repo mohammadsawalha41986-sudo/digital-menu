@@ -711,6 +711,22 @@ export async function upsertItem(
         currency: business.currency,
       },
     });
+
+    // And a PriceHistory row, because that is what the history screen reads
+    // (§147). The importer and bulk edit already wrote one; editing an item by
+    // hand did not, which left the most ordinary way of changing a price as
+    // the one way that never appeared in its history.
+    await prisma.priceHistory.create({
+      data: {
+        businessId: context.businessId,
+        itemId: item.id,
+        itemCode: item.itemCode,
+        oldPriceMinor: existing.priceMinor,
+        newPriceMinor: priceMinor,
+        currency: business.currency,
+        changedById: user.id,
+      },
+    });
   }
 
   return { id: item.id, created: !existing };
