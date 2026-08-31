@@ -10,6 +10,7 @@ import {
 } from '@/i18n/config';
 import { getDictionary } from '@/i18n/dictionary';
 import { resolveTemplate } from '@/templates/registry';
+import { preloadFontsFor } from '@/menu-studio/typography';
 import { looksLikeQrScan, recordEventByPublicId } from '@/server/analytics/record';
 import { AnalyticsScript } from './analytics-script';
 import type { PublicProfile } from './types';
@@ -59,6 +60,14 @@ export async function renderProfile(
   const { definition, variant } = resolveTemplate(profile.templateKey, profile.variantKey);
   const headerStore = await headers();
 
+  // Only the faces this business chose, and only the script this page is being
+  // drawn in. A profile is one screen of text behind a QR code; it should not
+  // spend a mobile connection on glyphs it will never render (§33, §81).
+  const preloads = preloadFontsFor(
+    [profile.brand.fontHeading, profile.brand.fontBody],
+    locale === 'ar' ? 'arabic' : 'latin',
+  );
+
   // Recorded after the response is sent, so counting never delays the menu
   // and never turns a failed write into an error page (master spec §112).
   if (!options.preview) after(async () => {
@@ -99,6 +108,10 @@ export async function renderProfile(
       // Brand identity enters as CSS custom properties here and nowhere else.
       style={brandTokensToStyle(profile.brand)}
     >
+      {preloads.map((href) => (
+        <link key={href} rel="preload" as="font" type="font/woff2" href={href} crossOrigin="" />
+      ))}
+
       {definition.render({ profile, locale, direction, dictionary })}
       {options.preview ? null : (
         <AnalyticsScript publicId={profile.publicId} branchKey={profile.activeBranchKey} locale={locale} />

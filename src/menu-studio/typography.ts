@@ -15,8 +15,14 @@
  *     (§35). Randomised typography is how a platform makes every menu look
  *     like an accident.
  *
- * Stacks resolve to fonts already installed or to the system UI faces; the
- * platform ships no webfont it has no licence for.
+ * The platform ships six webfont families, all under the SIL Open Font Licence
+ * and all self-hosted (`public/fonts`, licence in `OFL.txt`). Every stack still
+ * ends in a system fallback, so a face that fails to load degrades to real
+ * letterforms rather than to tofu.
+ *
+ * The `system-*` keys are historical: they are stored in the database against
+ * existing businesses, so they keep their names while their stacks now resolve
+ * to shipped faces. Renaming them would silently repaint every menu.
  */
 
 export type FontRole = 'heading' | 'body' | 'price' | 'accent';
@@ -26,6 +32,12 @@ export interface FontFace {
   label: string;
   /** CSS font-family stack, in order of preference. */
   stack: string;
+  /**
+   * The webfont family this face leads with, or `null` when it uses only faces
+   * already on the reader's machine. Used to preload exactly the families a
+   * page will actually draw with (§33).
+   */
+  family: string | null;
   /** Which scripts this stack renders properly. */
   scripts: readonly ('arabic' | 'latin')[];
   /** What the face is for, in a designer's terms. */
@@ -34,49 +46,64 @@ export interface FontFace {
   description: string;
 }
 
-const SYSTEM_ARABIC = '"Noto Naskh Arabic", "Geeza Pro", "Segoe UI", Tahoma';
+/**
+ * Fallbacks behind every shipped face. A visitor whose connection drops mid-load
+ * still gets Arabic letterforms rather than tofu.
+ */
+const ARABIC_FALLBACK = '"Noto Naskh Arabic", "Geeza Pro", "Segoe UI", Tahoma';
 
 export const FONT_FACES: readonly FontFace[] = [
   {
     key: 'system-serif',
-    label: 'Serif',
-    stack: `ui-serif, Georgia, "Times New Roman", ${SYSTEM_ARABIC}, serif`,
+    family: 'Amiri',
+    label: 'Naskh Serif',
+    stack: `Amiri, "Playfair Display", ui-serif, Georgia, ${ARABIC_FALLBACK}, serif`,
     scripts: ['arabic', 'latin'],
     character: 'serif',
     roles: ['heading', 'body', 'accent'],
-    description: 'Editorial default. Reads as considered rather than corporate.',
+    description:
+      'Classical naskh with a matched Latin serif. Editorial and unhurried; the face for a menu that wants to look older than it is.',
   },
   {
     key: 'system-sans',
-    label: 'Sans',
-    stack: `ui-sans-serif, system-ui, "Segoe UI", ${SYSTEM_ARABIC}, sans-serif`,
+    family: 'Cairo',
+    label: 'Contemporary Sans',
+    stack: `Cairo, Inter, ui-sans-serif, system-ui, ${ARABIC_FALLBACK}, sans-serif`,
     scripts: ['arabic', 'latin'],
     character: 'sans',
     roles: ['heading', 'body', 'price', 'accent'],
-    description: 'Neutral and legible at small sizes. Safe for long menus.',
+    description:
+      'Modern Arabic sans, legible down to caption sizes. The safe choice for a long menu.',
   },
   {
     key: 'system-display',
+    family: 'El Messiri',
     label: 'Display',
-    stack: `"Helvetica Neue", Impact, ui-sans-serif, ${SYSTEM_ARABIC}, sans-serif`,
-    scripts: ['latin'],
+    stack: `"El Messiri", Cairo, ui-sans-serif, ${ARABIC_FALLBACK}, sans-serif`,
+    // Upgraded from Latin-only: the shipped face covers Arabic properly, so a
+    // bold heading no longer falls back mid-word.
+    scripts: ['arabic', 'latin'],
     character: 'display',
     roles: ['heading', 'accent'],
-    description: 'Headline weight for bold compositions. Latin only — Arabic falls back.',
+    description:
+      'Arabic display weight with real presence. Built for a headline, wrong for a paragraph.',
   },
   {
     key: 'system-mono',
+    family: null,
     label: 'Tabular',
     stack: 'ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace',
     scripts: ['latin'],
     character: 'mono',
     roles: ['price'],
-    description: 'Figures align in a column. The reason prices stop looking ragged.',
+    description:
+      'Figures align in a column. The reason prices stop looking ragged. Uses the reader\'s own monospace face — no download.',
   },
   {
     key: 'arabic-naskh',
-    label: 'Naskh',
-    stack: `"Noto Naskh Arabic", "Amiri", "Traditional Arabic", ${SYSTEM_ARABIC}, serif`,
+    family: 'Amiri',
+    label: 'Amiri',
+    stack: `Amiri, "Noto Naskh Arabic", "Traditional Arabic", ${ARABIC_FALLBACK}, serif`,
     scripts: ['arabic', 'latin'],
     character: 'serif',
     roles: ['heading', 'body', 'accent'],
@@ -84,12 +111,34 @@ export const FONT_FACES: readonly FontFace[] = [
   },
   {
     key: 'arabic-kufi',
-    label: 'Kufi',
-    stack: `"Noto Kufi Arabic", "Segoe UI", ${SYSTEM_ARABIC}, sans-serif`,
+    family: 'Tajawal',
+    label: 'Geometric',
+    stack: `Tajawal, Cairo, "Noto Kufi Arabic", ${ARABIC_FALLBACK}, sans-serif`,
     scripts: ['arabic', 'latin'],
     character: 'display',
+    roles: ['heading', 'body', 'accent'],
+    description: 'Geometric Arabic. Contemporary, not antique — the minimal and modern themes lean on it.',
+  },
+  {
+    key: 'latin-editorial',
+    family: 'Playfair Display',
+    label: 'Editorial Serif',
+    stack: `"Playfair Display", Amiri, ui-serif, Georgia, ${ARABIC_FALLBACK}, serif`,
+    scripts: ['latin'],
+    character: 'serif',
     roles: ['heading', 'accent'],
-    description: 'Geometric Arabic display. Contemporary, not antique.',
+    description:
+      'High-contrast Latin serif for a masthead. Arabic falls back to Amiri, which is a real pairing rather than an accident.',
+  },
+  {
+    key: 'latin-neutral',
+    family: 'Inter',
+    label: 'Neutral Sans',
+    stack: `Inter, Cairo, ui-sans-serif, system-ui, ${ARABIC_FALLBACK}, sans-serif`,
+    scripts: ['latin'],
+    character: 'sans',
+    roles: ['body', 'price', 'accent'],
+    description: 'Neutral Latin sans with excellent figures. Pairs with Cairo for Arabic.',
   },
 ];
 
@@ -180,4 +229,36 @@ export function latinOnlyRoles(choice: TypographyChoice): FontRole[] {
   }
 
   return roles;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Loading                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The files a page should preload, given the faces it will actually draw with
+ * (§33).
+ *
+ * Only the *body* weight of each chosen family, and only the script the page is
+ * being rendered in: an Arabic menu has no use for the Latin subset, and
+ * preloading a face the page never draws is worse than not preloading at all —
+ * it competes for bandwidth with the one it does need.
+ *
+ * Everything else still loads, lazily, from the `@font-face` rules in
+ * `src/design/fonts.css`; this only decides what is worth fetching early.
+ */
+export function preloadFontsFor(
+  keys: readonly (string | null | undefined)[],
+  script: 'arabic' | 'latin',
+): string[] {
+  const families = new Set<string>();
+
+  for (const key of keys) {
+    const face = BY_KEY.get(key ?? '');
+    if (face?.family) families.add(face.family);
+  }
+
+  return [...families]
+    .map((family) => `/fonts/${family.toLowerCase().replace(/\s+/g, '-')}-400-${script}.woff2`)
+    .sort();
 }

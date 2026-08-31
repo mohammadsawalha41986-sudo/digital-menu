@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { resolveFont } from '@/menu-studio/typography';
 
 /**
  * Brand token emission — the *theme* half of template/theme separation
@@ -28,16 +29,17 @@ export interface BrandTokens {
   radiusScale: string;
 }
 
-const FONT_STACK_VARIABLE: Record<FontKey, string> = {
-  'system-sans': 'var(--sys-font-stack-sans)',
-  'system-serif': 'var(--sys-font-stack-serif)',
-  'system-mono': 'var(--sys-font-stack-mono)',
-};
+/**
+ * Font keys resolve through the studio's catalogue rather than through a second
+ * mapping kept in step by hand (§164). Every key it knows is therefore
+ * available here, including the ones added when the platform started shipping
+ * real webfonts — an unknown key still falls back to the body sans.
+ */
 
 const RADIUS_SCALES: readonly RadiusScale[] = ['none', 'sm', 'md', 'lg'];
 
 function fontStack(key: string): string {
-  return FONT_STACK_VARIABLE[key as FontKey] ?? FONT_STACK_VARIABLE['system-sans'];
+  return resolveFont(key, 'system-sans').stack;
 }
 
 function radiusScale(key: string): RadiusScale {

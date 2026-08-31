@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '../design/fonts.css';
 @import '../design/tokens.css';
 @import '../templates/editorial/editorial.css';
 @import '../templates/luxury/luxury.css';

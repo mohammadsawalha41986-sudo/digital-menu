@@ -127,9 +127,10 @@
    * arrive with the template system (Phase 8) — the token indirection means
    * adding them changes this block, not the components.
    */
-  --sys-font-stack-sans: ui-sans-serif, system-ui, 'Segoe UI', 'Noto Sans Arabic', 'Noto Sans',
+  --sys-font-stack-sans: Cairo, Inter, ui-sans-serif, system-ui, 'Segoe UI', 'Noto Sans Arabic', 'Noto Sans',
     sans-serif;
-  --sys-font-stack-serif: ui-serif, Georgia, 'Noto Naskh Arabic', 'Times New Roman', serif;
+  --sys-font-stack-serif: Amiri, 'Playfair Display', ui-serif, Georgia, 'Noto Naskh Arabic',
+    'Times New Roman', serif;
   --sys-font-stack-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
 }
 
