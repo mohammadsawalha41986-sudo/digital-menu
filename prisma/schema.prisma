@@ -249,6 +249,21 @@ model Menu {
   titleEn    String?
   sortOrder  Int        @default(0)
 
+  /// Scheduling (master spec §57). A breakfast menu, a Ramadan menu, a
+  /// seasonal one: outside its window the menu simply is not served.
+  ///
+  /// Evaluated at read time from the stored window rather than by a job
+  /// flipping a flag, for the same reason offers are: a cron that fails must
+  /// never leave last month's menu on a customer's phone.
+  startsAt DateTime?
+  endsAt   DateTime?
+  /// Daily window, `HH:MM`, for a menu served only at certain hours. Both or
+  /// neither; a closing time before the opening one runs past midnight.
+  dailyFrom String?
+  dailyTo   String?
+  /// Zone the daily window is read in. Falls back to the business's own.
+  timezone  String?
+
   currentVersionId String? @unique
 
   createdAt DateTime @default(now())

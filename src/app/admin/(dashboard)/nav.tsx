@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { href: '/admin', label: 'Dashboard', exact: true, superAdminOnly: false },
   { href: '/admin/businesses', label: 'Businesses', exact: false, superAdminOnly: false },
+  { href: '/admin/search', label: 'Search', exact: false, superAdminOnly: false },
   { href: '/admin/staff', label: 'Staff', exact: false, superAdminOnly: true },
   { href: '/admin/api-keys', label: 'API keys', exact: false, superAdminOnly: true },
   { href: '/admin/account', label: 'Account', exact: false, superAdminOnly: false },
