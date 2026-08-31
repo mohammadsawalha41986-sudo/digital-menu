@@ -273,6 +273,21 @@ model MenuVersion {
   publishedById String?
   notes         String?
 
+  /// The menu exactly as it stood when this version was published: categories,
+  /// items, prices, availability, image references and the studio design row.
+  /// A version without one predates snapshotting and cannot be restored — the
+  /// history screen says so rather than pretending (master spec §84, §85).
+  snapshot Json?
+
+  /// Counts of what changed against the previous version, computed once at
+  /// publish time so the history list never has to diff on render.
+  summary Json?
+
+  /// Set when this version was created by restoring an earlier one, naming the
+  /// version restored. A rollback is itself a publish — it moves the menu
+  /// forward to old content rather than deleting history (§85).
+  restoredFromVersion Int?
+
   createdAt DateTime @default(now())
 
   menu        Menu  @relation("MenuVersions", fields: [menuId], references: [id], onDelete: Cascade)

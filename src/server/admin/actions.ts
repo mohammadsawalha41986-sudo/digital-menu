@@ -21,6 +21,7 @@ import {
   updateBusiness,
   updateCategory,
   updateMenu,
+  restoreMenuVersion,
   updateTemplate,
   updateWorkingHours,
   upsertItem,
@@ -382,5 +383,28 @@ export async function updateWorkingHoursAction(
     const business = await updateWorkingHours(user, businessId, target, hours);
     revalidateBusiness(businessId, business.publicId);
     return hours === null ? 'Opening hours cleared' : 'Opening hours saved';
+  });
+}
+
+/**
+ * Restores a published version (§85).
+ *
+ * MANAGER-level in the service, and confirmed in the UI: it replaces the
+ * current draft content. What it does not touch is the QR, the public id or
+ * the public URL — restoring content is exactly the kind of change GOALS I2
+ * says must leave a printed code working.
+ */
+export async function restoreMenuVersionAction(
+  businessId: string,
+  publicId: string,
+  menuId: string,
+  versionId: string,
+): Promise<ActionState> {
+  const user = await requireUser();
+
+  return run(async () => {
+    const result = await restoreMenuVersion(user, businessId, menuId, versionId);
+    revalidateBusiness(businessId, publicId);
+    return `Restored version ${result.restoredFrom}, published as version ${result.version.version}`;
   });
 }

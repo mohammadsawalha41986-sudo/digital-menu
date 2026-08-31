@@ -26,6 +26,7 @@ export type AuditAction =
   | 'menu.created'
   | 'menu.updated'
   | 'menu.published'
+  | 'menu.restored'
   | 'category.created'
   | 'category.updated'
   | 'category.deleted'
