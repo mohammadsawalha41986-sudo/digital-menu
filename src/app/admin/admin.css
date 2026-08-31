@@ -1367,3 +1367,66 @@
   margin: 0;
   color: var(--admin-muted, #6b7176);
 }
+
+/* --- Focal point editor ---------------------------------------------------
+   The three previews use the same object-position the templates will, so what
+   an operator sees here is what a visitor gets. */
+
+.focal {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 52rem) {
+  .focal { grid-template-columns: 1.4fr 1fr; align-items: start; }
+}
+
+.focal__canvas {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 1px solid var(--admin-border, #d4d4d4);
+  background: none;
+  cursor: crosshair;
+  inline-size: 100%;
+  line-height: 0;
+}
+
+.focal__image {
+  inline-size: 100%;
+  block-size: auto;
+  max-block-size: 24rem;
+  object-fit: contain;
+}
+
+.focal__marker {
+  position: absolute;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin-inline-start: -0.75rem;
+  margin-block-start: -0.75rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #16181a, 0 0 0 6px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.focal__previews {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.focal__preview { margin: 0; }
+
+.focal__preview img {
+  inline-size: 100%;
+  object-fit: cover;
+  border: 1px solid var(--admin-border, #d4d4d4);
+}
+
+.focal__preview figcaption {
+  font-size: 0.72rem;
+  color: var(--admin-muted, #6b7176);
+  padding-block-start: 0.2rem;
+}

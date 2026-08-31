@@ -5,6 +5,7 @@ import { getStorage } from '@/server/storage';
 import { discountPercent, liveOfferWhere } from '@/server/offers/scheduling';
 import { resolveDesign, type DesignRowLike } from '@/menu-studio/resolve';
 import { parseWorkingHours } from '@/server/business/hours';
+import { buildSrcSet, objectPosition } from '@/server/media/derivatives';
 import type {
   PublicCategory,
   PublicDownload,
@@ -376,6 +377,9 @@ const MEDIA_SELECT = {
   altEn: true,
   width: true,
   height: true,
+  focalX: true,
+  focalY: true,
+  derivativeWidths: true,
 } as const;
 
 const BRAND_SELECT = {
@@ -398,19 +402,30 @@ interface MediaRow {
   altEn: string | null;
   width: number | null;
   height: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  derivativeWidths?: number[];
 }
 
 function toImage(media: MediaRow | null | undefined): PublicImage | null {
   if (!media) return null;
 
+  const url = getStorage().publicUrl(media.storageKey);
+
   return {
     // The storage key never reaches the browser directly; the provider decides
     // what a public URL looks like (§56).
-    url: getStorage().publicUrl(media.storageKey),
+    url,
     altAr: media.altAr,
     altEn: media.altEn,
     width: media.width,
     height: media.height,
+    srcSet: buildSrcSet(url, media.derivativeWidths ?? []),
+    objectPosition: objectPosition(
+      media.focalX !== null && media.focalX !== undefined && media.focalY !== null && media.focalY !== undefined
+        ? { x: media.focalX, y: media.focalY }
+        : null,
+    ),
   };
 }
 

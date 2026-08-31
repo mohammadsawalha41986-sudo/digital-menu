@@ -25,6 +25,14 @@ export interface PublicImage {
   altEn: string | null;
   width: number | null;
   height: number | null;
+  /** `srcset` for the generated widths, or null when none exist (§50). */
+  srcSet: string | null;
+  /**
+   * CSS `object-position` from the image's focal point (§47, §48). This is
+   * what lets one upload serve 1:1, 4:5 and 16:9 without the operator
+   * uploading three copies — the browser crops, and this says what to keep.
+   */
+  objectPosition: string;
 }
 
 export interface PublicItem {

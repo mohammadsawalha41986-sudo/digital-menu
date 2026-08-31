@@ -358,6 +358,19 @@ model Media {
   originalName String?
   checksum     String?
 
+  /// Focal point as a fraction of width and height, 0–1 (master spec §47).
+  /// Templates crop *around* this rather than from the centre, so a dish at
+  /// the edge of a photograph survives a 1:1 crop. Null means centre, which is
+  /// the sensible default and is stored as null rather than 0.5 so an
+  /// explicitly-centred image is distinguishable from an unset one.
+  focalX Float?
+  focalY Float?
+
+  /// Derivative widths generated for this image, e.g. [320, 640, 1024].
+  /// Empty means none were generated — for an SVG, or an upload from before
+  /// derivatives existed. The renderer falls back to the original.
+  derivativeWidths Int[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

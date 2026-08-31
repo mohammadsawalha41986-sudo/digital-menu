@@ -57,6 +57,8 @@ export type AuditAction =
   | 'preview.link_revoked'
   | 'preview.approved'
   | 'preview.changes_requested'
+  | 'media.focal_set'
+  | 'media.alt_set'
   | 'brand.analysed'
   | 'brand.overridden'
   | 'brand.applied'

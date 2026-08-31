@@ -4,6 +4,7 @@ import { StorageError } from '@/server/storage/provider';
 import { prisma } from '@/server/db/client';
 import { getCurrentUser } from '@/server/auth/current-user';
 import { resolveTenantContext } from '@/server/tenancy/context';
+import { derivativeKey } from '@/server/media/derivatives';
 
 /**
  * Serves objects held by the local StorageProvider.
@@ -20,11 +21,16 @@ import { resolveTenantContext } from '@/server/tenancy/context';
  *  3. …**or** the requester must be staff with a grant on it. Without that
  *     second branch, an operator could not preview the images of a business
  *     they are still setting up, which is exactly when they need to.
+ *
+ * `?w=` serves a pre-generated derivative (§50). The width is checked against
+ * the widths actually generated for that row rather than passed to an image
+ * pipeline, so this cannot be turned into an on-demand resizer — the classic
+ * way an image route becomes a denial-of-service amplifier.
  */
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: Request, context: { params: Promise<{ key: string[] }> }) {
+export async function GET(request: Request, context: { params: Promise<{ key: string[] }> }) {
   const { key: segments } = await context.params;
   const key = segments.join('/');
 
@@ -34,6 +40,8 @@ export async function GET(_request: Request, context: { params: Promise<{ key: s
       contentType: true,
       sizeBytes: true,
       businessId: true,
+      storageKey: true,
+      derivativeWidths: true,
       business: { select: { status: true } },
     },
   });
@@ -46,14 +54,23 @@ export async function GET(_request: Request, context: { params: Promise<{ key: s
     return new NextResponse(null, { status: 404 });
   }
 
+  // A width is honoured only when that exact derivative was generated. An
+  // unknown width falls back to the original rather than erroring: a stale
+  // srcset should degrade, not break the page.
+  const requested = Number(new URL(request.url).searchParams.get('w'));
+  const derivative =
+    Number.isFinite(requested) && media.derivativeWidths.includes(requested)
+      ? { key: derivativeKey(media.storageKey, requested), contentType: 'image/webp' }
+      : null;
+
   try {
-    const body = await getStorage().get(key);
+    const body = await getStorage().get(derivative?.key ?? key);
     if (!body) return new NextResponse(null, { status: 404 });
 
     return new NextResponse(new Uint8Array(body), {
       headers: {
-        'content-type': media.contentType,
-        'content-length': String(media.sizeBytes),
+        'content-type': derivative?.contentType ?? media.contentType,
+        'content-length': String(body.byteLength),
         // Content is immutable per key — a replacement writes a new key — so a
         // long cache is safe and keeps the public profile fast (§115).
         'cache-control': 'public, max-age=31536000, immutable',

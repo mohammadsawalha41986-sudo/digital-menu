@@ -2,6 +2,7 @@
 
 import { ActionButton, ActionForm, Field, SelectField, TextField } from '../../../components';
 import type { ActionState } from '@/server/admin/actions';
+import { FocalEditor } from './focal-editor';
 
 interface MediaRow {
   id: string;
@@ -11,6 +12,12 @@ interface MediaRow {
   altEn: string | null;
   originalName: string | null;
   sizeKb: number;
+  width: number | null;
+  height: number | null;
+  focalX: number | null;
+  focalY: number | null;
+  derivativeWidths: number[];
+  quality: { level: 'GOOD' | 'FAIR' | 'POOR'; notes: string[] } | null;
 }
 
 export function MediaLibrary({
@@ -22,6 +29,9 @@ export function MediaLibrary({
   uploadMedia,
   assignMedia,
   deleteMedia,
+  setFocalPoint,
+  setAltText,
+  optimiseAll,
 }: {
   businessId: string;
   publicId: string;
@@ -31,6 +41,17 @@ export function MediaLibrary({
   uploadMedia: (previous: ActionState, formData: FormData) => Promise<ActionState>;
   assignMedia: (previous: ActionState, formData: FormData) => Promise<ActionState>;
   deleteMedia: (businessId: string, mediaId: string, publicId: string) => Promise<ActionState>;
+  setFocalPoint: (
+    businessId: string,
+    publicId: string,
+    mediaId: string,
+  ) => (previous: ActionState, formData: FormData) => Promise<ActionState>;
+  setAltText: (
+    businessId: string,
+    publicId: string,
+    mediaId: string,
+  ) => (previous: ActionState, formData: FormData) => Promise<ActionState>;
+  optimiseAll: (businessId: string, publicId: string) => Promise<ActionState>;
 }) {
   return (
     <>
@@ -122,6 +143,18 @@ export function MediaLibrary({
 
       <section className="admin__panel">
         <h2 className="admin__panel-title">Library</h2>
+        <div className="admin__actions">
+          <ActionButton
+            action={optimiseAll.bind(null, businessId, publicId)}
+            label="Generate smaller versions"
+            pendingLabel="Optimising…"
+          />
+          <span className="admin__hint">
+            Images uploaded from now on are optimised automatically. This catches up on
+            anything uploaded earlier — twenty at a time.
+          </span>
+        </div>
+
         {media.length === 0 ? (
           <p className="admin__empty">No images yet.</p>
         ) : (
@@ -132,8 +165,56 @@ export function MediaLibrary({
                 <img src={entry.url} alt={entry.altEn ?? entry.altAr ?? ''} loading="lazy" />
                 <figcaption className="admin__hint">
                   {entry.originalName ?? entry.id} · {entry.kind} · {entry.sizeKb} KB
+                  {entry.width && entry.height ? ` · ${entry.width}×${entry.height}` : ''}
+                  {entry.derivativeWidths.length > 0
+                    ? ` · ${entry.derivativeWidths.length} smaller versions`
+                    : ' · not optimised'}
                   {entry.altAr || entry.altEn ? '' : ' · no alt text'}
                 </figcaption>
+
+                {entry.quality ? (
+                  <p
+                    className={`admin__message admin__message--${
+                      entry.quality.level === 'POOR'
+                        ? 'error'
+                        : entry.quality.level === 'FAIR'
+                          ? 'warn'
+                          : 'ok'
+                    }`}
+                    data-quality={entry.quality.level}
+                  >
+                    {entry.quality.notes.join(' ')}
+                  </p>
+                ) : null}
+
+                <details>
+                  <summary className="admin__label">Focal point</summary>
+                  <FocalEditor
+                    url={entry.url}
+                    alt={entry.altEn ?? entry.altAr ?? ''}
+                    focalX={entry.focalX}
+                    focalY={entry.focalY}
+                    action={setFocalPoint(businessId, publicId, entry.id)}
+                  />
+                </details>
+
+                <details>
+                  <summary className="admin__label">Alt text</summary>
+                  <ActionForm
+                    action={setAltText(businessId, publicId, entry.id)}
+                    submitLabel="Save alt text"
+                  >
+                    <TextField
+                      name="altAr"
+                      label="Arabic"
+                      defaultValue={entry.altAr}
+                      dir="rtl"
+                      hint="What the image shows, for a visitor who cannot see it."
+                    />
+                    <TextField name="altEn" label="English" defaultValue={entry.altEn} dir="ltr" />
+                  </ActionForm>
+                </details>
+
                 <ActionButton
                   action={deleteMedia.bind(null, businessId, entry.id, publicId)}
                   label="Remove"
