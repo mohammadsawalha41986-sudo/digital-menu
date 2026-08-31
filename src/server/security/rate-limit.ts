@@ -85,20 +85,24 @@ export function clearAll(): void {
 /**
  * The best client identity a request can offer.
  *
+ * Accepts either a `Request` or a bare `Headers`, because a route handler has
+ * the first and a server component has only the second.
+ *
  * Behind a proxy the socket address is the proxy, so the forwarded chain is
  * consulted first — and only its *first* hop, because later entries are
  * attacker-controlled. When nothing identifies the caller the value is a
  * constant, which makes the whole anonymous population share one bucket:
  * strict rather than permissive, which is the correct direction to fail.
  */
-export function clientIdentity(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
+export function clientIdentity(source: Request | Headers): string {
+  const headers = source instanceof Headers ? source : source.headers;
+  const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
     const first = forwarded.split(',')[0]?.trim();
     if (first) return first;
   }
 
-  return request.headers.get('x-real-ip')?.trim() || 'unknown';
+  return headers.get('x-real-ip')?.trim() || 'unknown';
 }
 
 /** Rules used across the application, declared in one place. */

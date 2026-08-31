@@ -84,6 +84,8 @@ model User {
   uploadedFiles   PublicFileVersion[]
   importBatches   ImportBatch[]
   priceChanges    PriceHistory[]
+  previewLinks       PreviewLink[]   @relation("PreviewLinkCreator")
+  completedRequests  ChangeRequest[] @relation("ChangeRequestCompleter")
 
   @@index([role])
   @@map("users")
@@ -174,6 +176,8 @@ model Business {
   modifierGroups  ModifierGroup[]
   menuDesigns     MenuDesign[]
   brandPresets    BrandPreset[]
+  previewLinks    PreviewLink[]
+  changeRequests  ChangeRequest[]
   logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   ogImage         Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
@@ -1096,4 +1100,88 @@ model BrandPreset {
   @@unique([businessId, key])
   @@index([businessId])
   @@map("brand_presets")
+}
+
+// ---------------------------------------------------------------------------
+// CLIENT REVIEW — preview links and approval without an account.
+// ---------------------------------------------------------------------------
+
+/// What the client did with a preview link (master spec §72, §139, §140).
+enum ReviewState {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+/// A shareable, expiring link that lets a client see their profile before it
+/// is published, and approve it or ask for changes — without an account, a
+/// password, or a dashboard (§71, §139).
+///
+/// The token is stored hashed, exactly as an API key is: a leaked database
+/// row must not hand over working preview links. What is shown once, at
+/// creation, is the only time the plaintext exists.
+model PreviewLink {
+  id         String @id @default(cuid())
+  businessId String
+
+  /// Short public handle, used in the URL beside the secret.
+  key String @unique
+
+  /// SHA-256 of the secret. The secret itself is never stored.
+  tokenHash String
+
+  /// Who the link was made for, so the record is meaningful later. Free text:
+  /// a client is not a user of this system and has no account to reference.
+  recipientNote String?
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  state       ReviewState @default(PENDING)
+  respondedAt DateTime?
+  /// The client's own words when asking for changes. Displayed to staff and
+  /// never interpreted as an instruction by anything automatic.
+  responseNote String?
+  /// How the client identified themselves when responding. Optional and
+  /// self-declared; never treated as authentication.
+  respondedBy String?
+
+  viewCount  Int       @default(0)
+  lastViewed DateTime?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy      User?           @relation("PreviewLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  changeRequests ChangeRequest[]
+
+  @@index([businessId, createdAt])
+  @@map("preview_links")
+}
+
+/// A change the client asked for, recorded so a managed service can work
+/// through them (§73, §140). Deliberately not a ticketing system: a note, who
+/// it came from, and whether it is done.
+model ChangeRequest {
+  id         String  @id @default(cuid())
+  businessId String
+  /// Set when the request arrived through a preview link.
+  previewLinkId String?
+
+  body String
+
+  isDone      Boolean   @default(false)
+  completedAt DateTime?
+  completedById String?
+
+  createdAt DateTime @default(now())
+
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  previewLink PreviewLink? @relation(fields: [previewLinkId], references: [id], onDelete: SetNull)
+  completedBy User?        @relation("ChangeRequestCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, isDone, createdAt])
+  @@map("change_requests")
 }

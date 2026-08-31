@@ -93,3 +93,18 @@ describe('rate limiting', () => {
     });
   });
 });
+
+describe('client identity from bare headers', () => {
+  it('reads a Headers object the same way it reads a Request', () => {
+    const headers = new Headers({ 'x-forwarded-for': '203.0.113.9, 10.0.0.1' });
+    const request = new Request('https://example.test', { headers });
+
+    // A server component has only Headers; a route handler has the Request.
+    expect(clientIdentity(headers)).toBe('203.0.113.9');
+    expect(clientIdentity(request)).toBe(clientIdentity(headers));
+  });
+
+  it('falls back to the strict shared bucket for bare headers too', () => {
+    expect(clientIdentity(new Headers())).toBe('unknown');
+  });
+});
