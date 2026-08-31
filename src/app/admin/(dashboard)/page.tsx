@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireUser } from '@/server/auth/current-user';
 import { prisma } from '@/server/db/client';
 import { listBusinessesForUser } from '@/server/admin/business-service';
+import { getAttention } from '@/server/quality/attention';
 
 /**
  * Dashboard home (master spec §19).
@@ -20,8 +21,17 @@ export default async function DashboardPage() {
 
   const visibleIds = businesses.map((business) => business.id);
 
-  const [activeProfiles, branches, menus, items, profileViews, qrScans, recentAudits] =
-    await Promise.all([
+  const [
+    attention,
+    activeProfiles,
+    branches,
+    menus,
+    items,
+    profileViews,
+    qrScans,
+    recentAudits,
+  ] = await Promise.all([
+    getAttention(user),
     prisma.business.count({ where: { id: { in: visibleIds }, status: 'ACTIVE' } }),
     prisma.branch.count({ where: { businessId: { in: visibleIds } } }),
     prisma.menu.count({ where: { businessId: { in: visibleIds }, status: 'ACTIVE' } }),
@@ -66,6 +76,59 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </header>
+
+      {/* Needs attention comes before the totals: §144 asks the dashboard to
+          answer "what needs my attention?" first, and a row of healthy-looking
+          counts above the problems buries them. */}
+      <section className="admin__panel" aria-labelledby="attention-heading">
+        <h2 className="admin__panel-title" id="attention-heading">
+          Needs attention
+        </h2>
+
+        {attention.length === 0 ? (
+          <p className="admin__message admin__message--ok" role="status">
+            Nothing outstanding across {businesses.length} business
+            {businesses.length === 1 ? '' : 'es'}.
+          </p>
+        ) : (
+          <ul className="admin__findings">
+            {attention.map((item) => (
+              <li key={item.code} data-attention={item.code} data-severity={item.severity}>
+                <span className="admin__finding-area">
+                  {item.severity === 'ERROR'
+                    ? 'Must fix'
+                    : item.severity === 'WARNING'
+                      ? 'Review'
+                      : 'Note'}
+                </span>
+                <span className="admin__finding-message">
+                  {item.label}
+                  {item.businesses.length > 0 ? (
+                    <span className="admin__hint">
+                      {' '}
+                      —{' '}
+                      {item.businesses.map((business, index) => (
+                        <span key={business.id}>
+                          {index > 0 ? ', ' : ''}
+                          <Link href={`/admin/businesses/${business.id}/health`}>
+                            {business.name}
+                          </Link>
+                        </span>
+                      ))}
+                      {item.count > item.businesses.length ? ' …' : ''}
+                    </span>
+                  ) : null}
+                </span>
+                {item.href ? (
+                  <Link href={item.href} className="admin__button admin__button--secondary">
+                    Open
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="admin__cards" aria-label="Overview">
         <Metric label="Businesses" value={businesses.length} />
