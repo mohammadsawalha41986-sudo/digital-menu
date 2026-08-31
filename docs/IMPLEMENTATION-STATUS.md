@@ -18,7 +18,7 @@ Feature grades (A–E) refer to `docs/AUDIT.md`.
 | `npm test` | **311 passed**, 124 skipped (was 242 / 124) |
 | `npm run build` | succeeds |
 | Integration + E2E | **BLOCKED** — no database, no Docker daemon in this environment |
-| Live deployment | **BLOCKED — ACCESS REQUIRED** (no deployment credentials reachable) |
+| Live deployment | **Not attempted, by instruction.** Railway access *is* available (corrected below). |
 
 ---
 
@@ -98,4 +98,36 @@ than dropped. The seed had no offers at all; it now demonstrates all three.
 |---|---|
 | 2 — real database testing | No PostgreSQL and no Docker daemon here. 124 tests and all E2E run in CI only. |
 | 57 — production storage (R2) | No credentials. The abstraction is in place; `STORAGE_PROVIDER=r2` throws by design rather than pretending. |
-| 60–63 — deployment and live verification | **ACCESS REQUIRED.** No deployment credentials reachable from this session. Nothing in this repository claims a live deployment. |
+| 60–63 — deployment and live verification | **Held at the deployment boundary, by instruction.** Railway access is available — the earlier "no credentials" note was wrong and is corrected here. See *Deployment facts* below. |
+
+
+---
+
+## Deployment facts, established rather than assumed
+
+An earlier revision of this file said deployment was blocked for want of
+credentials. That was wrong, and the correction matters:
+
+| Fact | Value |
+|---|---|
+| Railway account | authenticated as the repository owner |
+| Project | `scintillating-prosperity` |
+| Services | `digital-menu`, `Postgres`, `Redis` |
+| Live URL | `digital-menu-production-2b95.up.railway.app` (port 8080) |
+| **Branch the service deploys** | **`claude/goals-ohhrg2` — not this branch** |
+| Persistent volume | mounted at `/app/storage` |
+| Last successful deploy | 2026-08-28 |
+
+Two consequences:
+
+1. **This branch is not auto-deployed.** Shipping it would mean either
+   repointing the service's source branch or merging into
+   `claude/goals-ohhrg2`. Both are decisions about the owner's release
+   process, not incidental steps.
+2. **This session cannot verify a live deployment.** Its egress proxy refuses
+   the `railway.app` domain, so the live smoke tests of Phases 61–63 cannot be
+   run from here. Deploying without being able to confirm the result is
+   precisely what Phase 64 forbids.
+
+Work therefore stops at the deployment boundary by instruction, with the
+migrations and steps documented for whoever runs them.
