@@ -52,6 +52,9 @@ export default async function BusinessPage({
           <Link href={`/admin/businesses/${business.id}/menus`} className="admin__button admin__button--secondary">
             Menus ({business.menus.length})
           </Link>
+          <Link href={`/admin/businesses/${business.id}/health`} className="admin__button admin__button--secondary">
+            Profile health
+          </Link>
           <Link href={`/admin/businesses/${business.id}/hours`} className="admin__button admin__button--secondary">
             Opening hours
           </Link>

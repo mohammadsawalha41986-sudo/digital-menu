@@ -1256,3 +1256,89 @@
   display: grid;
   justify-items: center;
 }
+
+/* --- Profile health -------------------------------------------------------
+   The score is the first thing read and the findings are the second, so the
+   score is set large and the findings are a list rather than a table: a table
+   implies columns worth comparing, and these rows are read one at a time. */
+
+.admin__score {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+  text-align: end;
+}
+
+.admin__score strong {
+  font-size: 2.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin__score--blocked strong {
+  color: var(--admin-danger, #b3261e);
+}
+
+.admin__checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin__checklist li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding-block: 0.35rem;
+  border-block-end: 1px solid var(--admin-border, #e5e5e5);
+}
+
+.admin__checklist-mark {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.35rem;
+  block-size: 1.35rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--admin-muted, #6b7176);
+}
+
+[data-status='PASS'] .admin__checklist-mark { background: #2e7d32; }
+[data-status='INFO'] .admin__checklist-mark { background: #6b7176; }
+[data-status='WARNING'] .admin__checklist-mark { background: #b26a00; }
+[data-status='ERROR'] .admin__checklist-mark { background: #b3261e; }
+
+.admin__checklist-label { font-weight: 600; }
+
+.admin__findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin__findings li {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-block-end: 1px solid var(--admin-border, #e5e5e5);
+}
+
+@media (max-width: 40rem) {
+  .admin__findings li { grid-template-columns: 1fr; }
+}
+
+.admin__finding-area {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted, #6b7176);
+}
