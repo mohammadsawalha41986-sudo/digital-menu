@@ -6,6 +6,8 @@ import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { ParseError, parseSpreadsheet } from '@/server/import/parse';
 import { validateRows } from '@/server/import/validate';
+import { planImport, type ExistingItem } from '@/server/import/plan';
+import { IMPORT_COLUMNS } from '@/server/import/columns';
 import { executeImport, rollbackImport } from '@/server/import/execute';
 import { prisma } from '@/server/db/client';
 import type { ActionState } from './actions';
@@ -44,6 +46,25 @@ export interface ImportPreviewState extends ActionState {
       problem: string;
       suggestion: string;
     }[];
+    /**
+     * What the import will *do*, not merely whether the file parses (§15).
+     * Counts, the price moves in full, and the conflicts worth resolving
+     * before pressing the button.
+     */
+    plan: {
+      counts: { create: number; update: number; unchanged: number; error: number };
+      priceChanges: {
+        rowNumber: number;
+        name: string;
+        from: string;
+        to: string;
+      }[];
+      updates: { rowNumber: number; name: string; changes: string[] }[];
+      conflicts: { kind: string; subject: string; detail: string; rows: number[] }[];
+      newCategories: string[];
+    };
+    /** Every column the importer understands, so the mapping can be corrected. */
+    availableColumns: { key: string; label: string; required: boolean }[];
     /** Encoded rows, handed back on confirmation so the file is parsed once. */
     payload: string;
   };
@@ -79,12 +100,72 @@ export async function previewImportAction(
   try {
     const parsed = await parseSpreadsheet(new Uint8Array(await file.arrayBuffer()), file.name);
 
+    // A corrected mapping arrives as `map_<index>` fields, so re-previewing
+    // after a fix re-reads the same file through the operator's choices
+    // rather than through the guess (§14).
+    const overrides: Record<number, string> = {};
+    for (const [name, value] of formData.entries()) {
+      const match = /^map_(\d+)$/.exec(name);
+      if (match && typeof value === 'string' && value) {
+        overrides[Number(match[1])] = value;
+      }
+    }
+
+    const mapping =
+      Object.keys(overrides).length > 0
+        ? { ...parsed.suggestedMapping, ...overrides }
+        : parsed.suggestedMapping;
+
     const validation = validateRows({
       currency: business.currency,
-      mapping: parsed.suggestedMapping,
+      mapping,
       rows: parsed.rows,
       rowNumbers: parsed.rowNumbers,
     });
+
+    // Existing items, read once, so the plan can say new versus updated.
+    const existingRows = await prisma.menuItem.findMany({
+      where: { businessId },
+      select: {
+        itemCode: true,
+        nameAr: true,
+        nameEn: true,
+        descriptionAr: true,
+        descriptionEn: true,
+        priceMinor: true,
+        calories: true,
+        availability: true,
+        isFeatured: true,
+        category: { select: { key: true, nameAr: true } },
+      },
+    });
+
+    const existing: ExistingItem[] = existingRows.map((item) => ({
+      itemCode: item.itemCode,
+      nameAr: item.nameAr,
+      nameEn: item.nameEn,
+      descriptionAr: item.descriptionAr,
+      descriptionEn: item.descriptionEn,
+      priceMinor: item.priceMinor,
+      calories: item.calories,
+      availability: item.availability,
+      isFeatured: item.isFeatured,
+      categoryKey: item.category.key,
+      categoryNameAr: item.category.nameAr,
+    }));
+
+    const issuesByRow = new Map<number, string[]>();
+    for (const issue of validation.issues) {
+      issuesByRow.set(issue.rowNumber, [
+        ...(issuesByRow.get(issue.rowNumber) ?? []),
+        `${issue.column}: ${issue.problem}`,
+      ]);
+    }
+
+    const plan = planImport(validation.rows, existing, { issuesByRow });
+
+    const money = (minor: number | null) =>
+      minor === null ? '—' : (minor / 100).toFixed(2);
 
     return {
       ok: true,
@@ -95,7 +176,7 @@ export async function previewImportAction(
       preview: {
         fileName: file.name,
         headers: parsed.headers,
-        mapping: parsed.suggestedMapping,
+        mapping,
         missingRequiredColumns: validation.missingRequiredColumns,
         validCount: validation.validCount,
         invalidCount: validation.invalidCount,
@@ -110,6 +191,35 @@ export async function previewImportAction(
           problem: row.issues[0]?.problem ?? null,
         })),
         issues: validation.issues.slice(0, 100),
+        plan: {
+          counts: plan.counts,
+          priceChanges: plan.priceChanges.slice(0, 200).map((row) => ({
+            rowNumber: row.rowNumber,
+            name: row.nameEn ?? row.nameAr,
+            from: money(row.priceChange?.from ?? null),
+            to: money(row.priceChange?.to ?? null),
+          })),
+          updates: plan.rows
+            .filter((row) => row.outcome === 'UPDATE')
+            .slice(0, 200)
+            .map((row) => ({
+              rowNumber: row.rowNumber,
+              name: row.nameEn ?? row.nameAr,
+              changes: row.changes.map((change) => change.field),
+            })),
+          conflicts: plan.conflicts.map((conflict) => ({
+            kind: conflict.kind,
+            subject: conflict.subject,
+            detail: conflict.detail,
+            rows: conflict.rowNumbers.slice(0, 20),
+          })),
+          newCategories: plan.newCategories,
+        },
+        availableColumns: IMPORT_COLUMNS.map((column) => ({
+          key: column.key,
+          label: column.labelEn,
+          required: column.required ?? false,
+        })),
         payload: Buffer.from(JSON.stringify(validation.rows)).toString('base64'),
       },
     };
