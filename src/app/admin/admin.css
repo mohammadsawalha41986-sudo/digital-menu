@@ -1440,3 +1440,56 @@
   gap: 0.15rem;
   font-size: 0.85rem;
 }
+
+/* --- Service mode ---------------------------------------------------------
+   Large targets and no decoration. Every ornament here is something between a
+   busy operator and the button they need (§22). */
+
+.quick__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.quick__row {
+  display: grid;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem;
+  border: 1px solid var(--admin-border, #e5e5e5);
+  border-radius: 0.4rem;
+}
+
+@media (min-width: 40rem) {
+  .quick__row { grid-template-columns: 1fr auto auto; }
+}
+
+.quick__row[data-unavailable] {
+  background: color-mix(in srgb, #b3261e 7%, transparent);
+  border-color: color-mix(in srgb, #b3261e 35%, transparent);
+}
+
+.quick__name { font-weight: 600; }
+
+.quick__price {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quick__input {
+  inline-size: 6.5rem;
+  min-block-size: 2.75rem;
+  font-size: 1rem;
+}
+
+.quick__search {
+  inline-size: min(100%, 20rem);
+  min-block-size: 2.75rem;
+}
+
+/* Comfortable to hit on a phone, one-handed, in a hurry. */
+.quick__row .admin__button { min-block-size: 2.75rem; }
