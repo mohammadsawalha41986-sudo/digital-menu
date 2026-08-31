@@ -469,7 +469,28 @@ model MenuItem {
   currency   String @default("SAR")
 
   /// Optional and only ever business-supplied. Never inferred (§37).
+  ///
+  /// The wider set below exists because Saudi menu regulation asks for more
+  /// than calories, and because a field the business has not filled in must be
+  /// distinguishable from one whose true value is zero. Every one is nullable
+  /// for that reason: absent is absent, never 0 (§105; GOALS I9).
   calories      Int?
+  /// Milligrams. Named in SFDA guidance alongside calories.
+  caffeineMg    Int?
+  sodiumMg      Int?
+  /// Grams, to one decimal, stored as tenths so no float reaches the database.
+  proteinDeci   Int?
+  carbsDeci     Int?
+  fatDeci       Int?
+  fibreDeci     Int?
+  sugarDeci     Int?
+  /// Set by the business when it wants the high-salt notice shown.
+  highSalt      Boolean @default(false)
+  /// Free text the business supplies, e.g. a walking-equivalent statement.
+  /// Never computed by the platform: a calorie-burn figure depends on the
+  /// person, and inventing one would be a health claim (§05, §105).
+  activityNoteAr String?
+  activityNoteEn String?
   servingSizeAr String?
   servingSizeEn String?
   ingredientsAr String?
