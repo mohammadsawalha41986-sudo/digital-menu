@@ -15,7 +15,7 @@ Feature grades (A–E) refer to `docs/AUDIT.md`.
 | `npm ci` on a clean clone | **passes** (was failing — Phase 1) |
 | `npm run lint` | clean |
 | `npm run typecheck` | clean |
-| `npm test` | **311 passed**, 124 skipped (was 242 / 124) |
+| `npm test` | **457 passed**, 167 skipped (was 242 / 124) |
 | `npm run build` | succeeds |
 | Integration + E2E | **BLOCKED** — no database, no Docker daemon in this environment |
 | Live deployment | **Not attempted, by instruction.** Railway access *is* available (corrected below). |
@@ -66,6 +66,30 @@ designs in each of the ten families. A second `HERO` offer is rehomed rather
 than dropped. The seed had no offers at all; it now demonstrates all three.
 
 ---
+
+## Also done since
+
+| Phase | What |
+|---|---|
+| 7–9 | Menu version snapshots, draft-vs-live comparison, rollback |
+| 10 | Profile Health, and the attention dashboard built on it |
+| 3 (rest) | Staff accounts, roles, grants, password reset and change |
+| 39–40 | Client preview links and approval, with change requests |
+| 41 | Agency dashboard answering "what needs my attention?" |
+| 19–23 | Import change preview, conflict centre, editable mapping, drag-and-drop |
+| 29–30 | Nutrition fields and the readiness layer |
+| 16–18 | Media Studio: focal points, WebP derivatives, quality assessment |
+| 11 | Price-history and audit-log screens |
+| 21–22 | Service mode |
+| 32 | Menu scheduling |
+| 42 | Global search |
+| 44 | QR print kit |
+| 34–36 | The printable menu and the PDF path |
+| 65 | Seven documents: PUBLISHING, QUALITY-CHECK, NUTRITION, CLIENT-APPROVAL, MEDIA-STUDIO, BRAND-IDENTITY, AGENCY-OPERATIONS |
+
+**`docs/DEPLOYMENT-READINESS.md` is the handover document**: verification state,
+the five migrations and their risks, the deployment steps, and the live smoke
+tests that have not been run.
 
 ## Remaining, in the order it should be built
 
