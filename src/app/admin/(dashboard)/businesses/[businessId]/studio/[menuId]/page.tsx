@@ -118,6 +118,9 @@ export default async function StudioEditorPage({
       <StudioEditor
         businessId={business.id}
         menuId={menu.id}
+        // Framed: the staff preview, so an unpublished menu still previews.
+        previewPath={`/admin/preview/${business.id}`}
+        // Linked: the real public address, which is what "open" should mean.
         publicPath={`/m/${business.publicId}`}
         design={{
           themeKey: design.themeKey,
