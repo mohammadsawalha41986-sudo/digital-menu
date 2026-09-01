@@ -6,6 +6,7 @@ import { upsertOffer } from '@/server/offers/service';
 import { ValidationError } from '@/server/admin/business-service';
 import { OfferWindowError } from '@/server/offers/scheduling';
 import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/context';
+import { resolveDatabase } from '../database';
 
 /**
  * Offers end to end: what the public profile actually serves, and — the part
@@ -15,10 +16,7 @@ import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/cont
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'PRM001';
 let businessId = '';

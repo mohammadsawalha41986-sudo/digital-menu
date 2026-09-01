@@ -9,6 +9,7 @@ import { validateRows } from '@/server/import/validate';
 import { executeImport, rollbackImport } from '@/server/import/execute';
 import { buildImportTemplate, exportMenu } from '@/server/import/export';
 import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/context';
+import { resolveDatabase } from '../database';
 
 /**
  * THE BULK-EDIT ROUND TRIP (master spec §67, §66, §76).
@@ -24,10 +25,7 @@ import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/cont
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'SHT001';
 let businessId = '';

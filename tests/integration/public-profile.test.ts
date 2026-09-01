@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma/client';
 import { getPublicProfile } from '@/server/profile/repository';
+import { resolveDatabase } from '../database';
 
 /**
  * Integration coverage for the read path a QR scan takes. Requires a migrated,
@@ -15,10 +16,7 @@ import { getPublicProfile } from '@/server/profile/repository';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 afterAll(async () => {
   await prisma.$disconnect();

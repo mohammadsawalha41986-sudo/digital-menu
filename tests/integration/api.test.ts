@@ -10,6 +10,7 @@ import {
   scopeFilter,
 } from '@/server/api/auth';
 import { buildMeta, parseListQuery } from '@/server/api/response';
+import { resolveDatabase } from '../database';
 
 /**
  * API authentication and scoping.
@@ -22,10 +23,7 @@ import { buildMeta, parseListQuery } from '@/server/api/response';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 let scopedToken = '';
 let platformToken = '';

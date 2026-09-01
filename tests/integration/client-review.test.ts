@@ -10,6 +10,7 @@ import {
   revokePreviewLink,
 } from '@/server/review/service';
 import { resetEnvCache } from '@/lib/env';
+import { resolveDatabase } from '../database';
 
 /**
  * The client review journey (master spec §71–§73, §139, §140).
@@ -23,10 +24,7 @@ import { resetEnvCache } from '@/lib/env';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const EMAIL = 'review-fixture@example.test';
 let user = { id: '', role: 'SUPER_ADMIN' as const };

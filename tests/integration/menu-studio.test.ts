@@ -10,6 +10,7 @@ import {
   setItemModifiers,
 } from '@/server/menu-studio/modifiers';
 import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/context';
+import { resolveDatabase } from '../database';
 
 /**
  * The Menu Studio's central promise, made executable (Menu Studio §4):
@@ -25,10 +26,7 @@ import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/cont
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'STD001';
 const OTHER_PUBLIC_ID = 'STD002';
