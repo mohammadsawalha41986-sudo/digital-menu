@@ -185,6 +185,7 @@ export function CasualTemplate({ profile, locale, dictionary }: TemplateRenderPr
 
       <DownloadsSection
         downloads={profile.downloads}
+        printHref={`/m/${profile.publicId}/print`}
         locale={locale}
         dictionary={dictionary}
         prefix="casual"

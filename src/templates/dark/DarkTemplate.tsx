@@ -163,6 +163,7 @@ export function DarkTemplate({ profile, locale, dictionary }: TemplateRenderProp
 
       <DownloadsSection
         downloads={profile.downloads}
+        printHref={`/m/${profile.publicId}/print`}
         locale={locale}
         dictionary={dictionary}
         prefix="dark"

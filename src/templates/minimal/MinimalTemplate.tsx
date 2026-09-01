@@ -144,6 +144,7 @@ export function MinimalTemplate({ profile, locale, dictionary }: TemplateRenderP
 
       <DownloadsSection
         downloads={profile.downloads}
+        printHref={`/m/${profile.publicId}/print`}
         locale={locale}
         dictionary={dictionary}
         prefix="minimal"

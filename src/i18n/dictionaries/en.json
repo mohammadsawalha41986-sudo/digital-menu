@@ -27,7 +27,8 @@
     "unavailable": "Currently unavailable",
     "featured": "Featured",
     "menuComingSoon": "The menu has not been published yet",
-    "poweredBy": "Digital menu by"
+    "poweredBy": "Digital menu by",
+    "printableMenu": "Printable menu"
   },
   "allergens": {
     "gluten": "Gluten",

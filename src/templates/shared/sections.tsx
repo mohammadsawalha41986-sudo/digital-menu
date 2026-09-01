@@ -122,13 +122,18 @@ export function DownloadsSection({
   locale,
   dictionary,
   prefix,
+  printHref,
 }: {
   downloads: PublicDownload[];
   locale: Locale;
   dictionary: Dictionary;
   prefix: string;
+  /** The printable menu, offered alongside whatever files the business uploaded. */
+  printHref?: string;
 }) {
-  if (downloads.length === 0) return null;
+  // The printable menu alone is reason enough for the section: a business with
+  // no uploaded files still has a menu worth taking away.
+  if (downloads.length === 0 && !printHref) return null;
 
   return (
     <section className={`${prefix}__downloads`} aria-labelledby={`${prefix}-downloads`}>
@@ -137,6 +142,14 @@ export function DownloadsSection({
       </h2>
 
       <ul className={`${prefix}__download-list`}>
+        {printHref ? (
+          <li className={`${prefix}__download`} data-download="print">
+            <a href={printHref} className={`${prefix}__download-link`} data-event="pdf_open">
+              {dictionary.profile.printableMenu}
+            </a>
+          </li>
+        ) : null}
+
         {downloads.map((download) => (
           <li key={download.key} className={`${prefix}__download`}>
             <a

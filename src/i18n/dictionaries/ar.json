@@ -27,7 +27,8 @@
     "unavailable": "غير متوفر حالياً",
     "featured": "مميز",
     "menuComingSoon": "لم يتم نشر المنيو بعد",
-    "poweredBy": "منيو رقمي من"
+    "poweredBy": "منيو رقمي من",
+    "printableMenu": "نسخة للطباعة"
   },
   "allergens": {
     "gluten": "الغلوتين",

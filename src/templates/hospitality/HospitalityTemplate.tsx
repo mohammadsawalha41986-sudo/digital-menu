@@ -202,6 +202,7 @@ export function HospitalityTemplate({ profile, locale, dictionary }: TemplateRen
 
       <DownloadsSection
         downloads={profile.downloads}
+        printHref={`/m/${profile.publicId}/print`}
         locale={locale}
         dictionary={dictionary}
         prefix="hospitality"

@@ -276,12 +276,25 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
         ))}
       </main>
 
-      {profile.downloads.length > 0 ? (
-        <section className="editorial__downloads" aria-labelledby="downloads-heading">
+      {/* Always present: even with no uploaded files, the business has a menu
+          worth taking away, and the printable version is it. */}
+      <section className="editorial__downloads" aria-labelledby="downloads-heading">
           <h2 id="downloads-heading" className="editorial__section-title">
             {dictionary.profile.downloads}
           </h2>
           <ul className="editorial__download-list">
+            <li className="editorial__download" data-download="print">
+              <a
+                href={`/m/${profile.publicId}/print`}
+                className="editorial__download-link"
+                data-event="pdf_open"
+              >
+                <span className="editorial__download-title">
+                  {dictionary.profile.printableMenu}
+                </span>
+              </a>
+            </li>
+
             {profile.downloads.map((download) => (
               <li key={download.key} className="editorial__download">
                 <a
@@ -315,8 +328,7 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+      </section>
 
       <footer className="editorial__footer">
         {profile.branches.length > 0 ? (
