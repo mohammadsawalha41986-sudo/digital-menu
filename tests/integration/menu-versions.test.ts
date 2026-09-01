@@ -11,6 +11,7 @@ import {
 import { getPublicProfile } from '@/server/profile/repository';
 import { renderQr } from '@/server/qr/service';
 import { resetEnvCache } from '@/lib/env';
+import { resolveDatabase } from '../database';
 
 /**
  * The rollback journey, end to end (master spec §84, §85; completion Phase 7).
@@ -24,10 +25,7 @@ import { resetEnvCache } from '@/lib/env';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const SLUG = 'version-fixture';
 let businessId = '';

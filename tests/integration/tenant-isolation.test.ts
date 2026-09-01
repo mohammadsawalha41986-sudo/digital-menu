@@ -5,6 +5,7 @@ import {
   TenantAccessError,
   type AuthenticatedUser,
 } from '@/server/tenancy/context';
+import { resolveDatabase } from '../database';
 import {
   ValidationError,
   deleteBranch,
@@ -30,10 +31,7 @@ import {
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const SUFFIX = 'ISO';
 

@@ -50,7 +50,11 @@ jobs:
 
       - run: npm run lint
       - run: npm run typecheck
+      # A missing database must fail the run, not quietly remove a third of the
+      # suite from it. Without this a broken Postgres service reports green.
       - run: npm test
+        env:
+          REQUIRE_DATABASE: '1'
       - run: npm run build
 
       - name: Install Playwright browser
@@ -59,6 +63,7 @@ jobs:
       - run: npm run test:e2e
         env:
           SEED_ADMIN_PASSWORD: ci-password-for-e2e-only
+          REQUIRE_DATABASE: '1'
 
       - uses: actions/upload-artifact@v4
         if: failure()

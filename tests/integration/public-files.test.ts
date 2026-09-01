@@ -16,6 +16,7 @@ import {
   uploadPublicFile,
 } from '@/server/files/service';
 import { FileValidationError } from '@/server/files/validation';
+import { resolveDatabase } from '../database';
 
 /**
  * File lifecycle, including the invariant that gives this phase its shape:
@@ -25,10 +26,7 @@ import { FileValidationError } from '@/server/files/validation';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'PDF001';
 let businessId = '';

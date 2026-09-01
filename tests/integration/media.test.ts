@@ -9,14 +9,12 @@ import { assignMedia, deleteMedia, listMedia, uploadMedia } from '@/server/media
 import { getPublicProfile } from '@/server/profile/repository';
 import { FileValidationError } from '@/server/files/validation';
 import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/context';
+import { resolveDatabase } from '../database';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'MED001';
 let businessId = '';

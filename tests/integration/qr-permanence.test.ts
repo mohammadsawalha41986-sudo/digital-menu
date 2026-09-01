@@ -4,6 +4,7 @@ import { PrismaClient } from '@/generated/prisma/client';
 import { getPublicProfile } from '@/server/profile/repository';
 import { renderQr } from '@/server/qr/service';
 import { resetEnvCache } from '@/lib/env';
+import { resolveDatabase } from '../database';
 
 /**
  * THE PERMANENCE REGRESSION TEST.
@@ -26,10 +27,7 @@ import { resetEnvCache } from '@/lib/env';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'QRT001';
 const BRANCH_KEY = 'fixture-branch';

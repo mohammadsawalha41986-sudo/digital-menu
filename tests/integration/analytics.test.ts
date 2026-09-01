@@ -5,14 +5,12 @@ import { recordEvent, recordEventByPublicId } from '@/server/analytics/record';
 import { buildReport } from '@/server/analytics/report';
 import { resetEnvCache } from '@/lib/env';
 import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/context';
+import { resolveDatabase } from '../database';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'ANA001';
 const DRAFT_ID = 'ANA002';

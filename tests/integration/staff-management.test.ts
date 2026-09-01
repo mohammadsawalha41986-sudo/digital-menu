@@ -13,6 +13,7 @@ import {
 } from '@/server/admin/user-service';
 import { resolveTenantContext } from '@/server/tenancy/context';
 import { verifyPassword } from '@/server/auth/password';
+import { resolveDatabase } from '../database';
 
 /**
  * Staff management, and the two rules that matter most about it: a staff user
@@ -23,10 +24,7 @@ import { verifyPassword } from '@/server/auth/password';
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? '' });
 const prisma = new PrismaClient({ adapter });
 
-const databaseReachable = await prisma
-  .$queryRaw`SELECT 1`
-  .then(() => true)
-  .catch(() => false);
+const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const EMAILS = [
   'staff-fixture-admin@example.test',
