@@ -7,7 +7,7 @@
 | Field | Value |
 |---|---|
 | **Production branch** | `claude/goals-ohhrg2` |
-| **Production commit** | `0c6e8c90dcc3de9331612247a7dfc0a1851b46fd` |
+| **Production commit** | `e1daada1f99f31197f0f22aaedf77efff39d2f93` |
 | **Work branch** | `claude/website-audit-wev2pn` (`fd33103`) |
 | **Live URL** | `https://digital-menu-production-2b95.up.railway.app` |
 | **Railway project / service** | `scintillating-prosperity` / `digital-menu` |
@@ -17,7 +17,9 @@ Two deployments in this release window:
 
 1. **`345e276`** — 2026-09-01 05:02 UTC. The PR #2 merge. Build **SUCCESS**,
    all five migrations applied, healthcheck **passed**.
-2. **`0c6e8c9`** — 2026-09-01 05:19 UTC. The live-defect fix (see below).
+2. **`0c6e8c9`** — 05:19 UTC. Security-header fix. Build SUCCESS, no pending
+   migrations, healthcheck passed.
+3. **`e1daada`** — 05:34 UTC. The template-preview fix (see below).
 
 ---
 
@@ -76,8 +78,8 @@ longer blocked.
 | `npm run typecheck` | **PASS** |
 | `prisma migrate deploy` + `migrate status` | **PASS** — schema up to date |
 | `npm run db:seed` | **PASS** — 8 demo profiles |
-| `npm test` | **PASS — 624 passed, 0 skipped** (50 files) |
-| `npx playwright test` | **PASS — 70 passed** |
+| `npm test` | **PASS — 627 passed, 0 skipped** (50 files) |
+| `npx playwright test` | **PASS — 76 passed** |
 | `npm run build` | **PASS** |
 | Served build, headers probed | **PASS** |
 
@@ -94,12 +96,57 @@ CI sets it for both jobs.
 | Migrations | **SUCCESS** — all applied |
 | Bootstrap | staff account present, password unchanged |
 | Server start | `0.0.0.0:8080`, Next.js 16.3.3 |
-| Healthcheck `/api/health` | **SUCCEEDED** |
+| Healthcheck `/api/health` | **SUCCEEDED** on every deployment |
+| Production HTTP (last hour) | **161 requests — 158×2xx, 3×3xx, 0×4xx, 0×5xx** |
+| Application error logs | none |
 | Routes built | 50, including every new one |
 
 ---
 
-## Defect found and fixed by live-grade testing
+## Defects found and fixed
+
+### 1. The template preview was blank in production — reported by the owner
+
+Two independent causes, and both render the same way: an empty frame, with
+nothing thrown, no error logged, and no test failing. The page looks fine until
+a person looks at it.
+
+**Cause A — the security headers.** `frame-ancestors 'none'` and
+`X-Frame-Options: DENY` blocked the admin from framing its own pages. Fixed to
+same-origin in `0c6e8c9`; cross-origin framing, the actual clickjacking threat,
+stays blocked.
+
+**Cause B — the preview framed the wrong route.** Admin → Template framed
+`/m/{publicId}`, the *public* route, which serves only an ACTIVE business with
+a published menu. For a business still being built — which is exactly when
+someone chooses a template — all three frames were a **404**. The Menu Studio's
+live preview had the same defect for an unpublished menu.
+
+Both now frame `/admin/preview/{businessId}`, which the guided builder already
+used: the same renderer, the same read model, the same templates and brand
+tokens, able to see drafts, tenant-guarded, recording no analytics. The
+studio's "open" link still points at the real public URL.
+
+That route also answered an unauthenticated request with a **500**, which
+inside an iframe is a blank frame with no explanation. It redirects to login
+now.
+
+Verified in a real browser: `e2e/template-preview.spec.ts` asserts what is
+*inside* the frames — all ten template families in Arabic and English, real
+viewports at 390, 768 and 1200, a draft business previewing, template
+switching changing the design but not the dishes, and a signed-out request
+redirected rather than served.
+
+### 2. The login limiter counted successes
+
+Found while running the E2E suite. The per-client window is shared by everyone
+behind one address, and successful sign-ins counted against it — so
+twenty-five ordinary sign-ins would lock a restaurant group out of its own
+admin. A correct password now clears both windows: these limits count
+failures, which is what guessing is made of. Runs of failures are still
+stopped, per account and per client.
+
+### 3. Found by live-grade testing
 
 Running the E2E suite against a real database — possible for the first time in
 this environment — found a defect shipped in deployment 1:
