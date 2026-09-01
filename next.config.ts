@@ -18,14 +18,21 @@ import type { NextConfig } from 'next';
  *     plus `data:` for the QR previews the admin renders inline. Nothing else
  *     is allowed to embed.
  *
- * `frame-ancestors 'none'` is the modern form of X-Frame-Options; the older
- * header is sent too, because some corporate proxies still only read that one.
+ * `frame-ancestors` is the modern form of X-Frame-Options; the older header is
+ * sent too, because some corporate proxies still only read that one. Both are
+ * set to same-origin rather than deny — see the note beside them.
  */
 const CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  // 'self', not 'none': the admin frames the *real* public profile in four
+  // places — the Menu Studio's live preview, the template picker, and the
+  // guided builder's style step and preview pane. 'none' blocks same-origin
+  // framing too, which silently empties every one of those panes while the
+  // page itself looks fine. Cross-origin framing, which is the actual
+  // clickjacking threat, stays blocked.
+  "frame-ancestors 'self'",
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
@@ -39,7 +46,8 @@ const CSP = [
 const SECURITY_HEADERS = [
   { key: 'Content-Security-Policy', value: CSP },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'X-Frame-Options', value: 'DENY' },
+  // The older header's equivalent of frame-ancestors 'self'.
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   // No feature here is used by either the public profile or the admin.
   {

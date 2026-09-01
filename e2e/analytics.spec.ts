@@ -25,7 +25,15 @@ test('the interaction script reports a tapped contact action', async ({ page }) 
   await page.goto('/m/DEM001?lang=en');
   await page.getByRole('link', { name: 'WhatsApp' }).click({ noWaitAfter: true });
 
-  await expect.poll(() => beacons.length, { timeout: 5000 }).toBeGreaterThan(0);
+  // Poll for *this* beacon, not for any beacon. The profile also reports
+  // offer and category views from an IntersectionObserver as soon as the page
+  // settles, so "at least one arrived" can be satisfied by an unrelated event
+  // before the tap is reported — which makes the assertion below race.
+  await expect
+    .poll(() => beacons.filter((body) => body.includes('contact_whatsapp')).length, {
+      timeout: 5000,
+    })
+    .toBeGreaterThan(0);
 
   const payload = JSON.parse(beacons.find((body) => body.includes('contact_whatsapp')) ?? '{}');
   expect(payload.event).toBe('contact_whatsapp');

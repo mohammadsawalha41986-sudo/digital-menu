@@ -81,14 +81,22 @@ test('the generated PDF contains complete, correctly-mapped Arabic', async ({ pa
   }
 });
 
-/** Reads the Unicode values a PDF's CMaps declare, including object streams. */
+/**
+ * Reads the Unicode values a PDF's CMaps declare.
+ *
+ * Both `bfchar` (one code, one destination) and `bfrange` (a span mapped onto
+ * consecutive destinations) are handled, because Chromium emits both and a
+ * scanner that reads only the first reports letters as missing that are
+ * present.
+ */
 function extractMappedCodepoints(pdf: Buffer): Set<number> {
   const points = new Set<number>();
+  const latin = pdf.toString('latin1');
 
   const streamStart = /stream\r?\n/g;
   let match: RegExpExecArray | null;
 
-  while ((match = streamStart.exec(pdf.toString('latin1'))) !== null) {
+  while ((match = streamStart.exec(latin)) !== null) {
     const start = match.index + match[0].length;
     const end = pdf.indexOf('endstream', start);
     if (end === -1) continue;
@@ -103,11 +111,22 @@ function extractMappedCodepoints(pdf: Buffer): Set<number> {
     const text = inflated.toString('latin1');
     if (!text.includes('beginbfchar') && !text.includes('beginbfrange')) continue;
 
+    // <src> <dst> — one glyph mapped to one or more UTF-16 code units.
     for (const pair of text.matchAll(/<([0-9A-Fa-f]{4})>\s*<((?:[0-9A-Fa-f]{4})+)>/g)) {
       const destination = pair[2] as string;
       for (let index = 0; index < destination.length; index += 4) {
         points.add(parseInt(destination.slice(index, index + 4), 16));
       }
+    }
+
+    // <lo> <hi> <dst> — a run of glyphs mapped onto consecutive codepoints.
+    for (const range of text.matchAll(
+      /<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4})>/g,
+    )) {
+      const low = parseInt(range[1] as string, 16);
+      const high = parseInt(range[2] as string, 16);
+      const base = parseInt(range[3] as string, 16);
+      for (let offset = 0; offset <= high - low; offset += 1) points.add(base + offset);
     }
   }
 
