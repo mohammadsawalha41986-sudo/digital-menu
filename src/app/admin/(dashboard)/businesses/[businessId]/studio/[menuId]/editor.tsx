@@ -53,6 +53,7 @@ const DEVICES = [
 export function StudioEditor({
   businessId,
   menuId,
+  previewPath,
   publicPath,
   design,
   themes,
@@ -63,6 +64,7 @@ export function StudioEditor({
 }: {
   businessId: string;
   menuId: string;
+  previewPath: string;
   publicPath: string;
   design: {
     themeKey: string;
@@ -91,7 +93,7 @@ export function StudioEditor({
 
   // Reloads when the saved design changes, so the preview reflects the last
   // successful save rather than an optimistic guess.
-  const previewSrc = `${publicPath}?lang=${locale}&studio=${state.ok ? 'saved' : 'draft'}`;
+  const previewSrc = `${previewPath}?lang=${locale}&studio=${state.ok ? 'saved' : 'draft'}`;
 
   return (
     <div className="studio">

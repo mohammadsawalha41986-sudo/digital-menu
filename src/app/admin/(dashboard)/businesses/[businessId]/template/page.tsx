@@ -50,7 +50,12 @@ export default async function TemplatePage({
     })),
   }));
 
-  const previewUrl = `/m/${business.publicId}`;
+  // The staff preview route, not the public one. `/m/{publicId}` serves only
+  // an ACTIVE business with a published menu, so framing it meant three 404s
+  // for any business still being built — which is precisely when a template is
+  // chosen. This route runs the *same* renderer, and can additionally see
+  // drafts and unpublished menus.
+  const previewUrl = `/admin/preview/${business.id}`;
 
   return (
     <>

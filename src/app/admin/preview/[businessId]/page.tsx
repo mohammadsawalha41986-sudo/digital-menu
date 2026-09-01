@@ -1,5 +1,5 @@
-import { notFound } from 'next/navigation';
-import { requireUser } from '@/server/auth/current-user';
+import { notFound, redirect } from 'next/navigation';
+import { getCurrentUser } from '@/server/auth/current-user';
 import { requireTenantContext, TenantAccessError } from '@/server/tenancy/context';
 import { getProfileForPreview } from '@/server/profile/repository';
 import { renderProfile, type SearchParams } from '@/server/profile/render';
@@ -29,7 +29,12 @@ export default async function BuilderPreviewPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { businessId } = await params;
-  const user = await requireUser();
+
+  // An unauthenticated request must be redirected, not thrown at. This route
+  // is loaded inside iframes, and an uncaught error there renders as a broken
+  // frame with no explanation — which is exactly how a preview defect hides.
+  const user = await getCurrentUser();
+  if (!user) redirect(`/admin/login?next=/admin/preview/${businessId}`);
 
   const context = await requireTenantContext(user, businessId, 'VIEWER').catch((error) => {
     if (error instanceof TenantAccessError) notFound();

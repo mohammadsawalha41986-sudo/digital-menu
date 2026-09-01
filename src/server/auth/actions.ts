@@ -22,6 +22,9 @@ import { SESSION_COOKIE, createSessionToken, sessionCookieOptions } from './sess
  *    be guessed at; and per client, so one source cannot spray many addresses.
  *    Both windows are refused with the same generic message, because telling an
  *    attacker they have been throttled tells them the account exists.
+ *  - A successful sign-in clears both windows, so the limits count failures
+ *    rather than traffic. Counting successes locks out shared office
+ *    addresses, which are the normal case for the businesses this serves.
  */
 
 const GENERIC_FAILURE = 'Incorrect email or password';
@@ -68,9 +71,15 @@ export async function signInAction(
     return { error: GENERIC_FAILURE };
   }
 
-  // A correct password clears the account's window; a legitimate operator who
-  // mistyped twice is not locked out for the rest of the quarter hour.
+  // A correct password clears **both** windows.
+  //
+  // These counters exist to make guessing useless, and guessing is made of
+  // *failures*. Counting successes punishes exactly the wrong people: a
+  // restaurant group whose staff all sign in from one office address shares a
+  // single client bucket, and twenty-five legitimate sign-ins in a quarter of
+  // an hour would lock the rest of them out of their own admin.
   reset(RULES.loginAccount, parsed.data.email.toLowerCase());
+  reset(RULES.loginClient, client);
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, createSessionToken(user.id), sessionCookieOptions());

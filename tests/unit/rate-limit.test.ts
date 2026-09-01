@@ -108,3 +108,45 @@ describe('client identity from bare headers', () => {
     expect(clientIdentity(new Headers())).toBe('unknown');
   });
 });
+
+describe('what the login limiter is counting', () => {
+  beforeEach(() => clearAll());
+
+  it('a successful sign-in must clear both windows, not just the account one', () => {
+    // The client window is shared by everyone behind one address. If successes
+    // counted against it, a restaurant group's staff would lock each other out
+    // of their own admin after twenty-five ordinary sign-ins.
+    const account = 'staff@example.test';
+    const client = '203.0.113.10';
+
+    for (let attempt = 0; attempt < RULES.loginClient.max; attempt += 1) {
+      expect(consume(RULES.loginClient, client).limited).toBe(false);
+      // …each one succeeding, which is what a busy morning looks like.
+      reset(RULES.loginAccount, account);
+      reset(RULES.loginClient, client);
+    }
+
+    expect(consume(RULES.loginClient, client).limited).toBe(false);
+  });
+
+  it('still stops a run of failures from one client', () => {
+    const client = '198.51.100.20';
+
+    for (let attempt = 0; attempt < RULES.loginClient.max; attempt += 1) {
+      expect(consume(RULES.loginClient, client).limited).toBe(false);
+    }
+
+    // No reset, because none of those succeeded.
+    expect(consume(RULES.loginClient, client).limited).toBe(true);
+  });
+
+  it('still stops a run of failures against one account', () => {
+    const account = 'target@example.test';
+
+    for (let attempt = 0; attempt < RULES.loginAccount.max; attempt += 1) {
+      expect(consume(RULES.loginAccount, account).limited).toBe(false);
+    }
+
+    expect(consume(RULES.loginAccount, account).limited).toBe(true);
+  });
+});
