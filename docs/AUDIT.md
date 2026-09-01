@@ -1,5 +1,15 @@
 # REPOSITORY AUDIT — against the Master Upgrade Prompt
 
+> **This document records the repository as it stood when the audit was
+> performed.** It is deliberately not edited as things are fixed: an audit
+> rewritten to match the present is no longer evidence of anything.
+>
+> For what has changed since, see **`docs/IMPLEMENTATION-STATUS.md`**. For the
+> current verification state, the migrations and the outstanding smoke tests,
+> see **`docs/DEPLOYMENT-READINESS.md`**.
+>
+> Grades below marked ~~struck through~~ have since been addressed.
+
 Performed against `DIGITAL PROFILE OS — MASTER UPGRADE PROMPT` (176 sections), as
 required by **§160**. Every claim below was checked against the code, not against
 the documentation. Section references in brackets point at the upgrade prompt.
@@ -71,7 +81,7 @@ Do not rebuild any of this (§164).
 
 ## 2. Partially implemented — grade B
 
-### B1. Typography engine loads no fonts at all — §31, §32, §33
+### ~~B1. Typography engine loads no fonts at all~~ — fixed. Six OFL families now ship self-hosted.
 `src/menu-studio/typography.ts` models roles (heading / body / price / accent),
 Arabic coverage and a deterministic recommender. But there is **no `@font-face`,
 no `next/font`, no `preload`, and no WOFF2 anywhere in the repository.** Every
@@ -92,7 +102,7 @@ badge as §28 specifies — staff cannot see *why* a colour was adjusted.
 There is no `activeFrom`/`activeTo`, so Ramadan / National Day / seasonal
 branding (§70) cannot be scheduled.
 
-### B4. Menu versions are numbers, not snapshots — §84, §85, §10
+### ~~B4. Menu versions are numbers, not snapshots~~ — fixed. Versions carry content; rollback and diff work.
 `MenuVersion` holds `version`, `publishedAt`, `publishedBy`, `notes` — **and no
 content**. Publishing is atomic (§83 holds), but:
 - **Rollback (§85) is impossible** — there is nothing to restore.
@@ -102,17 +112,17 @@ content**. Publishing is atomic (§83 holds), but:
 This is the one gap that blocks the final acceptance journey of §173, whose last
 two steps are `Rollback Menu → Verify Previous Version`.
 
-### B5. Audit log is written broadly but barely readable — §146
+### ~~B5. Audit log is written broadly but barely readable~~ — fixed. See /history.
 `recordAudit()` is called from business, brand, offers, media, studio, bulk and
 API-key services. It is read in exactly one place: the last **8** rows on the
 dashboard. No audit page, no filters, no old-value → new-value display.
 
-### B6. Price history is write-only — §147
+### ~~B6. Price history is write-only~~ — fixed. Every path that changes a price now writes one, and it is readable.
 `PriceHistory` rows are written by the importer and by bulk edits. **No code
 anywhere reads them.** The `38 → 42 SAR` history of §147 is captured and never
 shown.
 
-### B7. Import preview does not show what the import will do — §15, §16, §14, §13
+### ~~B7. Import preview does not show what the import will do~~ — fixed. Counts, price moves, conflicts, editable mapping, drag-and-drop.
 The preview shows *valid / invalid* counts and a row sample. It does not show:
 - `120 New / 83 Updated / 14 Unchanged / 6 Errors` (§15)
 - per-item before → after price diffs (§15)
@@ -142,12 +152,12 @@ hospitality have no motion personality.
 Mobile / tablet / desktop exist. Print preview and zoom controls (50/75/100/Fit)
 do not.
 
-### B12. Nutrition model is one field deep — §105
+### ~~B12. Nutrition model is one field deep~~ — fixed. Nine further fields plus a readiness layer.
 `MenuItem` carries `calories`, `allergens[]`, `servingSize`. §105 asks for
 caffeine, sodium, salt, protein, carbohydrates, fat, fibre, sugar and a
 physical-activity label. See D8.
 
-### B13. Rate limiting covers one route — §126, §149
+### ~~B13. Rate limiting covers one route~~ — fixed. Shared limiter across login, API and events.
 `/api/events` has an in-process limiter. **`/api/v1` has none. `/admin/login` has
 none.** See D12.
 
@@ -205,7 +215,7 @@ Ordered by commercial impact, not by spec order.
 
 ## 5. Incorrect — grade E
 
-### E1. Working hours are dead data
+### ~~E1. Working hours are dead data~~ — fixed
 `Business.workingHours` and `Branch.workingHours` are stored, typed, and
 **exposed through `/api/v1`**. But:
 - there is no admin editor for them anywhere,
@@ -218,14 +228,14 @@ Ordered by commercial impact, not by spec order.
 an emergency action. Right now the API publishes a field the product never
 maintains. Either wire it end to end or remove it from the API surface.
 
-### E2. Offer placement is a promise the renderer does not keep
+### ~~E2. Offer placement is a promise the renderer does not keep~~ — fixed
 `OfferPlacement` (`HERO` / `FEATURED` / `BANNER` / `SECTION`) is stored, selected
 in the admin, and carried all the way into `PublicOffer.placement` — and **no
 template branches on it**. Every offer renders in one `OffersSection` regardless.
 §115 and the per-template "offer presentation" requirement of §35 are unmet while
 the data model claims otherwise.
 
-### E3. `npm ci` fails without `.env`
+### ~~E3. `npm ci` fails without `.env`~~ — fixed
 See §0. `postinstall → prisma generate → env('DATABASE_URL')` throws on a clean
 clone. Fix by making the datasource URL lazy, or by skipping `generate` when the
 variable is absent.

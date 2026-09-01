@@ -36,9 +36,20 @@ and asserts the QR payload and rendered SVG are byte-identical afterwards.
 | Analytics | Privacy-conscious events, no PII, admin reporting |
 | API | `/api/v1` read surface with scoped bearer keys |
 | Menu Studio | Brand identity measured from the logo, ten data-driven themes, live preview, modifiers, bulk edit |
+| Typography | Six self-hosted OFL families covering Arabic and Latin, subset per script, preloaded per business |
+| Publishing | Content snapshots per version, draft-vs-live comparison, rollback, menu scheduling |
+| Quality | Profile Health with severities and fix links; an agency dashboard answering what needs attention |
+| Client review | Expiring, revocable preview links; approval and change requests without an account |
+| Media | Focal points, WebP derivatives at four widths, quality assessment |
+| Nutrition | Structured fields and a readiness layer that never claims compliance |
+| Staff | Accounts, platform roles, per-business grants, password reset and change |
+| Print | Printable menu with correct Arabic, and a QR print kit sized in millimetres |
 | Deployment | Multi-stage Docker image needing no build-time secrets, compose, health checks, CI, Railway |
 
-Known gaps are listed at the end of this file, honestly.
+Known gaps are listed at the end of this file, honestly. `docs/AUDIT.md` records
+the state before the current upgrade round; `docs/IMPLEMENTATION-STATUS.md`
+tracks what has changed since, and `docs/DEPLOYMENT-READINESS.md` is the
+handover for shipping it.
 
 ## Documentation
 
@@ -202,18 +213,20 @@ Stated plainly rather than left to be discovered:
 - **Image ZIP import (§71) is not implemented.** `image_url` is validated but not fetched;
   fetching arbitrary URLs server-side is an SSRF surface needing an allowlist and a fetch
   budget.
-- **Responsive image variants (§88) are not generated.** Images are served as uploaded,
-  with explicit dimensions and lazy loading to prevent layout shift. Generating AVIF/WebP
-  derivatives needs an image pipeline in the runtime image.
+- **AVIF derivatives are not generated.** WebP versions at 320/640/1024/1600 are,
+  and are served through `srcset`. AVIF encodes smaller but costs an order of
+  magnitude more CPU per image, which does not belong in an upload request; it
+  becomes worth adding behind a queue.
 - **Demo photography is absent.** The demo businesses carry no images, because the spec
   bars low-quality stock and infringing assets and no licensed set was available. Every
   template renders correctly with and without imagery.
-- **Server-side PDF export is not implemented.** A print stylesheet and a print
-  preview exist, so a menu prints to PDF from a browser; generating the file on the
-  server needs a headless renderer in the runtime image. See `docs/MENU-STUDIO.md`.
-- **Drag-and-drop ordering is not implemented.** Ordering is by `sort_order` through
-  forms and the spreadsheet, which works with a keyboard, on a phone and with no
-  JavaScript. Drag would be an addition to that, not a replacement.
+- **Server-side PDF generation is not implemented, deliberately.** `/m/{id}/print`
+  renders the live menu for paper and the browser turns it into a PDF — which is
+  what gets Arabic shaping and bidirectional text right. `docs/PUBLISHING.md`
+  records exactly what server-side generation would additionally require.
+- **Drag-and-drop *ordering* is not implemented.** Ordering is by `sort_order`
+  through forms and the spreadsheet, which works with a keyboard, on a phone and
+  with no JavaScript. (Drag-and-drop *upload* does exist, in the importer.)
 - **Rate limiting is in-process.** Fine for one instance; it moves behind Redis when a
   second is added.
 - **Docker Compose is unverified by execution** in the environment this was built in (no
