@@ -1,0 +1,168 @@
+/**
+ * Paper styles for the printable menu (master spec §59, §60, §62).
+ *
+ * Written for print first and screen second, which is the reverse of the rest
+ * of the platform: this page exists to become a PDF.
+ *
+ * Choices worth stating:
+ *  - No photography. It costs ink, prints badly on anything but good stock,
+ *    and says less on paper than it does on a phone.
+ *  - Leader dots between the name and the price, because that is how a printed
+ *    menu has been set for a century and it is genuinely easier to read across.
+ *  - Categories avoid page breaks; items never split. A dish whose price is on
+ *    the next page is worse than a shorter menu.
+ */
+
+.print {
+  --print-ink: var(--brand-color-text, #16181a);
+  --print-muted: var(--brand-color-muted, #6b7176);
+
+  max-inline-size: 46rem;
+  margin-inline: auto;
+  padding: 2rem 1.5rem 3rem;
+  color: var(--print-ink);
+  background: #fff;
+  font-family: var(--brand-font-body, ui-sans-serif, system-ui, sans-serif);
+  line-height: 1.5;
+}
+
+.print__action {
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.7rem 1.4rem;
+  margin-block-end: 2rem;
+  border: 1px solid var(--print-ink);
+  background: none;
+  color: inherit;
+  border-radius: 0.3rem;
+  min-block-size: 2.75rem;
+}
+
+.print__head {
+  text-align: center;
+  padding-block-end: 1.25rem;
+  margin-block-end: 1.5rem;
+  border-block-end: 2px solid var(--print-ink);
+}
+
+.print__name {
+  font-family: var(--brand-font-heading, ui-serif, Georgia, serif);
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  margin: 0;
+}
+
+.print__description {
+  margin: 0.5rem 0 0;
+  color: var(--print-muted);
+}
+
+.print__category { margin-block-end: 1.75rem; }
+
+.print__category-name {
+  font-family: var(--brand-font-heading, ui-serif, Georgia, serif);
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 0.6rem;
+  padding-block-end: 0.3rem;
+  border-block-end: 1px solid var(--print-muted);
+}
+
+.print__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+/* A two-row grid rather than one flex line: the name, the leader dots and the
+   price share the first row, and the description runs underneath the name.
+   Laid out as one flex line, the dots align to the bottom of the whole text
+   block and end up beside the description instead of beside the dish. */
+.print__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'name leader price'
+    'description description description';
+  align-items: baseline;
+  column-gap: 0.4rem;
+}
+
+.print__item-text { display: contents; }
+
+.print__item-name {
+  grid-area: name;
+  font-weight: 600;
+}
+
+.print__item-description {
+  grid-area: description;
+  color: var(--print-muted);
+  font-size: 0.85rem;
+  /* Indented under the name, as a menu sets a sub-line. */
+  padding-inline-start: 0.75rem;
+}
+
+/* The leader dots fill exactly the space left over, which is what keeps the
+   price flush to the margin at any name length. */
+.print__leader {
+  grid-area: leader;
+  align-self: center;
+  border-block-end: 1px dotted var(--print-muted);
+  min-inline-size: 1.5rem;
+}
+
+.print__item-price {
+  grid-area: price;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.print__item-calories {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--print-muted);
+}
+
+.print__foot {
+  margin-block-start: 2.5rem;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--print-muted);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--print-muted);
+}
+
+.print__foot p { margin: 0.15rem 0; }
+
+.print__empty {
+  text-align: center;
+  color: var(--print-muted);
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  .print {
+    max-inline-size: none;
+    padding: 0;
+    font-size: 10.5pt;
+  }
+
+  /* The only screen affordance, gone from the paper. */
+  .print__action { display: none; }
+
+  .print__category { break-inside: avoid-page; }
+  .print__item { break-inside: avoid; }
+  .print__category-name { break-after: avoid; }
+
+  /* Leader dots survive the print colour adjustment. */
+  .print__leader { border-block-end-color: #888; }
+}

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
+import { workingHoursFromForm } from '@/server/business/hours';
 import {
   ValidationError,
   createBranch,
@@ -20,7 +21,9 @@ import {
   updateBusiness,
   updateCategory,
   updateMenu,
+  restoreMenuVersion,
   updateTemplate,
+  updateWorkingHours,
   upsertItem,
 } from './business-service';
 import {
@@ -358,4 +361,50 @@ function firstIssue(issues: { path: PropertyKey[]; message: string }[]): string 
 
   const field = issue.path.join('.');
   return field ? `${field}: ${issue.message}` : issue.message;
+}
+
+/**
+ * Saves opening hours for the business or one of its branches (§21, §74).
+ *
+ * The target arrives as a bound argument rather than a form field, so a
+ * crafted payload cannot redirect the write at a different record; the branch
+ * id is still scoped to the tenant inside the service.
+ */
+export async function updateWorkingHoursAction(
+  businessId: string,
+  target: { kind: 'business' } | { kind: 'branch'; branchId: string },
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const hours = workingHoursFromForm(formData);
+
+  return run(async () => {
+    const business = await updateWorkingHours(user, businessId, target, hours);
+    revalidateBusiness(businessId, business.publicId);
+    return hours === null ? 'Opening hours cleared' : 'Opening hours saved';
+  });
+}
+
+/**
+ * Restores a published version (§85).
+ *
+ * MANAGER-level in the service, and confirmed in the UI: it replaces the
+ * current draft content. What it does not touch is the QR, the public id or
+ * the public URL — restoring content is exactly the kind of change GOALS I2
+ * says must leave a printed code working.
+ */
+export async function restoreMenuVersionAction(
+  businessId: string,
+  publicId: string,
+  menuId: string,
+  versionId: string,
+): Promise<ActionState> {
+  const user = await requireUser();
+
+  return run(async () => {
+    const result = await restoreMenuVersion(user, businessId, menuId, versionId);
+    revalidateBusiness(businessId, publicId);
+    return `Restored version ${result.restoredFrom}, published as version ${result.version.version}`;
+  });
 }

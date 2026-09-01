@@ -86,6 +86,26 @@ export default async function QrPage({ params }: { params: Promise<{ businessId:
             <h2 className="admin__panel-title">{target.label}</h2>
             <p className="admin__destination">{destination}</p>
 
+            {/* The kit is the managed-service deliverable: everything a
+                restaurant needs to put this code on a table, a counter, a
+                window and a wall, sized in millimetres so a print shop needs
+                to do nothing to it (§123, §124). */}
+            <p className="admin__actions">
+              <a
+                className="admin__button"
+                href={`/admin/businesses/${business.id}/qr/kit${
+                  target.key ? `?branch=${encodeURIComponent(target.key)}` : ''
+                }`}
+                data-qr-kit={target.key ?? 'business'}
+              >
+                Download print kit (.zip)
+              </a>
+              <span className="admin__hint">
+                Table card, counter card, window sticker, A5 and A4 posters, a social image,
+                and the bare symbol as SVG and PNG.
+              </span>
+            </p>
+
             {validation && validation.issues.length > 0 ? (
               <div>
                 {validation.issues.map((issue) => (

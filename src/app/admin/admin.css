@@ -1256,3 +1256,240 @@
   display: grid;
   justify-items: center;
 }
+
+/* --- Profile health -------------------------------------------------------
+   The score is the first thing read and the findings are the second, so the
+   score is set large and the findings are a list rather than a table: a table
+   implies columns worth comparing, and these rows are read one at a time. */
+
+.admin__score {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+  text-align: end;
+}
+
+.admin__score strong {
+  font-size: 2.5rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin__score--blocked strong {
+  color: var(--admin-danger, #b3261e);
+}
+
+.admin__checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin__checklist li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding-block: 0.35rem;
+  border-block-end: 1px solid var(--admin-border, #e5e5e5);
+}
+
+.admin__checklist-mark {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.35rem;
+  block-size: 1.35rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--admin-muted, #6b7176);
+}
+
+[data-status='PASS'] .admin__checklist-mark { background: #2e7d32; }
+[data-status='INFO'] .admin__checklist-mark { background: #6b7176; }
+[data-status='WARNING'] .admin__checklist-mark { background: #b26a00; }
+[data-status='ERROR'] .admin__checklist-mark { background: #b3261e; }
+
+.admin__checklist-label { font-weight: 600; }
+
+.admin__findings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin__findings li {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-block-end: 1px solid var(--admin-border, #e5e5e5);
+}
+
+@media (max-width: 40rem) {
+  .admin__findings li { grid-template-columns: 1fr; }
+}
+
+.admin__finding-area {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--admin-muted, #6b7176);
+}
+
+/* --- Import dropzone ------------------------------------------------------
+   The file input stays the real control, so the form works with a keyboard
+   and without JavaScript; the zone around it is an affordance, not a
+   replacement. */
+
+.admin__dropzone {
+  border: 2px dashed var(--admin-border, #d4d4d4);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.admin__dropzone--active {
+  border-color: #2e7d32;
+  background: color-mix(in srgb, #2e7d32 6%, transparent);
+}
+
+.admin__dropzone p {
+  margin: 0;
+  color: var(--admin-muted, #6b7176);
+}
+
+/* --- Focal point editor ---------------------------------------------------
+   The three previews use the same object-position the templates will, so what
+   an operator sees here is what a visitor gets. */
+
+.focal {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 52rem) {
+  .focal { grid-template-columns: 1.4fr 1fr; align-items: start; }
+}
+
+.focal__canvas {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 1px solid var(--admin-border, #d4d4d4);
+  background: none;
+  cursor: crosshair;
+  inline-size: 100%;
+  line-height: 0;
+}
+
+.focal__image {
+  inline-size: 100%;
+  block-size: auto;
+  max-block-size: 24rem;
+  object-fit: contain;
+}
+
+.focal__marker {
+  position: absolute;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin-inline-start: -0.75rem;
+  margin-block-start: -0.75rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #16181a, 0 0 0 6px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.focal__previews {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.focal__preview { margin: 0; }
+
+.focal__preview img {
+  inline-size: 100%;
+  object-fit: cover;
+  border: 1px solid var(--admin-border, #d4d4d4);
+}
+
+.focal__preview figcaption {
+  font-size: 0.72rem;
+  color: var(--admin-muted, #6b7176);
+  padding-block-start: 0.2rem;
+}
+
+/* Before-and-after pairs in the audit log read as a list, not a sentence. */
+.admin__changes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}
+
+/* --- Service mode ---------------------------------------------------------
+   Large targets and no decoration. Every ornament here is something between a
+   busy operator and the button they need (§22). */
+
+.quick__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.quick__row {
+  display: grid;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem;
+  border: 1px solid var(--admin-border, #e5e5e5);
+  border-radius: 0.4rem;
+}
+
+@media (min-width: 40rem) {
+  .quick__row { grid-template-columns: 1fr auto auto; }
+}
+
+.quick__row[data-unavailable] {
+  background: color-mix(in srgb, #b3261e 7%, transparent);
+  border-color: color-mix(in srgb, #b3261e 35%, transparent);
+}
+
+.quick__name { font-weight: 600; }
+
+.quick__price {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quick__input {
+  inline-size: 6.5rem;
+  min-block-size: 2.75rem;
+  font-size: 1rem;
+}
+
+.quick__search {
+  inline-size: min(100%, 20rem);
+  min-block-size: 2.75rem;
+}
+
+/* Comfortable to hit on a phone, one-handed, in a hurry. */
+.quick__row .admin__button { min-block-size: 2.75rem; }

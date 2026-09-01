@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { brandTokensToStyle, contrastRatio, readableForeground } from '@/design/brand';
+import { resolveFont } from '@/menu-studio/typography';
 import {
   DEFAULT_TEMPLATE_KEY,
   SUGGESTED_TEMPLATES,
@@ -30,7 +31,10 @@ describe('brand tokens', () => {
 
     expect(style['--brand-color-primary']).toBe('#2B2118');
     expect(style['--brand-color-background']).toBe('#FAF6F0');
-    expect(style['--brand-font-heading']).toBe('var(--sys-font-stack-serif)');
+    // Font keys resolve to a real stack rather than to another custom property:
+    // the platform ships the faces, so the value names them (§31, §33).
+    expect(style['--brand-font-heading']).toContain('Amiri');
+    expect(style['--brand-font-heading']).toMatch(/serif$/);
     expect(style['--brand-radius-md']).toBe('var(--sys-radius-sm-md)');
   });
 
@@ -51,7 +55,7 @@ describe('brand tokens', () => {
     }) as Record<string, string>;
 
     expect(style['--brand-radius-md']).toBe('var(--sys-radius-md-md)');
-    expect(style['--brand-font-heading']).toBe('var(--sys-font-stack-sans)');
+    expect(style['--brand-font-heading']).toBe(resolveFont('system-sans', 'system-sans').stack);
   });
 
   it('computes contrast symmetrically, as the QR validator will need (§13)', () => {

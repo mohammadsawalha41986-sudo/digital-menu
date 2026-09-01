@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ApiAuthError } from './auth';
+import { ApiAuthError, ApiRateLimitError } from './auth';
 
 /**
  * Consistent API envelopes (master spec §129).
@@ -38,6 +38,19 @@ export function failure(status: number, code: string, message: string, details?:
  * trace in an API response is an information leak (master spec §119).
  */
 export function handleApiError(error: unknown) {
+  if (error instanceof ApiRateLimitError) {
+    return NextResponse.json(
+      { error: { code: 'rate_limited', message: error.message } },
+      {
+        status: 429,
+        headers: {
+          'cache-control': 'no-store',
+          'retry-after': String(error.retryAfterSeconds),
+        },
+      },
+    );
+  }
+
   if (error instanceof ApiAuthError) {
     return failure(error.status, error.status === 404 ? 'not_found' : 'unauthorized', error.message);
   }

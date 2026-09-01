@@ -1,6 +1,13 @@
 import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../shared/primitives';
 import { composeProfile } from '../shared/composition';
-import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
+import {
+  ContactSection,
+  DownloadsSection,
+  HeroOffer,
+  HoursSection,
+  OfferBanners,
+  OffersSection,
+} from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
 
@@ -55,8 +62,32 @@ export function BoldTemplate({ profile, locale, dictionary }: TemplateRenderProp
         ) : null}
       </header>
 
+      <HeroOffer
+
+        offer={composition.offers.hero}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="bold"
+
+      />
+
+
+      <OfferBanners
+
+        offers={composition.offers.banners}
+
+        locale={locale}
+
+        prefix="bold"
+
+      />
+
+
       <OffersSection
-        offers={profile.offers}
+        offers={composition.offers.section}
         locale={locale}
         dictionary={dictionary}
         prefix="bold"
@@ -139,10 +170,24 @@ export function BoldTemplate({ profile, locale, dictionary }: TemplateRenderProp
 
       <DownloadsSection
         downloads={profile.downloads}
+        printHref={`/m/${profile.publicId}/print`}
         locale={locale}
         dictionary={dictionary}
         prefix="bold"
       />
+
+      <HoursSection
+
+        hours={profile.contact.workingHours}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="bold"
+
+      />
+
 
       <ContactSection
         actions={composition.contactActions}

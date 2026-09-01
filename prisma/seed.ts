@@ -46,6 +46,143 @@ interface SeedCategory {
   items: SeedItem[];
 }
 
+/**
+ * Opening-hour patterns for the demo businesses (§74, §134).
+ *
+ * Each is shaped like the trade it belongs to: a fine-dining room opens only
+ * for dinner and runs past midnight, a bakery starts before dawn and closes
+ * mid-afternoon, a salon shuts one day a week. Six identical weeks would make
+ * the six demos read as one business again, which is exactly what §174 tests.
+ */
+type SeedHours = {
+  timezone: string;
+  days: Record<string, { closed: boolean; intervals: { opens: string; closes: string }[] }>;
+};
+
+const RIYADH = 'Asia/Riyadh';
+
+function week(
+  pattern: Partial<Record<string, { opens: string; closes: string }[] | 'closed'>>,
+): SeedHours {
+  const days: SeedHours['days'] = {};
+
+  for (const [day, value] of Object.entries(pattern)) {
+    days[day] =
+      value === 'closed'
+        ? { closed: true, intervals: [] }
+        : { closed: false, intervals: value ?? [] };
+  }
+
+  return { timezone: RIYADH, days };
+}
+
+const EVERY_DAY = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+function sameEveryDay(intervals: { opens: string; closes: string }[]): SeedHours {
+  return week(Object.fromEntries(EVERY_DAY.map((day) => [day, intervals])));
+}
+
+/** Dinner only, running past midnight at the weekend. */
+const FINE_DINING_HOURS = week({
+  sunday: [{ opens: '18:00', closes: '23:30' }],
+  monday: 'closed',
+  tuesday: [{ opens: '18:00', closes: '23:30' }],
+  wednesday: [{ opens: '18:00', closes: '23:30' }],
+  thursday: [{ opens: '18:00', closes: '01:00' }],
+  friday: [{ opens: '18:00', closes: '01:00' }],
+  saturday: [{ opens: '18:00', closes: '23:30' }],
+});
+
+/** Long single shift, seven days — the café pattern. */
+const CAFE_HOURS = sameEveryDay([{ opens: '07:00', closes: '23:00' }]);
+
+/** Late-night burger trade. */
+const BURGER_HOURS = sameEveryDay([{ opens: '12:00', closes: '02:00' }]);
+
+/** Bakers start early and are gone by mid-afternoon. */
+const BAKERY_HOURS = week({
+  sunday: [{ opens: '05:30', closes: '15:00' }],
+  monday: [{ opens: '05:30', closes: '15:00' }],
+  tuesday: [{ opens: '05:30', closes: '15:00' }],
+  wednesday: [{ opens: '05:30', closes: '15:00' }],
+  thursday: [{ opens: '05:30', closes: '15:00' }],
+  friday: 'closed',
+  saturday: [{ opens: '06:30', closes: '13:00' }],
+});
+
+/** A salon: split shift around the afternoon break, closed on Friday. */
+const SALON_HOURS = week({
+  sunday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  monday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  tuesday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  wednesday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '21:00' }],
+  thursday: [{ opens: '10:00', closes: '13:30' }, { opens: '16:00', closes: '22:00' }],
+  friday: 'closed',
+  saturday: [{ opens: '12:00', closes: '21:00' }],
+});
+
+/**
+ * One branch keeping different hours from its business — the reason hours are
+ * stored per branch at all. Olaya serves later than the main location.
+ */
+const LATE_BRANCH_HOURS = sameEveryDay([
+  { opens: '12:00', closes: '15:30' },
+  { opens: '18:00', closes: '01:00' },
+]);
+
+/** Family restaurant: lunch and dinner, with the kitchen closed between. */
+const RESTAURANT_HOURS = sameEveryDay([
+  { opens: '12:00', closes: '15:30' },
+  { opens: '18:00', closes: '23:59' },
+]);
+
+/**
+ * Demo offers, one per placement (§115).
+ *
+ * The three placements are three different designs, so the demo has to carry
+ * all three or the difference is unprovable: a hero the page leads with, a
+ * banner strip that announces without displacing, and an ordinary section
+ * entry. Windows are left open — an offer whose demo expires silently is a
+ * support ticket, not a demonstration.
+ */
+async function seedOffers(
+  businessId: string,
+  offers: {
+    key: string;
+    titleAr: string;
+    titleEn: string;
+    descriptionAr?: string;
+    descriptionEn?: string;
+    placement: 'HERO' | 'BANNER' | 'SECTION' | 'FEATURED';
+    originalPriceMinor?: number;
+    offerPriceMinor?: number;
+    discountPercent?: number;
+    sortOrder?: number;
+  }[],
+) {
+  for (const offer of offers) {
+    const payload = {
+      businessId,
+      titleAr: offer.titleAr,
+      titleEn: offer.titleEn,
+      descriptionAr: offer.descriptionAr ?? null,
+      descriptionEn: offer.descriptionEn ?? null,
+      placement: offer.placement,
+      originalPriceMinor: offer.originalPriceMinor ?? null,
+      offerPriceMinor: offer.offerPriceMinor ?? null,
+      discountPercent: offer.discountPercent ?? null,
+      isActive: true,
+      sortOrder: offer.sortOrder ?? 0,
+    };
+
+    await prisma.offer.upsert({
+      where: { businessId_key: { businessId, key: offer.key } },
+      update: payload,
+      create: { key: offer.key, ...payload },
+    });
+  }
+}
+
 async function main() {
   const staff = await provisionStaffUser();
 
@@ -71,6 +208,7 @@ async function main() {
     addressAr: 'الرياض، المملكة العربية السعودية',
     addressEn: 'Riyadh, Saudi Arabia',
     showPlatformFooter: true,
+    workingHours: RESTAURANT_HOURS,
   } as const;
 
   const business = await prisma.business.upsert({
@@ -111,6 +249,7 @@ async function main() {
     descriptionEn: null,
     templateKey: 'editorial',
     variantKey: 'a',
+    workingHours: CAFE_HOURS,
   } as const;
 
   const arabicOnly = await prisma.business.upsert({
@@ -145,7 +284,11 @@ async function main() {
   // exercised by the demo data.
   const olaya = await prisma.branch.upsert({
     where: { businessId_key: { businessId: business.id, key: 'olaya' } },
-    update: { phone: '+966500000001', whatsapp: '+966500000001' },
+    update: {
+      phone: '+966500000001',
+      whatsapp: '+966500000001',
+      workingHours: LATE_BRANCH_HOURS,
+    },
     create: {
       businessId: business.id,
       key: 'olaya',
@@ -156,6 +299,7 @@ async function main() {
       phone: '+966500000001',
       whatsapp: '+966500000001',
       googleMapsUrl: 'https://maps.google.com/?q=24.6944,46.6856',
+      workingHours: LATE_BRANCH_HOURS,
       sortOrder: 0,
     },
   });
@@ -282,6 +426,41 @@ async function main() {
   ];
 
   await seedMenu(business.id, 'main', 'المنيو الرئيسي', 'Main Menu', restaurantMenu, staff.id);
+
+  // All three placements on one profile, so the difference is visible at once.
+  await seedOffers(business.id, [
+    {
+      key: 'family-night',
+      titleAr: 'ليلة العائلة',
+      titleEn: 'Family Night',
+      descriptionAr: 'طبقان رئيسيان ومقبلات ومشروبان.',
+      descriptionEn: 'Two mains, a starter and two drinks.',
+      placement: 'HERO',
+      originalPriceMinor: 18000,
+      offerPriceMinor: 12600,
+      discountPercent: 30,
+    },
+    {
+      key: 'weekday-lunch',
+      titleAr: 'غداء أيام الأسبوع',
+      titleEn: 'Weekday lunch',
+      placement: 'BANNER',
+      offerPriceMinor: 3900,
+      sortOrder: 1,
+    },
+    {
+      key: 'coffee-with-dessert',
+      titleAr: 'قهوة مع الحلى',
+      titleEn: 'Coffee with dessert',
+      descriptionAr: 'مع أي طبق حلى.',
+      descriptionEn: 'With any dessert.',
+      placement: 'SECTION',
+      originalPriceMinor: 2600,
+      offerPriceMinor: 1800,
+      discountPercent: 31,
+      sortOrder: 2,
+    },
+  ]);
   await seedMenu(arabicOnly.id, 'main', 'قائمة المشروبات', null, cafeMenu, staff.id);
 
   // A draft menu on an active business: present in the database, invisible.
@@ -346,6 +525,18 @@ async function seedShowcase(publishedById: string) {
   const showcase = [
     {
       publicId: 'DEM003',
+      offer: {
+        key: 'tasting-menu',
+        titleAr: 'قائمة التذوق',
+        titleEn: 'Tasting menu',
+        descriptionAr: 'سبعة أطباق من المطبخ.',
+        descriptionEn: 'Seven courses from the kitchen.',
+        placement: 'HERO' as const,
+        originalPriceMinor: 45000,
+        offerPriceMinor: 38000,
+        discountPercent: 16,
+      },
+      hours: FINE_DINING_HOURS,
       slug: 'demo-luxury-restaurant',
       type: 'RESTAURANT' as const,
       template: 'luxury',
@@ -363,8 +554,8 @@ async function seedShowcase(publishedById: string) {
         colorText: '#14171A',
         colorMuted: '#6B7076',
         colorBorder: '#DDD8CC',
-        fontHeading: 'system-serif',
-        fontBody: 'system-serif',
+        fontHeading: 'latin-editorial',
+        fontBody: 'arabic-naskh',
         radiusScale: 'none',
       },
       categories: [
@@ -390,6 +581,14 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM004',
+      offer: {
+        key: 'morning-filter',
+        titleAr: 'قهوة الصباح',
+        titleEn: 'Morning filter',
+        placement: 'BANNER' as const,
+        offerPriceMinor: 1200,
+      },
+      hours: CAFE_HOURS,
       slug: 'demo-specialty-cafe',
       type: 'CAFE' as const,
       template: 'cafe',
@@ -407,7 +606,7 @@ async function seedShowcase(publishedById: string) {
         colorText: '#1E2A26',
         colorMuted: '#66756F',
         colorBorder: '#E3DCD0',
-        fontHeading: 'system-sans',
+        fontHeading: 'arabic-kufi',
         fontBody: 'system-sans',
         radiusScale: 'lg',
       },
@@ -435,6 +634,18 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM005',
+      offer: {
+        key: 'double-thursday',
+        titleAr: 'خميس الدبل',
+        titleEn: 'Double Thursday',
+        descriptionAr: 'قطعة لحم إضافية بلا زيادة.',
+        descriptionEn: 'An extra patty at no extra cost.',
+        placement: 'HERO' as const,
+        discountPercent: 50,
+        originalPriceMinor: 4800,
+        offerPriceMinor: 2400,
+      },
+      hours: BURGER_HOURS,
       slug: 'demo-burger',
       type: 'RESTAURANT' as const,
       template: 'bold',
@@ -452,7 +663,7 @@ async function seedShowcase(publishedById: string) {
         colorText: '#141414',
         colorMuted: '#5C5C5C',
         colorBorder: '#141414',
-        fontHeading: 'system-sans',
+        fontHeading: 'system-display',
         fontBody: 'system-sans',
         radiusScale: 'none',
       },
@@ -471,6 +682,16 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM006',
+      offer: {
+        key: 'end-of-day-bread',
+        titleAr: 'خبز آخر اليوم',
+        titleEn: 'End-of-day bread',
+        placement: 'BANNER' as const,
+        discountPercent: 40,
+        originalPriceMinor: 1800,
+        offerPriceMinor: 1080,
+      },
+      hours: BAKERY_HOURS,
       slug: 'demo-bakery',
       type: 'BAKERY' as const,
       template: 'casual',
@@ -488,8 +709,8 @@ async function seedShowcase(publishedById: string) {
         colorText: '#2A1E14',
         colorMuted: '#7A6A5C',
         colorBorder: '#EADDCC',
-        fontHeading: 'system-serif',
-        fontBody: 'system-sans',
+        fontHeading: 'system-sans',
+        fontBody: 'latin-neutral',
         radiusScale: 'md',
       },
       categories: [
@@ -515,6 +736,18 @@ async function seedShowcase(publishedById: string) {
     },
     {
       publicId: 'DEM007',
+      offer: {
+        key: 'midweek-package',
+        titleAr: 'باقة منتصف الأسبوع',
+        titleEn: 'Midweek package',
+        descriptionAr: 'قص وتصفيف وعناية.',
+        descriptionEn: 'Cut, styling and care.',
+        placement: 'SECTION' as const,
+        originalPriceMinor: 42000,
+        offerPriceMinor: 33000,
+        discountPercent: 21,
+      },
+      hours: SALON_HOURS,
       slug: 'demo-luxury-salon',
       type: 'SALON' as const,
       template: 'hospitality',
@@ -533,7 +766,7 @@ async function seedShowcase(publishedById: string) {
         colorMuted: '#6E5C70',
         colorBorder: '#E6DAE6',
         fontHeading: 'system-serif',
-        fontBody: 'system-sans',
+        fontBody: 'arabic-kufi',
         radiusScale: 'lg',
       },
       // A salon is a service catalogue: durations, not calories (§94).
@@ -574,6 +807,7 @@ async function seedShowcase(publishedById: string) {
       templateKey: business.template,
       variantKey: business.variant,
       showPlatformFooter: true,
+      workingHours: business.hours,
     };
 
     const row = await prisma.business.upsert({
@@ -587,6 +821,8 @@ async function seedShowcase(publishedById: string) {
       update: business.brand,
       create: { businessId: row.id, ...business.brand },
     });
+
+    if (business.offer) await seedOffers(row.id, [business.offer]);
 
     await seedMenu(
       row.id,

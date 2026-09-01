@@ -149,6 +149,10 @@ export function ProfileImage({
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={image.url}
+      // Generated widths, so a phone downloads a phone-sized file (§50). Absent
+      // for an SVG or an upload from before derivatives existed, in which case
+      // the browser simply uses `src`.
+      srcSet={image.srcSet ?? undefined}
       alt={alt}
       className={className}
       width={image.width ?? undefined}
@@ -156,8 +160,15 @@ export function ProfileImage({
       sizes={sizes}
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
-      // Explicit dimensions plus this attribute prevent layout shift (§88).
-      style={image.width && image.height ? { aspectRatio: `${image.width}/${image.height}` } : undefined}
+      style={{
+        // The focal point, so a template cropping to a square keeps the
+        // subject rather than the middle (§47, §48).
+        objectPosition: image.objectPosition,
+        // Explicit dimensions plus this prevent layout shift (§88).
+        ...(image.width && image.height
+          ? { aspectRatio: `${image.width}/${image.height}` }
+          : {}),
+      }}
     />
   );
 }

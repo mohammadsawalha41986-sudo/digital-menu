@@ -317,3 +317,115 @@ describe.skipIf(!databaseReachable)('platform super admin', () => {
     );
   });
 });
+
+/**
+ * The surfaces added after the original isolation suite was written.
+ *
+ * Every one of these is a place where a business id, an item code, a version
+ * id or a search term arrives from a form or a URL. Each is therefore a place
+ * where a missing guard turns into one client reading another's data, so each
+ * gets the same test as the original surfaces: try it from the wrong tenant,
+ * and require a refusal rather than an empty result that happens to look safe.
+ */
+describe.skipIf(!databaseReachable)('the newer surfaces respect the same boundary', () => {
+  it('cannot read the other business’s profile health', async () => {
+    const { getProfileHealth } = await import('@/server/quality/service');
+
+    await expect(getProfileHealth(alphaUser, betaId)).rejects.toThrow();
+  });
+
+  it('cannot read the other business’s nutrition readiness', async () => {
+    const { getNutritionReadiness } = await import('@/server/nutrition/service');
+
+    await expect(getNutritionReadiness(alphaUser, betaId)).rejects.toThrow();
+  });
+
+  it('cannot read the other business’s price history or audit log', async () => {
+    const { getAuditLog, getPriceHistory } = await import('@/server/history/service');
+
+    await expect(getPriceHistory(alphaUser, betaId)).rejects.toThrow();
+    await expect(getAuditLog(alphaUser, betaId)).rejects.toThrow();
+  });
+
+  it('cannot set opening hours on the other business', async () => {
+    const { updateWorkingHours } = await import('@/server/admin/business-service');
+
+    await expect(
+      updateWorkingHours(alphaUser, betaId, { kind: 'business' }, null),
+    ).rejects.toThrow();
+  });
+
+  it('cannot issue a preview link for the other business', async () => {
+    const { createPreviewLink, listPreviewLinks } = await import('@/server/review/service');
+
+    await expect(createPreviewLink(alphaUser, betaId, {})).rejects.toThrow();
+    await expect(listPreviewLinks(alphaUser, betaId)).rejects.toThrow();
+  });
+
+  it('cannot read the other business’s change requests', async () => {
+    const { listChangeRequests } = await import('@/server/review/service');
+
+    await expect(listChangeRequests(alphaUser, betaId)).rejects.toThrow();
+  });
+
+  it('cannot restore a version of the other business’s menu', async () => {
+    const { getMenuVersions, restoreMenuVersion } = await import(
+      '@/server/admin/business-service'
+    );
+
+    await expect(getMenuVersions(alphaUser, betaId, 'any-menu-id')).rejects.toThrow();
+    await expect(
+      restoreMenuVersion(alphaUser, betaId, 'any-menu-id', 'any-version-id'),
+    ).rejects.toThrow();
+  });
+
+  it('cannot change a focal point on the other business’s media', async () => {
+    const { setAltText, setFocalPoint } = await import('@/server/media/service');
+
+    await expect(
+      setFocalPoint(alphaUser, betaId, 'any-media-id', { x: 0.5, y: 0.5 }),
+    ).rejects.toThrow();
+    await expect(
+      setAltText(alphaUser, betaId, 'any-media-id', { ar: 'x', en: 'x' }),
+    ).rejects.toThrow();
+  });
+
+  it('search never returns another tenant’s content', async () => {
+    const { globalSearch } = await import('@/server/admin/search');
+
+    // Search for something that exists only in Beta.
+    const beta = await prisma.business.findUniqueOrThrow({
+      where: { id: betaId },
+      select: { nameAr: true, publicId: true },
+    });
+
+    for (const term of [beta.nameAr, beta.publicId]) {
+      const { hits } = await globalSearch(alphaUser, term);
+
+      for (const hit of hits) {
+        expect(hit.href).not.toContain(betaId);
+      }
+    }
+  });
+
+  it('a staff user cannot manage staff at all', async () => {
+    const { createStaffUser, listStaff } = await import('@/server/admin/user-service');
+
+    await expect(listStaff(alphaUser)).rejects.toThrow();
+    await expect(
+      createStaffUser(alphaUser, { email: 'nope@example.test', name: 'No', role: 'STAFF' }),
+    ).rejects.toThrow();
+  });
+
+  it('the attention dashboard shows only the businesses the user may see', async () => {
+    const { getAttention } = await import('@/server/quality/attention');
+
+    const attention = await getAttention(alphaUser);
+
+    for (const item of attention) {
+      for (const business of item.businesses) {
+        expect(business.id).not.toBe(betaId);
+      }
+    }
+  });
+});

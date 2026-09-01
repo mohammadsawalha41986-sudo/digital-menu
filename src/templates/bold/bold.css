@@ -353,3 +353,49 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Opening hours — loud, like everything else here: a filled badge and heavy
+   numerals, because in this family the state is a headline, not a footnote. */
+.bold__hours { margin-block: var(--sys-space-7); }
+.bold__hours-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-3); }
+.bold__hours-badge {
+  display: inline-block; padding: 0.35em 0.9em;
+  background: var(--brand-muted); color: var(--brand-background);
+  font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.bold__hours-state[data-open='true'] .bold__hours-badge { background: var(--brand-accent); }
+.bold__hours-detail { font-weight: 700; }
+.bold__hours-list {
+  margin-block-start: var(--sys-space-4);
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--sys-space-3);
+}
+.bold__hours-row { border-block-start: 3px solid var(--brand-text); padding-block-start: var(--sys-space-2); }
+.bold__hours-row[data-today] { border-block-start-color: var(--brand-accent); }
+.bold__hours-day { font-weight: 800; text-transform: uppercase; font-size: 0.8rem; }
+.bold__hours-times { font-variant-numeric: tabular-nums; }
+.bold__hours-intervals { list-style: none; margin: 0; padding: 0; }
+
+/* --- Offer placement ------------------------------------------------------
+   HERO, BANNER and SECTION are three different designs, not three sizes of
+   one. Each family answers them in its own language (§35, §115). */
+
+/* HERO — the offer as a poster: colour block, enormous discount, no subtlety. */
+.bold__hero-offer { margin-block-end: var(--sys-space-6); background: var(--brand-accent); color: var(--brand-background); }
+.bold__hero-offer-image { inline-size: 100%; block-size: clamp(12rem, 40vw, 20rem); object-fit: cover; mix-blend-mode: multiply; }
+.bold__hero-offer-body { padding: var(--sys-space-5); display: grid; gap: var(--sys-space-2); }
+.bold__hero-offer-discount { font-size: clamp(3.5rem, 20vw, 9rem); font-weight: 900; line-height: 0.82; letter-spacing: -0.04em; }
+.bold__hero-offer-title { font-size: clamp(1.5rem, 7vw, 3rem); font-weight: 900; text-transform: uppercase; }
+.bold__hero-offer-was { opacity: 0.7; margin-inline-end: 0.5em; }
+.bold__hero-offer-now { font-size: 1.6rem; font-weight: 800; }
+.bold__hero-offer-cta { justify-self: start; background: var(--brand-text); color: var(--brand-background); padding: 0.7em 1.6em; font-weight: 800; text-transform: uppercase; }
+
+/* BANNER — a marquee bar, one per line, impossible to miss. */
+.bold__offer-banners { display: grid; gap: 2px; margin-block-end: var(--sys-space-5); }
+.bold__offer-banner {
+  display: flex; justify-content: space-between; align-items: center; gap: var(--sys-space-3);
+  background: var(--brand-text); color: var(--brand-background);
+  padding: var(--sys-space-3) var(--sys-space-4);
+  font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.bold__offer-banner-discount { font-size: 1.4rem; color: var(--brand-accent); }

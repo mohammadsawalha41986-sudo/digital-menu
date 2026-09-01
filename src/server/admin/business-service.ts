@@ -11,6 +11,15 @@ import {
   type AuthenticatedUser,
 } from '@/server/tenancy/context';
 import { isValidTemplateSelection } from '@/templates/registry';
+import { parseSnapshot, summarise } from '@/server/menus/snapshot';
+import {
+  applySnapshot,
+  currentSnapshot,
+  pendingChanges,
+  writeVersionContent,
+} from '@/server/menus/versioning';
+import { parseWorkingHours, type WorkingHours } from '@/server/business/hours';
+import { Prisma } from '@/generated/prisma/client';
 import type {
   branchSchema,
   brandSchema,
@@ -329,6 +338,10 @@ export async function publishMenu(user: AuthenticatedUser, businessId: string, m
 
     if (!menu) throw new TenantAccessError('Menu not found');
 
+    // What is live right now, read before anything moves, so the version we
+    // are about to write can record what it changed (§84).
+    const previous = await currentSnapshot(tx, menu.id);
+
     const latest = await tx.menuVersion.findFirst({
       where: { menuId: menu.id },
       orderBy: { version: 'desc' },
@@ -344,12 +357,16 @@ export async function publishMenu(user: AuthenticatedUser, businessId: string, m
       },
     });
 
+    const { diff } = await writeVersionContent(tx, created.id, menu.id, previous);
+
+    // The pointer moves last, inside the same transaction: a visitor reads
+    // either the old version or the new one, never a half-written menu (§83).
     await tx.menu.update({
       where: { id: menu.id },
       data: { currentVersionId: created.id, status: 'ACTIVE' },
     });
 
-    return created;
+    return { ...created, summary: summarise(diff) };
   });
 
   await recordAudit({
@@ -358,10 +375,168 @@ export async function publishMenu(user: AuthenticatedUser, businessId: string, m
     entityId: menuId,
     businessId: context.businessId,
     userId: user.id,
-    metadata: { version: version.version },
+    metadata: { version: version.version, ...version.summary },
   });
 
   return version;
+}
+
+/**
+ * Restores a previously published version (§85).
+ *
+ * A rollback is itself a publish: it creates a *new* version whose content is
+ * the old one's, rather than deleting the versions in between. History stays
+ * append-only, so a rollback can itself be rolled back, and the audit trail
+ * never loses the fact that something was live.
+ *
+ * The QR, the public id and the public URL are untouched — restoring content
+ * is precisely the kind of change GOALS I2 says must not disturb them.
+ */
+export async function restoreMenuVersion(
+  user: AuthenticatedUser,
+  businessId: string,
+  menuId: string,
+  versionId: string,
+) {
+  const context = await requireTenantContext(user, businessId, 'MANAGER');
+
+  const result = await prisma.$transaction(async (tx) => {
+    const menu = await tx.menu.findFirst({
+      where: { id: menuId, ...tenantScope(context) },
+      select: { id: true },
+    });
+
+    if (!menu) throw new TenantAccessError('Menu not found');
+
+    // Scoped through the menu, so a version id from another business is a
+    // not-found rather than a restore of somebody else's content.
+    const target = await tx.menuVersion.findFirst({
+      where: { id: versionId, menuId: menu.id },
+      select: { id: true, version: true, snapshot: true },
+    });
+
+    if (!target) throw new TenantAccessError('Version not found');
+
+    const snapshot = parseSnapshot(target.snapshot);
+
+    if (!snapshot) {
+      throw new ValidationError(
+        `Version ${target.version} was published before content snapshots existed, so there is nothing to restore.`,
+      );
+    }
+
+    const previous = await currentSnapshot(tx, menu.id);
+
+    await applySnapshot(tx, menu.id, context.businessId, snapshot);
+
+    const latest = await tx.menuVersion.findFirst({
+      where: { menuId: menu.id },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+
+    const created = await tx.menuVersion.create({
+      data: {
+        menuId: menu.id,
+        version: (latest?.version ?? 0) + 1,
+        publishedAt: new Date(),
+        publishedById: user.id,
+        restoredFromVersion: target.version,
+        notes: `Restored from version ${target.version}`,
+      },
+    });
+
+    const { diff } = await writeVersionContent(tx, created.id, menu.id, previous);
+
+    await tx.menu.update({
+      where: { id: menu.id },
+      data: { currentVersionId: created.id, status: 'ACTIVE' },
+    });
+
+    return { version: created, restoredFrom: target.version, summary: summarise(diff) };
+  });
+
+  await recordAudit({
+    action: 'menu.restored',
+    entity: 'menu',
+    entityId: menuId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: {
+      version: result.version.version,
+      restoredFrom: result.restoredFrom,
+      ...result.summary,
+    },
+  });
+
+  return result;
+}
+
+/** Version history for the menus screen, newest first. */
+export async function getMenuVersions(
+  user: AuthenticatedUser,
+  businessId: string,
+  menuId: string,
+) {
+  const context = await requireTenantContext(user, businessId, 'VIEWER');
+
+  const menu = await prisma.menu.findFirst({
+    where: { id: menuId, ...tenantScope(context) },
+    select: { id: true, key: true, titleAr: true, titleEn: true, currentVersionId: true },
+  });
+
+  if (!menu) throw new TenantAccessError('Menu not found');
+
+  const versions = await prisma.menuVersion.findMany({
+    where: { menuId: menu.id },
+    orderBy: { version: 'desc' },
+    take: 50,
+    select: {
+      id: true,
+      version: true,
+      publishedAt: true,
+      notes: true,
+      summary: true,
+      snapshot: true,
+      restoredFromVersion: true,
+      publishedBy: { select: { name: true, email: true } },
+    },
+  });
+
+  return {
+    menu,
+    versions: versions.map((version) => ({
+      id: version.id,
+      version: version.version,
+      publishedAt: version.publishedAt,
+      notes: version.notes,
+      restoredFromVersion: version.restoredFromVersion,
+      publishedBy: version.publishedBy?.name ?? null,
+      summary: version.summary as Record<string, number | boolean> | null,
+      // Reported rather than assumed: versions from before snapshotting exist
+      // and must be shown as un-restorable instead of failing on click.
+      restorable: parseSnapshot(version.snapshot) !== null,
+      isLive: version.id === menu.currentVersionId,
+    })),
+  };
+}
+
+/** The draft-versus-live comparison shown before publishing (§10). */
+export async function getPendingChanges(
+  user: AuthenticatedUser,
+  businessId: string,
+  menuId: string,
+) {
+  const context = await requireTenantContext(user, businessId, 'VIEWER');
+
+  const menu = await prisma.menu.findFirst({
+    where: { id: menuId, ...tenantScope(context) },
+    select: { id: true },
+  });
+
+  if (!menu) throw new TenantAccessError('Menu not found');
+
+  return pendingChanges(prisma, menu.id);
 }
 
 export async function createCategory(
@@ -536,6 +711,22 @@ export async function upsertItem(
         currency: business.currency,
       },
     });
+
+    // And a PriceHistory row, because that is what the history screen reads
+    // (§147). The importer and bulk edit already wrote one; editing an item by
+    // hand did not, which left the most ordinary way of changing a price as
+    // the one way that never appeared in its history.
+    await prisma.priceHistory.create({
+      data: {
+        businessId: context.businessId,
+        itemId: item.id,
+        itemCode: item.itemCode,
+        oldPriceMinor: existing.priceMinor,
+        newPriceMinor: priceMinor,
+        currency: business.currency,
+        changedById: user.id,
+      },
+    });
   }
 
   return { id: item.id, created: !existing };
@@ -614,3 +805,99 @@ export function canEdit(role: Parameters<typeof roleAtLeast>[0]): boolean {
 }
 
 export { isValidPublicId };
+
+// --- Working hours ---------------------------------------------------------
+
+/**
+ * Sets opening hours for the business, or for one of its branches.
+ *
+ * Hours are the one piece of contact data that goes stale fastest — Ramadan,
+ * a public holiday, a kitchen closing early — so this is a MANAGER-level
+ * operation that writes an audit entry naming what changed, and nothing more:
+ * it deliberately touches no other field on the record.
+ *
+ * `null` clears the hours, which is how a business stops publishing a schedule
+ * it can no longer keep. That is a real operation, not an error.
+ */
+export async function updateWorkingHours(
+  user: AuthenticatedUser,
+  businessId: string,
+  target: { kind: 'business' } | { kind: 'branch'; branchId: string },
+  hours: WorkingHours | null,
+) {
+  const context = await requireTenantContext(user, businessId, 'MANAGER');
+
+  if (target.kind === 'business') {
+    const updated = await prisma.business.update({
+      where: { id: context.businessId },
+      data: { workingHours: hours ?? Prisma.DbNull },
+      select: { id: true, publicId: true },
+    });
+
+    await recordAudit({
+      action: 'business.hours_updated',
+      entity: 'business',
+      entityId: updated.id,
+      businessId: context.businessId,
+      userId: user.id,
+      metadata: { cleared: hours === null },
+    });
+
+    return updated;
+  }
+
+  // The branch id arrives from a form, so it is scoped before it is trusted:
+  // updateMany with a businessId filter cannot cross a tenant boundary even if
+  // the id belongs to somebody else's branch (GOALS I8).
+  const result = await prisma.branch.updateMany({
+    where: { id: target.branchId, businessId: context.businessId },
+    data: { workingHours: hours ?? Prisma.DbNull },
+  });
+
+  if (result.count === 0) throw new TenantAccessError();
+
+  const business = await prisma.business.findUniqueOrThrow({
+    where: { id: context.businessId },
+    select: { id: true, publicId: true },
+  });
+
+  await recordAudit({
+    action: 'branch.hours_updated',
+    entity: 'branch',
+    entityId: target.branchId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { cleared: hours === null },
+  });
+
+  return business;
+}
+
+/** Everything the hours editor needs, in one scoped read. */
+export async function getHoursForAdmin(user: AuthenticatedUser, businessId: string) {
+  const context = await requireTenantContext(user, businessId, 'VIEWER');
+
+  const business = await prisma.business.findUniqueOrThrow({
+    where: { id: context.businessId },
+    select: {
+      id: true,
+      publicId: true,
+      nameAr: true,
+      nameEn: true,
+      workingHours: true,
+      branches: {
+        orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+        select: { id: true, key: true, nameAr: true, nameEn: true, workingHours: true },
+      },
+    },
+  });
+
+  return {
+    ...business,
+    workingHours: parseWorkingHours(business.workingHours),
+    branches: business.branches.map((branch) => ({
+      ...branch,
+      workingHours: parseWorkingHours(branch.workingHours),
+    })),
+  };
+}

@@ -1,11 +1,12 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/server/db/client';
 import { recordAudit } from '@/server/audit/log';
 import { formDataToObject, signInSchema } from '@/server/admin/validation';
 import { verifyPassword } from './password';
+import { RULES, consume, reset } from '@/server/security/rate-limit';
 import { SESSION_COOKIE, createSessionToken, sessionCookieOptions } from './session';
 
 /**
@@ -17,6 +18,10 @@ import { SESSION_COOKIE, createSessionToken, sessionCookieOptions } from './sess
  *  - A password verification runs even when no user matched, so response time
  *    does not leak whether an address exists.
  *  - The session cookie is httpOnly and SameSite=Lax, and Secure in production.
+ *  - Attempts are rate limited on two axes: per account, so one address cannot
+ *    be guessed at; and per client, so one source cannot spray many addresses.
+ *    Both windows are refused with the same generic message, because telling an
+ *    attacker they have been throttled tells them the account exists.
  */
 
 const GENERIC_FAILURE = 'Incorrect email or password';
@@ -37,6 +42,21 @@ export async function signInAction(
 
   if (!parsed.success) return { error: GENERIC_FAILURE };
 
+  const headerStore = await headers();
+  const client =
+    headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    headerStore.get('x-real-ip')?.trim() ||
+    'unknown';
+
+  // Both counters are consumed before any lookup, so a throttled attempt costs
+  // no database work and reveals nothing by timing.
+  const byAccount = consume(RULES.loginAccount, parsed.data.email.toLowerCase());
+  const byClient = consume(RULES.loginClient, client);
+
+  if (byAccount.limited || byClient.limited) {
+    return { error: GENERIC_FAILURE };
+  }
+
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
     select: { id: true, passwordHash: true, isActive: true },
@@ -47,6 +67,10 @@ export async function signInAction(
   if (!user || !user.isActive || !matches) {
     return { error: GENERIC_FAILURE };
   }
+
+  // A correct password clears the account's window; a legitimate operator who
+  // mistyped twice is not locked out for the rest of the quarter hour.
+  reset(RULES.loginAccount, parsed.data.email.toLowerCase());
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, createSessionToken(user.id), sessionCookieOptions());

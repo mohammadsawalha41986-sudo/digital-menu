@@ -7,7 +7,7 @@ import {
   resolveLocale,
 } from '@/i18n/config';
 import { resolveContent } from '@/i18n/content';
-import { formatCalories, formatPrice } from '@/i18n/format';
+import { formatCalories, formatClock, formatPrice } from '@/i18n/format';
 import { getDictionary } from '@/i18n/dictionary';
 
 describe('locale resolution', () => {
@@ -108,5 +108,21 @@ describe('interface dictionaries', () => {
   it('has no empty strings', () => {
     const values = JSON.stringify(getDictionary('ar')) + JSON.stringify(getDictionary('en'));
     expect(values).not.toContain('""');
+  });
+});
+
+describe('clock formatting', () => {
+  it('renders a stored 24-hour time in the English locale', () => {
+    expect(formatClock('17:00', 'en')).toMatch(/5:00/);
+  });
+
+  it('uses the same Western numerals Arabic prices use', () => {
+    // The house rule (see format.ts): Arabic menus print `42 ر.س`, not ٤٢.
+    expect(formatClock('09:30', 'ar')).toMatch(/9|09/);
+    expect(formatClock('09:30', 'ar')).not.toMatch(/[٠-٩]/);
+  });
+
+  it('returns malformed input unchanged rather than inventing a time', () => {
+    expect(formatClock('not-a-time', 'en')).toBe('not-a-time');
   });
 });

@@ -84,6 +84,8 @@ model User {
   uploadedFiles   PublicFileVersion[]
   importBatches   ImportBatch[]
   priceChanges    PriceHistory[]
+  previewLinks       PreviewLink[]   @relation("PreviewLinkCreator")
+  completedRequests  ChangeRequest[] @relation("ChangeRequestCompleter")
 
   @@index([role])
   @@map("users")
@@ -174,6 +176,8 @@ model Business {
   modifierGroups  ModifierGroup[]
   menuDesigns     MenuDesign[]
   brandPresets    BrandPreset[]
+  previewLinks    PreviewLink[]
+  changeRequests  ChangeRequest[]
   logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   ogImage         Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
@@ -245,6 +249,21 @@ model Menu {
   titleEn    String?
   sortOrder  Int        @default(0)
 
+  /// Scheduling (master spec §57). A breakfast menu, a Ramadan menu, a
+  /// seasonal one: outside its window the menu simply is not served.
+  ///
+  /// Evaluated at read time from the stored window rather than by a job
+  /// flipping a flag, for the same reason offers are: a cron that fails must
+  /// never leave last month's menu on a customer's phone.
+  startsAt DateTime?
+  endsAt   DateTime?
+  /// Daily window, `HH:MM`, for a menu served only at certain hours. Both or
+  /// neither; a closing time before the opening one runs past midnight.
+  dailyFrom String?
+  dailyTo   String?
+  /// Zone the daily window is read in. Falls back to the business's own.
+  timezone  String?
+
   currentVersionId String? @unique
 
   createdAt DateTime @default(now())
@@ -272,6 +291,21 @@ model MenuVersion {
   publishedAt   DateTime?
   publishedById String?
   notes         String?
+
+  /// The menu exactly as it stood when this version was published: categories,
+  /// items, prices, availability, image references and the studio design row.
+  /// A version without one predates snapshotting and cannot be restored — the
+  /// history screen says so rather than pretending (master spec §84, §85).
+  snapshot Json?
+
+  /// Counts of what changed against the previous version, computed once at
+  /// publish time so the history list never has to diff on render.
+  summary Json?
+
+  /// Set when this version was created by restoring an earlier one, naming the
+  /// version restored. A rollback is itself a publish — it moves the menu
+  /// forward to old content rather than deleting history (§85).
+  restoredFromVersion Int?
 
   createdAt DateTime @default(now())
 
@@ -338,6 +372,19 @@ model Media {
   /// Original upload filename, used to match Excel image-ZIP rows (§71).
   originalName String?
   checksum     String?
+
+  /// Focal point as a fraction of width and height, 0–1 (master spec §47).
+  /// Templates crop *around* this rather than from the centre, so a dish at
+  /// the edge of a photograph survives a 1:1 crop. Null means centre, which is
+  /// the sensible default and is stored as null rather than 0.5 so an
+  /// explicitly-centred image is distinguishable from an unset one.
+  focalX Float?
+  focalY Float?
+
+  /// Derivative widths generated for this image, e.g. [320, 640, 1024].
+  /// Empty means none were generated — for an SVG, or an upload from before
+  /// derivatives existed. The renderer falls back to the original.
+  derivativeWidths Int[] @default([])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -450,7 +497,28 @@ model MenuItem {
   currency   String @default("SAR")
 
   /// Optional and only ever business-supplied. Never inferred (§37).
+  ///
+  /// The wider set below exists because Saudi menu regulation asks for more
+  /// than calories, and because a field the business has not filled in must be
+  /// distinguishable from one whose true value is zero. Every one is nullable
+  /// for that reason: absent is absent, never 0 (§105; GOALS I9).
   calories      Int?
+  /// Milligrams. Named in SFDA guidance alongside calories.
+  caffeineMg    Int?
+  sodiumMg      Int?
+  /// Grams, to one decimal, stored as tenths so no float reaches the database.
+  proteinDeci   Int?
+  carbsDeci     Int?
+  fatDeci       Int?
+  fibreDeci     Int?
+  sugarDeci     Int?
+  /// Set by the business when it wants the high-salt notice shown.
+  highSalt      Boolean @default(false)
+  /// Free text the business supplies, e.g. a walking-equivalent statement.
+  /// Never computed by the platform: a calorie-burn figure depends on the
+  /// person, and inventing one would be a health claim (§05, §105).
+  activityNoteAr String?
+  activityNoteEn String?
   servingSizeAr String?
   servingSizeEn String?
   ingredientsAr String?
@@ -1081,4 +1149,88 @@ model BrandPreset {
   @@unique([businessId, key])
   @@index([businessId])
   @@map("brand_presets")
+}
+
+// ---------------------------------------------------------------------------
+// CLIENT REVIEW — preview links and approval without an account.
+// ---------------------------------------------------------------------------
+
+/// What the client did with a preview link (master spec §72, §139, §140).
+enum ReviewState {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+/// A shareable, expiring link that lets a client see their profile before it
+/// is published, and approve it or ask for changes — without an account, a
+/// password, or a dashboard (§71, §139).
+///
+/// The token is stored hashed, exactly as an API key is: a leaked database
+/// row must not hand over working preview links. What is shown once, at
+/// creation, is the only time the plaintext exists.
+model PreviewLink {
+  id         String @id @default(cuid())
+  businessId String
+
+  /// Short public handle, used in the URL beside the secret.
+  key String @unique
+
+  /// SHA-256 of the secret. The secret itself is never stored.
+  tokenHash String
+
+  /// Who the link was made for, so the record is meaningful later. Free text:
+  /// a client is not a user of this system and has no account to reference.
+  recipientNote String?
+
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  state       ReviewState @default(PENDING)
+  respondedAt DateTime?
+  /// The client's own words when asking for changes. Displayed to staff and
+  /// never interpreted as an instruction by anything automatic.
+  responseNote String?
+  /// How the client identified themselves when responding. Optional and
+  /// self-declared; never treated as authentication.
+  respondedBy String?
+
+  viewCount  Int       @default(0)
+  lastViewed DateTime?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy      User?           @relation("PreviewLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  changeRequests ChangeRequest[]
+
+  @@index([businessId, createdAt])
+  @@map("preview_links")
+}
+
+/// A change the client asked for, recorded so a managed service can work
+/// through them (§73, §140). Deliberately not a ticketing system: a note, who
+/// it came from, and whether it is done.
+model ChangeRequest {
+  id         String  @id @default(cuid())
+  businessId String
+  /// Set when the request arrived through a preview link.
+  previewLinkId String?
+
+  body String
+
+  isDone      Boolean   @default(false)
+  completedAt DateTime?
+  completedById String?
+
+  createdAt DateTime @default(now())
+
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  previewLink PreviewLink? @relation(fields: [previewLinkId], references: [id], onDelete: SetNull)
+  completedBy User?        @relation("ChangeRequestCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, isDone, createdAt])
+  @@map("change_requests")
 }

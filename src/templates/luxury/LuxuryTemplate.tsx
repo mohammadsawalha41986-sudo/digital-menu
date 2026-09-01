@@ -1,6 +1,13 @@
 import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../shared/primitives';
 import { composeProfile } from '../shared/composition';
-import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
+import {
+  ContactSection,
+  DownloadsSection,
+  HeroOffer,
+  HoursSection,
+  OfferBanners,
+  OffersSection,
+} from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
 
@@ -56,8 +63,32 @@ export function LuxuryTemplate({ profile, locale, dictionary }: TemplateRenderPr
         />
       </header>
 
+      <HeroOffer
+
+        offer={composition.offers.hero}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="luxury"
+
+      />
+
+
+      <OfferBanners
+
+        offers={composition.offers.banners}
+
+        locale={locale}
+
+        prefix="luxury"
+
+      />
+
+
       <OffersSection
-        offers={profile.offers}
+        offers={composition.offers.section}
         locale={locale}
         dictionary={dictionary}
         prefix="luxury"
@@ -159,10 +190,24 @@ export function LuxuryTemplate({ profile, locale, dictionary }: TemplateRenderPr
 
       <DownloadsSection
         downloads={profile.downloads}
+        printHref={`/m/${profile.publicId}/print`}
         locale={locale}
         dictionary={dictionary}
         prefix="luxury"
       />
+
+      <HoursSection
+
+        hours={profile.contact.workingHours}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="luxury"
+
+      />
+
 
       <ContactSection
         actions={composition.contactActions}

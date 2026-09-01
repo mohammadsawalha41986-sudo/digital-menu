@@ -12,6 +12,8 @@ import {
 } from '../shared/primitives';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
+import { HeroOffer, HoursSection, OfferBanners } from '../shared/sections';
+import { splitOffersByPlacement } from '../shared/composition';
 
 /**
  * EDITORIAL — type-led, rule-separated, restrained.
@@ -28,6 +30,7 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
   const socialLinks = buildSocialLinks(profile.contact);
   const menus = profile.menus;
   const categories = menus.flatMap((menu) => menu.categories);
+  const offers = splitOffersByPlacement(profile.offers);
 
   return (
     <article className="editorial">
@@ -79,13 +82,17 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
         ) : null}
       </header>
 
-      {profile.offers.length > 0 ? (
+      <HeroOffer offer={offers.hero} locale={locale} dictionary={dictionary} prefix="editorial" />
+
+      <OfferBanners offers={offers.banners} locale={locale} prefix="editorial" />
+
+      {offers.section.length > 0 ? (
         <section className="editorial__offers" aria-labelledby="offers-heading">
           <h2 id="offers-heading" className="editorial__section-title">
             {dictionary.profile.offers}
           </h2>
           <ul className="editorial__offer-list">
-            {profile.offers.map((offer) => (
+            {offers.section.map((offer) => (
               <li key={offer.key} className="editorial__offer" data-offer={offer.key}>
                 <div className="editorial__offer-body">
                   <Localized
@@ -269,12 +276,25 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
         ))}
       </main>
 
-      {profile.downloads.length > 0 ? (
-        <section className="editorial__downloads" aria-labelledby="downloads-heading">
+      {/* Always present: even with no uploaded files, the business has a menu
+          worth taking away, and the printable version is it. */}
+      <section className="editorial__downloads" aria-labelledby="downloads-heading">
           <h2 id="downloads-heading" className="editorial__section-title">
             {dictionary.profile.downloads}
           </h2>
           <ul className="editorial__download-list">
+            <li className="editorial__download" data-download="print">
+              <a
+                href={`/m/${profile.publicId}/print`}
+                className="editorial__download-link"
+                data-event="pdf_open"
+              >
+                <span className="editorial__download-title">
+                  {dictionary.profile.printableMenu}
+                </span>
+              </a>
+            </li>
+
             {profile.downloads.map((download) => (
               <li key={download.key} className="editorial__download">
                 <a
@@ -308,8 +328,7 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
               </li>
             ))}
           </ul>
-        </section>
-      ) : null}
+      </section>
 
       <footer className="editorial__footer">
         {profile.branches.length > 0 ? (
@@ -346,6 +365,13 @@ export function EditorialTemplate({ profile, locale, dictionary }: TemplateRende
             </ul>
           </section>
         ) : null}
+
+        <HoursSection
+          hours={profile.contact.workingHours}
+          locale={locale}
+          dictionary={dictionary}
+          prefix="editorial"
+        />
 
         {hasContent(
           { ar: profile.contact.addressAr, en: profile.contact.addressEn },

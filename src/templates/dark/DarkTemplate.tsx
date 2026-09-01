@@ -1,6 +1,13 @@
 import { Calories, Localized, LocaleSwitcher, Price, ProfileImage } from '../shared/primitives';
 import { composeProfile } from '../shared/composition';
-import { ContactSection, DownloadsSection, OffersSection } from '../shared/sections';
+import {
+  ContactSection,
+  DownloadsSection,
+  HeroOffer,
+  HoursSection,
+  OfferBanners,
+  OffersSection,
+} from '../shared/sections';
 import type { TemplateRenderProps } from '../types';
 import { designToAttributes } from '@/menu-studio/resolve';
 
@@ -49,8 +56,32 @@ export function DarkTemplate({ profile, locale, dictionary }: TemplateRenderProp
         />
       </header>
 
+      <HeroOffer
+
+        offer={composition.offers.hero}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="dark"
+
+      />
+
+
+      <OfferBanners
+
+        offers={composition.offers.banners}
+
+        locale={locale}
+
+        prefix="dark"
+
+      />
+
+
       <OffersSection
-        offers={profile.offers}
+        offers={composition.offers.section}
         locale={locale}
         dictionary={dictionary}
         prefix="dark"
@@ -132,10 +163,24 @@ export function DarkTemplate({ profile, locale, dictionary }: TemplateRenderProp
 
       <DownloadsSection
         downloads={profile.downloads}
+        printHref={`/m/${profile.publicId}/print`}
         locale={locale}
         dictionary={dictionary}
         prefix="dark"
       />
+
+      <HoursSection
+
+        hours={profile.contact.workingHours}
+
+        locale={locale}
+
+        dictionary={dictionary}
+
+        prefix="dark"
+
+      />
+
 
       <ContactSection
         actions={composition.contactActions}

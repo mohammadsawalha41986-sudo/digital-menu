@@ -343,3 +343,61 @@
 [data-variant='b'] .luxury {
   --luxury-measure: 42rem;
 }
+
+/* Opening hours — set as a quiet, wide-tracked table, in keeping with the
+   family's restraint. The badge is a hairline rule and small caps, never a
+   coloured pill. */
+.luxury__hours { margin-block: var(--sys-space-7); }
+.luxury__hours-state {
+  display: flex; align-items: baseline; gap: var(--sys-space-3);
+  padding-block-end: var(--sys-space-3);
+  border-block-end: 1px solid var(--brand-border);
+}
+.luxury__hours-badge {
+  font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--brand-muted);
+}
+.luxury__hours-state[data-open='true'] .luxury__hours-badge { color: var(--brand-accent); }
+.luxury__hours-detail { font-size: 0.85rem; color: var(--brand-muted); }
+.luxury__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
+.luxury__hours-row {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-4);
+  align-items: baseline; font-size: 0.9rem;
+}
+.luxury__hours-row[data-today] { color: var(--brand-text); font-weight: 500; }
+.luxury__hours-day { color: var(--brand-muted); letter-spacing: 0.06em; }
+.luxury__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }
+
+/* --- Offer placement ------------------------------------------------------
+   HERO, BANNER and SECTION are three different designs, not three sizes of
+   one. Each family answers them in its own language (§35, §115). */
+
+/* HERO — a centred plate: image behind, type above, everything ceremonial. */
+.luxury__hero-offer { position: relative; margin-block-end: var(--sys-space-7); text-align: center; }
+.luxury__hero-offer-image { inline-size: 100%; block-size: clamp(14rem, 46vw, 24rem); object-fit: cover; filter: brightness(0.72); }
+.luxury__hero-offer-body {
+  position: absolute; inset-block-end: 0; inset-inline: 0; padding: var(--sys-space-6);
+  display: grid; gap: var(--sys-space-2); justify-items: center;
+  /* Scrim and foreground both come from brand tokens, so an inverted theme
+     stays legible and this family still contains no colour of its own. */
+  background: linear-gradient(to top, var(--brand-text) 15%, transparent);
+  color: var(--brand-background);
+}
+.luxury__hero-offer:not(:has(.luxury__hero-offer-image)) .luxury__hero-offer-body {
+  position: static; color: var(--brand-text); border-block: 1px solid var(--brand-border);
+}
+.luxury__hero-offer-discount { font-size: clamp(2.5rem, 12vw, 5rem); line-height: 0.9; letter-spacing: -0.03em; color: var(--brand-accent); }
+.luxury__hero-offer-title { font-size: clamp(1.25rem, 5vw, 2rem); letter-spacing: 0.06em; }
+.luxury__hero-offer-note { max-inline-size: 34ch; opacity: 0.85; }
+.luxury__hero-offer-was { opacity: 0.6; margin-inline-end: 0.6em; }
+.luxury__hero-offer-now { font-size: 1.25rem; }
+.luxury__hero-offer-cta { margin-block-start: var(--sys-space-2); border: 1px solid currentColor; padding: 0.6em 1.6em; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.8rem; }
+
+/* BANNER — a hairline rule with small caps; the quietest of the ten. */
+.luxury__offer-banners { display: grid; gap: 0; margin-block-end: var(--sys-space-6); }
+.luxury__offer-banner {
+  display: flex; justify-content: center; align-items: baseline; gap: var(--sys-space-3);
+  padding-block: var(--sys-space-3); border-block-end: 1px solid var(--brand-border);
+  font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase;
+}
+.luxury__offer-banner-discount, .luxury__offer-banner-price { color: var(--brand-accent); }

@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { prisma } from '@/server/db/client';
+import { RULES, consume } from '@/server/security/rate-limit';
 
 /**
  * API authentication (master spec §127, §129, §130).
@@ -22,6 +23,22 @@ export interface ApiCredential {
   businessIds: string[];
   scopes: string[];
   marketingClientId: string | null;
+}
+
+/**
+ * Thrown when a key exceeds its window. Separate from {@link ApiAuthError}
+ * because 429 is not an authentication outcome and must not be reported as
+ * one — a client that retries on 401 would loop forever against a 429.
+ */
+export class ApiRateLimitError extends Error {
+  readonly status = 429;
+  readonly retryAfterSeconds: number;
+
+  constructor(retryAfterSeconds: number) {
+    super('Rate limit exceeded');
+    this.name = 'ApiRateLimitError';
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
 }
 
 export class ApiAuthError extends Error {
@@ -101,6 +118,13 @@ export async function authenticateApiRequest(request: Request): Promise<ApiCrede
   }
 
   // Best-effort: a failed usage stamp must not fail the request.
+  // Limited per key rather than per address: keys are the API's unit of
+  // identity, and several of them legitimately share one egress address.
+  const limit = consume(RULES.api, client.id);
+  if (limit.limited) {
+    throw new ApiRateLimitError(Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000)));
+  }
+
   prisma.apiClient
     .update({ where: { id: client.id }, data: { lastUsedAt: new Date() } })
     .catch(() => undefined);

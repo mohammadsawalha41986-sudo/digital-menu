@@ -6,7 +6,10 @@ import { listMedia } from '@/server/media/service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import {
   assignMediaAction,
+  backfillDerivativesAction,
   deleteMediaAction,
+  setAltTextAction,
+  setFocalPointAction,
   uploadMediaAction,
 } from '@/server/admin/media-actions';
 import { MediaLibrary } from './library';
@@ -64,11 +67,24 @@ export default async function MediaPage({
           altEn: entry.altEn,
           originalName: entry.originalName,
           sizeKb: Math.ceil(entry.sizeBytes / 1024),
+          width: entry.width,
+          height: entry.height,
+          focalX: entry.focalX,
+          focalY: entry.focalY,
+          derivativeWidths: entry.derivativeWidths,
+          quality: entry.quality,
         }))}
         itemCodes={itemCodes}
         categoryKeys={categoryKeys}
         uploadMedia={uploadMediaAction.bind(null, business.id, business.publicId)}
         assignMedia={assignMediaAction.bind(null, business.id, business.publicId)}
+        setFocalPoint={(businessId, publicId, mediaId) =>
+          setFocalPointAction.bind(null, businessId, publicId, mediaId)
+        }
+        setAltText={(businessId, publicId, mediaId) =>
+          setAltTextAction.bind(null, businessId, publicId, mediaId)
+        }
+        optimiseAll={backfillDerivativesAction}
         deleteMedia={deleteMediaAction}
       />
     </>

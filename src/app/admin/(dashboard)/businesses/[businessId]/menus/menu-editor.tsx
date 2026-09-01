@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { ActionButton, ActionForm, SelectField, TextField } from '../../../components';
 import type { ActionState } from '@/server/admin/actions';
 
@@ -114,12 +116,22 @@ export function MenuEditor({
                 Status: {menu.status}.
               </p>
             </div>
-            <ActionButton
-              action={publishMenu.bind(null, businessId, menu.id, publicId)}
-              label="Publish"
-              pendingLabel="Publishing…"
-              variant="primary"
-            />
+            <div className="admin__actions">
+              {/* History sits beside Publish because the question "what will
+                  this change?" is asked immediately before pressing it. */}
+              <Link
+                href={`/admin/businesses/${businessId}/menus/${menu.id}/versions`}
+                className="admin__button admin__button--secondary"
+              >
+                History &amp; changes
+              </Link>
+              <ActionButton
+                action={publishMenu.bind(null, businessId, menu.id, publicId)}
+                label="Publish"
+                pendingLabel="Publishing…"
+                variant="primary"
+              />
+            </div>
           </header>
 
           <div className="admin__table-scroll">
