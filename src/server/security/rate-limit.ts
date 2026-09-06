@@ -117,4 +117,17 @@ export const RULES = {
   api: { namespace: 'api', windowMs: 60_000, max: 120 },
   /** Client preview tokens, per client — brute-forcing a token is the threat. */
   previewToken: { namespace: 'preview', windowMs: 60_000, max: 30 },
+  /**
+   * Command palette, per signed-in account. High, because it queries on every
+   * keystroke and a fast typist is not an attacker — but a ceiling, because a
+   * search endpoint without one is a database-load amplifier.
+   */
+  palette: { namespace: 'palette', windowMs: 60_000, max: 240 },
+  /**
+   * Link Health, per business. The cost of a run is outbound requests to third
+   * parties, so the party a loose limit would hurt is the *target*, not this
+   * platform: a freely resubmittable form is a way to point our traffic at
+   * someone else's server.
+   */
+  linkCheck: { namespace: 'links', windowMs: 60_000, max: 1 },
 } as const satisfies Record<string, RateLimitRule>;

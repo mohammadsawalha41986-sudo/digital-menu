@@ -42,6 +42,7 @@ export type AuditAction =
   | 'file.updated'
   | 'file.deleted'
   | 'qr.generated'
+  | 'links.checked'
   | 'import.executed'
   | 'import.rolled_back'
   | 'export.executed'

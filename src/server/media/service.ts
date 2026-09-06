@@ -14,7 +14,6 @@ import {
   requireTenantContext,
   tenantScope,
   type AuthenticatedUser,
-  type TenantContext,
 } from '@/server/tenancy/context';
 import {
   ALLOWED_IMAGE_TYPES,
@@ -53,24 +52,41 @@ export interface UploadMediaInput {
   height?: number | null;
 }
 
-export async function uploadMedia(
-  user: AuthenticatedUser,
-  businessId: string,
-  input: UploadMediaInput,
-) {
-  const context = await requireTenantContext(user, businessId, 'EDITOR');
-
+/**
+ * Stores bytes as a medium for a business, without asking who is doing it.
+ *
+ * Split out of `uploadMedia` so the seed can put images through exactly the
+ * pipeline the admin uses — validation, checksum de-duplication, derivative
+ * generation — rather than a second, quietly divergent one. Demo imagery that
+ * skipped this would not exercise the srcset the templates render, which is
+ * most of what makes the demos worth looking at.
+ *
+ * Authorisation and audit stay with the caller: this function is deliberately
+ * not safe to expose to a request.
+ */
+export async function storeMedia(businessId: string, input: UploadMediaInput) {
   const validated = validateUpload(input.upload, ALLOWED_IMAGE_TYPES);
-  const storageKey = buildMediaKey(context, validated.extension);
+
+  // The key is namespaced by the *public* id, never the internal one. A media
+  // URL is rendered into every public profile, so anything in the key is
+  // published: keying by the database cuid would print an internal identifier
+  // on every page and let anyone correlate tenants across profiles. The public
+  // id is already public, already permanent, and is what the QR codes encode.
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { publicId: true },
+  });
+
+  if (!business) throw new TenantAccessError('No such business.');
+
+  const storageKey = buildMediaKey(business.publicId, validated.extension);
   const checksum = createHash('sha256').update(input.upload.bytes).digest('hex');
 
   // Identical bytes already uploaded for this tenant: reuse rather than store
   // a second copy. Menus repeat images far more often than they don't.
-  const existing = await prisma.media.findFirst({
-    where: { businessId: context.businessId, checksum },
-  });
+  const existing = await prisma.media.findFirst({ where: { businessId, checksum } });
 
-  if (existing) return existing;
+  if (existing) return { media: existing, deduplicated: true, derivatives: 0 };
 
   const storage = getStorage();
 
@@ -111,7 +127,7 @@ export async function uploadMedia(
 
   const media = await prisma.media.create({
     data: {
-      businessId: context.businessId,
+      businessId,
       kind: input.kind,
       storageKey,
       contentType: validated.contentType,
@@ -127,20 +143,34 @@ export async function uploadMedia(
     },
   });
 
+  return { media, deduplicated: false, derivatives: derivativeWidths.length };
+}
+
+export async function uploadMedia(
+  user: AuthenticatedUser,
+  businessId: string,
+  input: UploadMediaInput,
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const result = await storeMedia(context.businessId, input);
+
+  // A de-duplicated upload stored nothing, so there is nothing to record.
+  if (result.deduplicated) return result.media;
+
   await recordAudit({
     action: 'file.uploaded',
     entity: 'media',
-    entityId: media.id,
+    entityId: result.media.id,
     businessId: context.businessId,
     userId: user.id,
     metadata: {
       kind: input.kind,
-      sizeBytes: validated.sizeBytes,
-      derivatives: derivativeWidths.length,
+      sizeBytes: result.media.sizeBytes,
+      derivatives: result.derivatives,
     },
   });
 
-  return media;
+  return result.media;
 }
 
 export type AssignTarget =
@@ -318,9 +348,9 @@ export async function deleteMedia(user: AuthenticatedUser, businessId: string, m
   });
 }
 
-function buildMediaKey(context: TenantContext, extension: string): string {
+function buildMediaKey(publicId: string, extension: string): string {
   const nonce = randomBytes(8).toString('hex');
-  return `businesses/${context.businessId}/media/${nonce}${extension}`;
+  return `businesses/${publicId}/media/${nonce}${extension}`;
 }
 
 /**

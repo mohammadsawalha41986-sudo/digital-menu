@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { getProfileHealth } from '@/server/quality/service';
+import { getLinkHealth } from '@/server/links/service';
+import { checkLinksAction } from '@/server/admin/link-actions';
+import { ActionForm } from '../../../components';
 import { TenantAccessError } from '@/server/tenancy/context';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +22,22 @@ const AREA_LABELS: Record<string, string> = {
   qr: 'QR',
   downloads: 'Downloads',
   publishing: 'Publishing',
+};
+
+/**
+ * How each link state is spoken about.
+ *
+ * `UNCHECKED` is a real state with its own words, not a blank. A profile whose
+ * links have never been checked must not look like one whose links passed.
+ */
+const LINK_STATE: Record<string, { label: string; hint: string }> = {
+  WORKING: { label: 'Working', hint: 'Answered when we asked.' },
+  BROKEN: { label: 'Broken', hint: 'Did not answer, or answered with an error.' },
+  BLOCKED: {
+    label: 'Refused',
+    hint: 'We will not fetch this address — check the scheme, port and host.',
+  },
+  UNCHECKED: { label: 'Unchecked', hint: 'Not checked yet.' },
 };
 
 const STATUS_MARK: Record<string, string> = {
@@ -50,10 +69,16 @@ export default async function HealthPage({
   const { businessId } = await params;
   const user = await requireUser();
 
-  const report = await getProfileHealth(user, businessId).catch((error) => {
-    if (error instanceof TenantAccessError) notFound();
-    throw error;
-  });
+  const [report, links] = await Promise.all([
+    getProfileHealth(user, businessId).catch((error) => {
+      if (error instanceof TenantAccessError) notFound();
+      throw error;
+    }),
+    getLinkHealth(user, businessId).catch((error) => {
+      if (error instanceof TenantAccessError) notFound();
+      throw error;
+    }),
+  ]);
 
   const groups = [
     { severity: 'ERROR' as const, title: 'Must fix', hint: 'These stop the profile working as intended.' },
@@ -128,6 +153,53 @@ export default async function HealthPage({
           </section>
         );
       })}
+
+      <section className="admin__panel" id="links">
+        <h2 className="admin__panel-title">Link health</h2>
+        <p className="admin__hint">
+          The addresses this profile sends visitors to. Checked on request rather than on a
+          schedule, so the platform is not quietly fetching every address its clients have ever
+          typed. Phone and WhatsApp numbers are not listed: <code>wa.me</code> answers for a
+          number nobody owns, so a tick there would mean nothing.
+        </p>
+
+        {links.length === 0 ? (
+          <p className="admin__hint">This profile publishes no external links.</p>
+        ) : (
+          <>
+            <ul className="admin__links">
+              {links.map((link) => (
+                <li key={link.field} data-link-status={link.status}>
+                  <span className="admin__link-state" data-state={link.status}>
+                    {LINK_STATE[link.status]?.label ?? link.status}
+                  </span>
+                  <span className="admin__link-label">{link.label}</span>
+                  <a
+                    className="admin__link-url"
+                    href={link.url}
+                    // A profile's links are operator-supplied and point off this
+                    // origin: no referrer, and no handle on the opener.
+                    rel="noreferrer noopener nofollow external"
+                    target="_blank"
+                  >
+                    {link.url}
+                  </a>
+                  <span className="admin__hint">
+                    {link.reason ?? LINK_STATE[link.status]?.hint}
+                    {link.checkedAt
+                      ? ` · checked ${new Date(link.checkedAt).toISOString().slice(0, 16).replace('T', ' ')}`
+                      : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <ActionForm action={checkLinksAction} submitLabel="Check links now">
+              <input type="hidden" name="businessId" value={businessId} />
+            </ActionForm>
+          </>
+        )}
+      </section>
 
       {report.findings.length === 0 ? (
         <section className="admin__panel">

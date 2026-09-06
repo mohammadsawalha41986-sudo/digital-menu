@@ -122,7 +122,12 @@ describe.skipIf(!databaseReachable)('media upload', () => {
     expect(media.altAr).toBe('صورة الطبق');
     // The key is generated, not derived from the filename.
     expect(media.storageKey).not.toContain('dish.png');
-    expect(media.storageKey).toContain(`businesses/${businessId}/media/`);
+    // Namespaced by the *public* id. The key is rendered into every public
+    // profile as part of the image URL, so the internal database id must not
+    // appear in it — `tests/integration/public-profile.test.ts` asserts the
+    // same invariant from the other end, on the serialised read model.
+    expect(media.storageKey).toContain(`businesses/${PUBLIC_ID}/media/`);
+    expect(media.storageKey).not.toContain(businessId);
   });
 
   it('reuses an identical upload rather than storing it twice', async () => {
