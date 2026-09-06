@@ -1,3 +1,10 @@
+> **Superseded.** This document describes the state of branch
+> `claude/website-audit-wev2pn`, when integration and E2E were blocked for want
+> of a database. Both now run. For current status see
+> [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md); for the deployment
+> procedure see [`PRODUCTION-RUNBOOK.md`](PRODUCTION-RUNBOOK.md). Kept for the
+> record of what was known at the time.
+
 # DEPLOYMENT READINESS
 
 Prepared for whoever runs the deployment. Nothing in this document claims the

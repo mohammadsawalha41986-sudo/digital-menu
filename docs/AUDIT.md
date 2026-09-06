@@ -1,3 +1,7 @@
+> **Historical.** This records the state *before* the current upgrade round.
+> For what is built now see [`IMPLEMENTATION-STATUS.md`](IMPLEMENTATION-STATUS.md);
+> for the current audit see [`PRODUCTION-READINESS-AUDIT.md`](PRODUCTION-READINESS-AUDIT.md).
+
 # REPOSITORY AUDIT — against the Master Upgrade Prompt
 
 > **This document records the repository as it stood when the audit was

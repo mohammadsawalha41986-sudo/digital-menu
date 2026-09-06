@@ -46,10 +46,12 @@ and asserts the QR payload and rendered SVG are byte-identical afterwards.
 | Print | Printable menu with correct Arabic, and a QR print kit sized in millimetres |
 | Deployment | Multi-stage Docker image needing no build-time secrets, compose, health checks, CI, Railway |
 
-Known gaps are listed at the end of this file, honestly. `docs/AUDIT.md` records
-the state before the current upgrade round; `docs/IMPLEMENTATION-STATUS.md`
-tracks what has changed since, and `docs/DEPLOYMENT-READINESS.md` is the
-handover for shipping it.
+Known gaps are listed at the end of this file, honestly.
+**[`docs/IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION-STATUS.md) is the single
+source of truth for what is built** — if another document disagrees with it,
+that document is stale. `docs/PRODUCTION-READINESS-AUDIT.md` is the current
+audit, and `docs/FINAL-PRODUCTION-READINESS-REPORT.md` carries the verdict and
+the two things standing between this and a production-ready claim.
 
 ## Documentation
 
@@ -67,6 +69,18 @@ handover for shipping it.
 | [`docs/API.md`](docs/API.md) | Endpoints, auth, envelopes, AI Marketing OS integration |
 | [`docs/MENU-STUDIO.md`](docs/MENU-STUDIO.md) | The studio: brand engine, theme layer, and what is not claimed |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Docker, Coolify, Railway, environment, backups |
+
+**Status, operations and verification**
+
+| Document | Covers |
+|---|---|
+| [`docs/IMPLEMENTATION-STATUS.md`](docs/IMPLEMENTATION-STATUS.md) | **The single source of truth for feature status** |
+| [`docs/PRODUCTION-READINESS-AUDIT.md`](docs/PRODUCTION-READINESS-AUDIT.md) | What was found when the system was actually run |
+| [`docs/FINAL-PRODUCTION-READINESS-REPORT.md`](docs/FINAL-PRODUCTION-READINESS-REPORT.md) | Verdict, scores, and what remains |
+| [`docs/PRODUCTION-RUNBOOK.md`](docs/PRODUCTION-RUNBOOK.md) | Releasing, health, smoke tests, backups, common situations |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model, defences, and accepted risks |
+| [`docs/TESTING.md`](docs/TESTING.md) | The layers, how to run them, and what PASS means |
+| [`docs/MEDIA.md`](docs/MEDIA.md) | The upload pipeline, alt text, and the demo artwork |
 
 ## Quick start
 

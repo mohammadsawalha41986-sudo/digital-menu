@@ -1,157 +1,154 @@
-# IMPLEMENTATION STATUS
+# Implementation Status
 
-Working checkpoint for the production-completion effort. Read this first when
-resuming; do not redo work marked **Done**.
+**The single source of truth for what is built.** If another document disagrees
+with this one, this one is right and the other is stale.
 
-Phase numbers refer to the Autonomous Production Completion Command.
-Feature grades (A–E) refer to `docs/AUDIT.md`.
+**Last verified:** 2026-09-06, against a real PostgreSQL 16 with all migrations
+applied and a production build.
+
+Statuses: **DONE** · **IN PROGRESS** · **BLOCKED** · **NOT STARTED**
 
 ---
 
-## Verification state, right now
+## Verification state
 
 | Check | Result |
 |---|---|
-| `npm ci` on a clean clone | **passes** (was failing — Phase 1) |
-| `npm run lint` | clean |
-| `npm run typecheck` | clean |
-| `npm test` | **457 passed**, 167 skipped (was 242 / 124) |
-| `npm run build` | succeeds |
-| Integration + E2E | **BLOCKED** — no database, no Docker daemon in this environment |
-| Live deployment | **Not attempted, by instruction.** Railway access *is* available (corrected below). |
+| `npm ci` on a clean clone | **PASS** |
+| `npm run lint` | **PASS** |
+| `npm run typecheck` | **PASS** |
+| `npm test` (unit + integration) | **PASS** — 670 passed, **0 skipped** |
+| `npm run build` | **PASS** |
+| `npx playwright test` (E2E, production build) | **PASS** — 90 passed |
+| `prisma migrate deploy` | **PASS** — 17 migrations, no drift |
+| Live production deployment | **NOT RUN** |
+| Production smoke tests | **NOT RUN** — depends on the above |
+
+> Integration and E2E were previously **BLOCKED** for want of a database, with
+> 167 tests skipping silently. Both now run. CI enforces it with
+> `REQUIRE_DATABASE=1`, so a missing database fails the run rather than
+> removing a third of the suite from it.
 
 ---
 
-## Done
+## Platform
 
-### Phase 1 — Clean clone / installability
-`npm ci` failed on a fresh clone because `postinstall` runs `prisma generate`
-and the config resolved `DATABASE_URL` eagerly. The URL is now declared only
-when set. Build-time and runtime requirements are separated, not weakened:
-`prisma migrate` still refuses without it, and `src/lib/env.ts` still requires
-it to start. **Verified by deleting `node_modules` and `.env` and running
-`npm ci`.**
+| Area | Status | Notes |
+|---|---|---|
+| Authentication, sessions, password reset | **DONE** | scrypt; rate-limited per account and per client |
+| RBAC, staff accounts, grants | **DONE** | Enforced in services, so routes cannot bypass it |
+| Tenant isolation | **DONE** | Scope resolved before querying, not filtered after |
+| Database schema and migrations | **DONE** | 30 tables, 17 migrations, all additive |
+| Security headers, CSP | **DONE** | Verified against a running production build |
+| Rate limiting | **DONE** | In-process — see Scaling |
+| Health endpoint | **DONE** | Application, database and storage reported separately |
+| Audit logging | **DONE** | |
+| Docker, entrypoint, Railway config | **DONE** | Migrations run in the container that serves |
+| CI | **DONE** | Postgres service, full suite including E2E |
 
-### Phase 3 (part) — Authentication hardening
-- **Rate limiting** — the analytics route held the only limiter in the
-  codebase. It is now `src/server/security/rate-limit.ts`, shared by login,
-  `/api/v1` and event ingest.
-- **Brute-force protection** — login is counted per account (8 / 15 min) and
-  per client (25 / 15 min). A correct password clears the account window. Both
-  refusals return the same generic message.
-- **Security headers** — CSP, `X-Content-Type-Options`, `X-Frame-Options`,
-  `Referrer-Policy`, `Permissions-Policy`, COOP, and HSTS in production only.
-  **Verified against a running production build with `curl -D-`.**
+## Content and publishing
 
-### Phase 4 — Real typography *(was the largest gap in the audit)*
-Six OFL families now ship self-hosted under `public/fonts` (1.4 MB, per-script
-subsets preserved): Cairo, Tajawal, Amiri, El Messiri, Playfair Display, Inter.
-The design layer and the studio catalogue were two parallel font systems; they
-are now one. Each page preloads only its own business's families, in the script
-it is being drawn in.
-**Verified in Chromium: all six load and each measures differently from a
-deliberately missing font.** `e2e/typography.spec.ts` keeps that check.
+| Area | Status | Notes |
+|---|---|---|
+| Business, branch, menu, category, item CRUD | **DONE** | |
+| Modifier groups and options | **DONE** | Can express sizes; not a first-class variant type |
+| Offers, with HERO / BANNER / SECTION placements | **DONE** | Three distinct designs per family |
+| Working hours, timezone-aware | **DONE** | Midnight-crossing intervals handled |
+| Menu scheduling | **DONE** | |
+| Service mode | **DONE** | |
+| Draft / live separation | **DONE** | |
+| Version snapshots, comparison, rollback | **DONE** | |
+| Client preview links and approval | **DONE** | |
+| Profile Health | **DONE** | Every finding carries a working fix link |
+| Agency dashboard ("needs attention") | **DONE** | |
+| Excel import: mapping, conflicts, preview, rollback | **DONE** | |
+| Export | **DONE** | |
+| Price history and audit screens | **DONE** | |
+| Nutrition fields | **DONE** | Never invented; missing data reported as missing |
 
-### Phase 5 — Working hours *(grade E — dead data)*
-Stored and published through the API, never editable and never rendered.
-Now end to end: open/closed computed server-side in the business's timezone,
-intervals that cross midnight handled as first-class, a native-time-input
-editor that works with no JavaScript, and per-family styling in all ten
-templates. Demo businesses carry hours shaped like their trades.
+## Public profile
 
-### Phase 6 — Offer placement *(grade E — ignored data)*
-`HERO` / `BANNER` / `SECTION` were stored and carried into the read model while
-every template rendered one identical list. They are now three distinct
-designs in each of the ten families. A second `HERO` offer is rehomed rather
-than dropped. The seed had no offers at all; it now demonstrates all three.
+| Area | Status | Notes |
+|---|---|---|
+| Ten template families | **DONE** | Proven distinct in DOM, metrics and palette |
+| Brand engine and per-business theming | **DONE** | Contrast-corrected variants |
+| Arabic / English, RTL / LTR | **DONE** | Designed for both, not CSS-flipped |
+| Self-hosted typography, per-script subsets | **DONE** | Six OFL families |
+| Responsive 320px → large desktop | **DONE** | No horizontal overflow at any target width |
+| SEO: metadata, canonical, hreflang, OG, sitemap, robots | **DONE** | Not verified against production URLs |
+| Printable menu and PDF | **DONE** | Arabic glyph mapping asserted in the generated PDF |
+| QR permanence | **DONE** | |
+| QR print kit | **DONE** | Table tent, counter card, A4, A5, QR-only |
+| Analytics capture and reporting | **DONE** | Owner previews excluded |
+| **Public menu search / filter** | **NOT STARTED** | Largest remaining visitor-facing gap |
 
----
+## Media
 
-## Also done since
+| Area | Status | Notes |
+|---|---|---|
+| Upload validation, dedupe, generated keys | **DONE** | Three-way type check |
+| Derivatives, srcset, focal points, lazy loading | **DONE** | Generated at upload |
+| Bilingual authored alt text | **DONE** | Never generated from a filename |
+| Media Studio: crop, focal, metadata, orphans, quality | **DONE** | |
+| **Demo imagery** | **DONE** | 67 original brand artworks across 8 businesses |
+| **Image ZIP import** | **NOT STARTED** | Excel image *mapping* exists; the archive path does not |
 
-| Phase | What |
-|---|---|
-| 7–9 | Menu version snapshots, draft-vs-live comparison, rollback |
-| 10 | Profile Health, and the attention dashboard built on it |
-| 3 (rest) | Staff accounts, roles, grants, password reset and change |
-| 39–40 | Client preview links and approval, with change requests |
-| 41 | Agency dashboard answering "what needs my attention?" |
-| 19–23 | Import change preview, conflict centre, editable mapping, drag-and-drop |
-| 29–30 | Nutrition fields and the readiness layer |
-| 16–18 | Media Studio: focal points, WebP derivatives, quality assessment |
-| 11 | Price-history and audit-log screens |
-| 21–22 | Service mode |
-| 32 | Menu scheduling |
-| 42 | Global search |
-| 44 | QR print kit |
-| 34–36 | The printable menu and the PDF path |
-| 65 | Seven documents: PUBLISHING, QUALITY-CHECK, NUTRITION, CLIENT-APPROVAL, MEDIA-STUDIO, BRAND-IDENTITY, AGENCY-OPERATIONS |
+## Admin experience
 
-**`docs/DEPLOYMENT-READINESS.md` is the handover document**: verification state,
-the five migrations and their risks, the deployment steps, and the live smoke
-tests that have not been run.
+| Area | Status | Notes |
+|---|---|---|
+| Guided onboarding (11 steps) | **DONE** | Resumable; shows what is complete and what is missing |
+| Global search | **DONE** | Works without JavaScript |
+| **Command palette (`Ctrl/⌘ K`)** | **DONE** | Native `<dialog>`, keyboard-only tested |
+| **Link Health** | **DONE** | With a tested SSRF guard |
+| Explicit save with pending state | **DONE** | |
+| **True autosave** | **NOT STARTED** | Explicit save only; no timer, no retry affordance |
+| **Undo / redo** | **NOT STARTED** | Price history and rollback mitigate the worst case |
 
-## Remaining, in the order it should be built
+## API and integration
 
-### Next — Phase 7/8/9, the publishing spine
-- **Phase 7 — menu version snapshots.** `MenuVersion` stores a number and no
-  content, so rollback and diff are impossible. This blocks the final
-  acceptance journey, whose last two steps are *Rollback Menu → Verify
-  Previous Version*.
-- **Phase 8 — draft/live separation.**
-- **Phase 9 — visual diff.**
+| Area | Status | Notes |
+|---|---|---|
+| `/api/v1` read surface | **DONE** | Authenticated, rate-limited, tenant-scoped |
+| API keys | **DONE** | |
+| **`/api/v1` write surface** | **NOT STARTED** | No `POST`/`PATCH`/`DELETE` handler exists |
 
-### Then
-- **Phase 10 — Profile Health** (nothing exists)
-- **Phase 3 (rest) — user management**: no UI at all; RBAC is enforced but
-  unassignable without database access
-- **Phases 39/40 — client preview link and approval**
-- **Phases 16–18 — media studio, derivatives, image quality**
-- **Phases 19–24 — Excel control centre**: engine is sound, the safety surface
-  (change preview, conflict centre, editable mapping, drag-and-drop) is not
-- **Phases 29/30 — nutrition and Saudi readiness**
-- **Phases 34/35 — PDF generation and QA**
-- **Phases 41–43 — agency dashboard, global search, command palette**
-- **Phase 44 — QR print kit**
-- **Phases 11/12/14/15 — brand directions, brand preview, template comparison
-  and recommendation**
-- **Phase 65 — the seven missing documents**
+## Operations
 
-### Blocked, and why
-| Phase | Blocker |
-|---|---|
-| 2 — real database testing | No PostgreSQL and no Docker daemon here. 124 tests and all E2E run in CI only. |
-| 57 — production storage (R2) | No credentials. The abstraction is in place; `STORAGE_PROVIDER=r2` throws by design rather than pretending. |
-| 60–63 — deployment and live verification | **Held at the deployment boundary, by instruction.** Railway access is available — the earlier "no credentials" note was wrong and is corrected here. See *Deployment facts* below. |
-
+| Area | Status | Notes |
+|---|---|---|
+| Documentation set | **DONE** | This file is the status source of truth |
+| **R2 / S3 storage provider** | **NOT STARTED** | Throws rather than silently degrading |
+| **Shared-store rate limiting** | **NOT STARTED** | In-process; blocks a second replica |
+| **Automated backups** | **NOT STARTED** | Procedure documented in the runbook; nothing scheduled |
+| **Error monitoring** | **NOT STARTED** | Errors reach stdout only |
+| **Live deployment + smoke tests** | **NOT RUN** | |
 
 ---
 
-## Deployment facts, established rather than assumed
+## Fixed in the most recent pass
 
-An earlier revision of this file said deployment was blocked for want of
-credentials. That was wrong, and the correction matters:
+Defects found by *running* the system, each with a regression test that fails
+when the fix is reverted:
 
-| Fact | Value |
+| Defect | Impact |
 |---|---|
-| Railway account | authenticated as the repository owner |
-| Project | `scintillating-prosperity` |
-| Services | `digital-menu`, `Postgres`, `Redis` |
-| Live URL | `digital-menu-production-2b95.up.railway.app` (port 8080) |
-| **Branch the service deploys** | **`claude/goals-ohhrg2` — not this branch** |
-| Persistent volume | mounted at `/app/storage` |
-| Last successful deploy | 2026-08-28 |
+| 125 dead `--brand-*` token references across all ten families | Offer, hours and badge styling rendered in inherited near-black on every profile, in production, silently |
+| Media URLs carried the internal database cuid | Published an internal id on every profile; allowed cross-profile tenant correlation |
+| `.admin a` outweighed component classes | The nav link for the current page was accent-on-accent — the one sidebar item that could not be read |
+| White on yellow at 1.82:1 on the bold offer panel | Failed WCAG AA |
+| Hero text legible only because the demo artwork was dark | Would have failed the first time an operator uploaded a pale photograph |
+| Hours badges broken in whichever state was not rendering | The defect depended on the hour of day; both halves shipped broken at different points |
+| Accent text at 4.16–4.49:1 on tinted surfaces | Failed WCAG AA |
+| The contrast harness read alpha backgrounds as solid | Produced false failures, obscuring real ones |
 
-Two consequences:
+---
 
-1. **This branch is not auto-deployed.** Shipping it would mean either
-   repointing the service's source branch or merging into
-   `claude/goals-ohhrg2`. Both are decisions about the owner's release
-   process, not incidental steps.
-2. **This session cannot verify a live deployment.** Its egress proxy refuses
-   the `railway.app` domain, so the live smoke tests of Phases 61–63 cannot be
-   run from here. Deploying without being able to confirm the result is
-   precisely what Phase 64 forbids.
+## Next, in order
 
-Work therefore stops at the deployment boundary by instruction, with the
-migrations and steps documented for whoever runs them.
+1. **Public menu search** — the largest remaining visitor-facing gap.
+2. **R2 storage provider** — required before a second application node.
+3. **Deploy and run the production smoke tests** — the last thing standing
+   between this codebase and an honest production-ready claim.
+4. Backups and error monitoring.
+5. Autosave, then undo/redo, then the API write surface.
