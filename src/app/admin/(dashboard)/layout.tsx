@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/server/auth/current-user';
 import { signOutAction } from '@/server/auth/actions';
 import { AdminNav } from './nav';
+import { CommandPalette } from './command-palette';
 
 /**
  * Authenticated admin shell.
@@ -21,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <div className="admin__shell">
       <aside className="admin__sidebar">
         <span className="admin__brand">Digital Profile OS</span>
+        <CommandPalette />
         <AdminNav isSuperAdmin={user.role === 'SUPER_ADMIN'} />
         <form action={signOutAction} className="admin__actions">
           <button type="submit" className="admin__button admin__button--secondary">

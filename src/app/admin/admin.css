@@ -31,12 +31,20 @@
 }
 
 /*
- * Ordinary admin links take the accent colour. A link *styled as a button*
- * must not: `.admin a` and `.admin__button` have the same specificity, so the
- * one declared later won, and a primary button rendered as an anchor came out
- * accent-on-accent — a solid green rectangle with invisible text.
+ * Ordinary admin links take the accent colour. A link *styled as a component*
+ * must not: `.admin a:not(.admin__button)` outweighs a single component class,
+ * so a primary button rendered as an anchor came out accent-on-accent — a
+ * solid green rectangle with invisible text.
+ *
+ * Excluding `.admin__button` fixed that one case and left the rule for the
+ * next component to trip over, which `.admin__nav-link[aria-current]` duly
+ * did: the link for the page you were on was accent text on an accent
+ * background, so the current page was the one item in the sidebar you could
+ * not read. Wrapping the selector in `:where()` drops its specificity to zero
+ * instead, so *every* component that sets its own colour wins by default and
+ * nothing has to be added to an exclusion list ever again.
  */
-.admin a:not(.admin__button) {
+:where(.admin a:not(.admin__button)) {
   color: var(--admin-accent);
 }
 
@@ -1493,3 +1501,142 @@
 
 /* Comfortable to hit on a phone, one-handed, in a hurry. */
 .quick__row .admin__button { min-block-size: 2.75rem; }
+
+/* --- Command palette ------------------------------------------------------
+   A native <dialog>, so the backdrop, the top layer, focus trapping and
+   Escape are the platform's job rather than this stylesheet's (§43). */
+
+.admin__palette-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  inline-size: 100%;
+  margin-block-end: var(--sys-space-3);
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.5rem;
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: start;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin__palette-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin__palette-trigger:hover { border-color: var(--admin-accent); color: var(--admin-ink); }
+
+.admin__kbd {
+  padding: 0.1em 0.4em;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.25rem;
+  background: var(--admin-bg);
+  font-family: var(--sys-font-stack-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.admin__palette {
+  inline-size: min(40rem, calc(100vw - 2rem));
+  max-block-size: min(30rem, calc(100dvh - 6rem));
+  /* `margin: auto` with `inset: 0` centres horizontally; the block start holds
+     the panel near the top, where a palette is expected and where it does not
+     jump about as the list grows. */
+  margin: 4rem auto auto;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.75rem;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  box-shadow: 0 1.5rem 3rem rgb(0 0 0 / 0.18);
+  overflow: hidden;
+}
+
+.admin__palette::backdrop { background: rgb(10 14 18 / 0.45); }
+
+.admin__palette-panel { display: grid; grid-template-rows: auto 1fr auto; max-block-size: inherit; }
+
+.admin__palette-input {
+  inline-size: 100%;
+  padding: var(--sys-space-4);
+  border: 0;
+  border-block-end: 1px solid var(--admin-border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.admin__palette-input:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: -2px; }
+
+.admin__palette-list {
+  margin: 0;
+  padding: var(--sys-space-2);
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.admin__palette-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 0.25rem var(--sys-space-3);
+  inline-size: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.admin__palette-row[data-active='true'] { background: var(--admin-accent); color: var(--admin-accent-ink); }
+
+.admin__palette-badge {
+  grid-row: span 2;
+  padding: 0.1em 0.45em;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.admin__palette-label { font-weight: 600; }
+
+.admin__palette-hint {
+  grid-column: 2;
+  font-size: 0.8rem;
+  /* On the highlighted row the hint must not fall back to the muted grey,
+     which sits at 2.4:1 on the accent. Dimming the inherited colour keeps it
+     legible on both. */
+  color: inherit;
+  opacity: 0.72;
+}
+
+.admin__palette-status {
+  margin: 0;
+  padding: 0.6rem var(--sys-space-4);
+  border-block-start: 1px solid var(--admin-border);
+  color: var(--admin-muted);
+  font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .admin__palette[open] { animation: admin-palette-in 120ms ease-out; }
+
+  @keyframes admin-palette-in {
+    from { opacity: 0; transform: translateY(-0.4rem); }
+    to { opacity: 1; transform: none; }
+  }
+}
