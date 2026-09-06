@@ -3,6 +3,7 @@ import { requireTenantContext, type AuthenticatedUser } from '@/server/tenancy/c
 import { paletteContrast } from '@/server/brand/identity';
 import { hasPublishedHours, parseWorkingHours } from '@/server/business/hours';
 import { pendingChanges } from '@/server/menus/versioning';
+import { listProfileLinks } from '@/server/links/service';
 import { evaluateHealth, scoreHealth, type HealthInput, type HealthReport } from './checks';
 
 /**
@@ -116,6 +117,14 @@ export async function getProfileHealth(
 
   const theme = business.brandTheme;
 
+  // The links the profile publishes, joined to whatever the last check found.
+  const [profileLinks, storedChecks] = await Promise.all([
+    listProfileLinks(business.id),
+    prisma.linkCheck.findMany({ where: { businessId: business.id } }),
+  ]);
+
+  const linkChecks = new Map(storedChecks.map((check) => [check.url, check]));
+
   const input: HealthInput = {
     businessId: business.id,
     publicId: business.publicId,
@@ -190,15 +199,26 @@ export async function getProfileHealth(
     })),
 
     duplicateItemNames: findDuplicateNames(items),
-    // Link checking is a separate concern with its own schedule; until it runs,
-    // links are honestly reported as unchecked rather than assumed working.
-    externalLinks: business.publicFiles
-      .filter((file) => file.kind === 'LINK' && file.externalUrl)
-      .map((file) => ({
-        label: file.titleEn ?? file.titleAr,
-        url: file.externalUrl as string,
-        status: 'unchecked' as const,
-      })),
+    /*
+     * Link Health results, where they exist. A link with no stored check stays
+     * `unchecked` — never `working`. Reporting an unverified link as healthy
+     * is the one thing this must not do, because an operator who trusts the
+     * green tick stops looking.
+     */
+    externalLinks: profileLinks.map((link) => {
+      const check = linkChecks.get(link.url);
+
+      return {
+        label: link.label,
+        url: link.url,
+        status:
+          check?.status === 'WORKING'
+            ? ('working' as const)
+            : check
+              ? ('broken' as const)
+              : ('unchecked' as const),
+      };
+    }),
     publicFileCount: business.publicFiles.filter((file) => file.kind !== 'LINK').length,
   };
 

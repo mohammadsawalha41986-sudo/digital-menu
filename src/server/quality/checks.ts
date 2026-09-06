@@ -414,7 +414,7 @@ export function evaluateHealth(input: HealthInput): Finding[] {
       area: 'links',
       count: broken.length,
       message: `${broken.length} external link${broken.length === 1 ? ' is' : 's are'} broken: ${broken.map((link) => link.label).join(', ')}.`,
-      fixPath: `${base}/files`,
+      fixPath: `${base}/health#links`,
     });
   }
 
@@ -426,7 +426,7 @@ export function evaluateHealth(input: HealthInput): Finding[] {
       area: 'links',
       count: unchecked,
       message: `${unchecked} external link${unchecked === 1 ? ' has' : 's have'} not been checked yet.`,
-      fixPath: `${base}/files`,
+      fixPath: `${base}/health#links`,
     });
   }
 

@@ -315,7 +315,11 @@
 .casual__hours-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-2); }
 .casual__hours-badge {
   border-radius: 0.5rem; padding: 0.35em 0.8em; font-weight: 700; font-size: 0.85rem;
-  background: color-mix(in srgb, var(--brand-color-muted) 15%, transparent); color: var(--brand-color-muted);
+  /* Opaque, with the foreground computed for it. A 15% tint carrying the
+     untinted muted colour measures around 4:1 — and shows only while the
+     business is closed, so it hid from every daytime test run. */
+  background: var(--brand-color-surface); border: 1px solid var(--brand-color-border);
+  color: var(--brand-color-text);
 }
 .casual__hours-state[data-open='true'] .casual__hours-badge {
   background: var(--brand-color-accent); color: var(--brand-color-on-accent);

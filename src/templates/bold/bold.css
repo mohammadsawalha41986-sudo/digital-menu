@@ -363,7 +363,13 @@
   background: var(--brand-color-muted); color: var(--brand-color-background);
   font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
 }
-.bold__hours-state[data-open='true'] .bold__hours-badge { background: var(--brand-color-accent); }
+/* The foreground has to move with the fill. Keeping the base rule's
+   `--brand-color-background` over an accent fill put white on this demo's
+   yellow at 1.82:1 — and only while the shop was open, so which half of the
+   day you looked decided whether the bug existed. */
+.bold__hours-state[data-open='true'] .bold__hours-badge {
+  background: var(--brand-color-accent); color: var(--brand-color-on-accent);
+}
 .bold__hours-detail { font-weight: 700; }
 .bold__hours-list {
   margin-block-start: var(--sys-space-4);

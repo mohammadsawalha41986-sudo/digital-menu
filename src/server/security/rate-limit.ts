@@ -123,4 +123,11 @@ export const RULES = {
    * search endpoint without one is a database-load amplifier.
    */
   palette: { namespace: 'palette', windowMs: 60_000, max: 240 },
+  /**
+   * Link Health, per business. The cost of a run is outbound requests to third
+   * parties, so the party a loose limit would hurt is the *target*, not this
+   * platform: a freely resubmittable form is a way to point our traffic at
+   * someone else's server.
+   */
+  linkCheck: { namespace: 'links', windowMs: 60_000, max: 1 },
 } as const satisfies Record<string, RateLimitRule>;

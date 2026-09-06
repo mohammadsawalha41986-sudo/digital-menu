@@ -161,6 +161,7 @@ model Business {
 
   memberships     BusinessMembership[]
   brandTheme      BrandTheme?
+  linkChecks      LinkCheck[]
   menus           Menu[]
   branches        Branch[]
   categories      MenuCategory[]
@@ -1233,4 +1234,45 @@ model ChangeRequest {
 
   @@index([businessId, isDone, createdAt])
   @@map("change_requests")
+}
+
+/// Outcome of the last check of one external link (master spec §19).
+enum LinkCheckStatus {
+  /// Answered, or answered with a login wall. Reachable either way.
+  WORKING
+  /// Answered with an error, or could not be reached at all.
+  BROKEN
+  /// Refused before it was contacted: a scheme, port or address the checker
+  /// will not connect to. An operator problem, not a network one.
+  BLOCKED
+}
+
+/// The last result of probing one of a business's external links.
+///
+/// One row per URL rather than a history: Link Health answers "is this link
+/// working *now*", and a business that renames a social account should not
+/// keep accumulating rows for addresses it no longer publishes. The absence of
+/// a row is meaningful — it is the honest "unchecked" state, and Profile
+/// Health reports it as such rather than assuming a link works.
+model LinkCheck {
+  id         String @id @default(cuid())
+  businessId String
+
+  /// The URL as published. Unique per business, which is what makes a re-check
+  /// an update rather than a second row.
+  url    String
+  status LinkCheckStatus
+
+  /// The status line, when there was one. Null when nothing answered.
+  httpStatus Int?
+  /// Short operator-facing explanation. Never carries response content.
+  reason String
+
+  checkedAt DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, url])
+  @@index([businessId, status])
+  @@map("link_checks")
 }

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * DESIGN QA — the §140 check, automated.
@@ -193,23 +193,14 @@ test('no family renders an empty card for a business that lacks the data', async
   }
 });
 
-test('every family keeps its text readable against the brand it is given', async ({ page }) => {
-  /*
-   * A brand is measured from a restaurant's logo, so the platform cannot know
-   * in advance whether a menu will be pale or nearly black. Templates set
-   * headings, prices and rules in the brand's own colours, which is what makes
-   * a menu look like the restaurant — and what made a deep-green brand render
-   * its prices at 1.65:1 on a dark page until the palette started carrying
-   * readable variants of those colours.
-   *
-   * This walks the rendered text of every demo, in both languages, and holds it
-   * to the 4.5:1 body-text ratio.
-   */
-  for (const demo of DEMOS) {
-    for (const lang of ['ar', 'en'] as const) {
-      await page.goto(`/m/${demo.publicId}?lang=${lang}`);
+/**
+ * Walks the rendered text of the current profile and returns anything below
+ * the 4.5:1 body-text ratio, compositing translucent backgrounds the way the
+ * compositor does.
+ */
+async function measureContrast(page: Page) {
+  return page.evaluate(() => {
 
-      const failures = await page.evaluate(() => {
         /**
          * Parses rgb(), rgba() and color(srgb …) into 0–255 channels plus
          * alpha. Alpha matters: a chip drawn as 20% of the brand accent over a
@@ -319,9 +310,50 @@ test('every family keeps its text readable against the brand it is given', async
         }
 
         return results;
+  });
+}
+
+test('every family keeps its text readable against the brand it is given', async ({ page }) => {
+  /*
+   * A brand is measured from a restaurant's logo, so the platform cannot know
+   * in advance whether a menu will be pale or nearly black. Templates set
+   * headings, prices and rules in the brand's own colours, which is what makes
+   * a menu look like the restaurant — and what made a deep-green brand render
+   * its prices at 1.65:1 on a dark page until the palette started carrying
+   * readable variants of those colours.
+   *
+   * This walks the rendered text of every demo, in both languages, and holds it
+   * to the 4.5:1 body-text ratio.
+   */
+  for (const demo of DEMOS) {
+    for (const lang of ['ar', 'en'] as const) {
+      await page.goto(`/m/${demo.publicId}?lang=${lang}`);
+
+      const failures = await measureContrast(page);
+      expect(failures, `${demo.publicId} (${lang})`).toEqual([]);
+
+      /*
+       * An open/closed badge only ever renders one of its two states, so half
+       * of that styling is invisible to a test run at any given hour. Both
+       * halves have shipped broken at some point — the bold family's open
+       * badge at 1.82:1, two families' closed badges at about 4:1 — and each
+       * time the sweep that should have caught it ran while the *other* state
+       * was showing.
+       *
+       * Flipping the attribute exercises the stylesheet rather than the clock.
+       */
+      const flipped = await page.evaluate(() => {
+        const states = document.querySelectorAll('[data-open]');
+        for (const state of states) {
+          state.setAttribute('data-open', state.getAttribute('data-open') === 'true' ? 'false' : 'true');
+        }
+        return states.length;
       });
 
-      expect(failures, `${demo.publicId} (${lang})`).toEqual([]);
+      if (flipped > 0) {
+        const otherState = await measureContrast(page);
+        expect(otherState, `${demo.publicId} (${lang}), opposite open state`).toEqual([]);
+      }
     }
   }
 });

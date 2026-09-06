@@ -1640,3 +1640,45 @@
     to { opacity: 1; transform: none; }
   }
 }
+
+/* --- Link health ---------------------------------------------------------- */
+
+.admin__links { margin: var(--sys-space-4) 0 0; padding: 0; list-style: none; display: grid; gap: var(--sys-space-3); }
+
+.admin__links > li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem var(--sys-space-3);
+  padding-block-end: var(--sys-space-3);
+  border-block-end: 1px solid var(--admin-border);
+}
+
+.admin__link-state {
+  grid-row: span 3;
+  align-self: start;
+  padding: 0.15em 0.5em;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Never colour alone: the label already says which state this is, so the
+   colour is reinforcement for people who see it and nothing is lost for
+   people who do not. */
+.admin__link-state[data-state='WORKING'] { background: #e3f2e9; color: var(--admin-ok); }
+.admin__link-state[data-state='BROKEN'] { background: #fbe6e6; color: var(--admin-danger); }
+.admin__link-state[data-state='BLOCKED'] { background: #fdf1dc; color: var(--admin-warning); }
+.admin__link-state[data-state='UNCHECKED'] { background: var(--admin-bg); color: var(--admin-muted); }
+
+.admin__link-label { font-weight: 600; }
+
+.admin__link-url {
+  grid-column: 2;
+  font-size: 0.8rem;
+  /* Operator-supplied URLs can be arbitrarily long; wrapping them anywhere
+     beats a sidescrolling panel. */
+  overflow-wrap: anywhere;
+}
