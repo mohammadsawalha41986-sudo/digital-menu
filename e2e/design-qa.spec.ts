@@ -210,45 +210,81 @@ test('every family keeps its text readable against the brand it is given', async
       await page.goto(`/m/${demo.publicId}?lang=${lang}`);
 
       const failures = await page.evaluate(() => {
-        /** Parses rgb(), rgba() and color(srgb …) into 0–255 channels. */
-        const channels = (value: string): [number, number, number] | null => {
-          const srgb = /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(value);
+        /**
+         * Parses rgb(), rgba() and color(srgb …) into 0–255 channels plus
+         * alpha. Alpha matters: a chip drawn as 20% of the brand accent over a
+         * cream page is a pale peach, and reading it as *solid* accent
+         * reported a 1.63:1 failure for something the eye reads at 7:1.
+         */
+        const channels = (value: string): [number, number, number, number] | null => {
+          const srgb =
+            /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?/.exec(value);
           if (srgb) {
             return [
               Number(srgb[1]) * 255,
               Number(srgb[2]) * 255,
               Number(srgb[3]) * 255,
+              srgb[4] === undefined ? 1 : Number(srgb[4]),
             ];
           }
 
-          const rgb = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(value);
-          return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : null;
+          const rgb = /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/.exec(value);
+          return rgb
+            ? [
+                Number(rgb[1]),
+                Number(rgb[2]),
+                Number(rgb[3]),
+                rgb[4] === undefined ? 1 : Number(rgb[4]),
+              ]
+            : null;
         };
 
-        const luminance = (value: string): number | null => {
-          const parsed = channels(value);
-          if (!parsed) return null;
-
+        const luminanceOf = (rgb: [number, number, number]): number => {
           const linear = (channel: number) => {
             const s = channel / 255;
             return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
           };
 
-          return 0.2126 * linear(parsed[0]) + 0.7152 * linear(parsed[1]) + 0.0722 * linear(parsed[2]);
+          return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
         };
 
-        const opaqueBackground = (element: Element): string => {
+        const luminance = (value: string): number | null => {
+          const parsed = channels(value);
+          return parsed ? luminanceOf([parsed[0], parsed[1], parsed[2]]) : null;
+        };
+
+        /**
+         * The colour actually behind an element, with translucent layers
+         * composited rather than treated as opaque.
+         *
+         * Walks up collecting every background that is not fully transparent,
+         * then paints them back down over an opaque white base — which is what
+         * the compositor does, and therefore what the eye sees.
+         */
+        const opaqueBackground = (element: Element): [number, number, number] => {
+          const layers: [number, number, number, number][] = [];
           let node: Element | null = element;
 
           while (node) {
-            const background = getComputedStyle(node).backgroundColor;
-            if (background && !/rgba\([^)]*,\s*0\)$/.test(background) && background !== 'transparent') {
-              return background;
+            const parsed = channels(getComputedStyle(node).backgroundColor);
+            if (parsed && parsed[3] > 0) {
+              layers.push(parsed);
+              if (parsed[3] >= 1) break;
             }
             node = node.parentElement;
           }
 
-          return 'rgb(255, 255, 255)';
+          let base: [number, number, number] = [255, 255, 255];
+
+          for (const [r, g, b, a] of layers.reverse()) {
+            base = [
+              r * a + base[0] * (1 - a),
+              g * a + base[1] * (1 - a),
+              b * a + base[2] * (1 - a),
+            ];
+          }
+
+          return base;
         };
 
         const root = document.querySelector('[data-profile-root]');
@@ -266,8 +302,8 @@ test('every family keeps its text readable against the brand it is given', async
           if (style.visibility === 'hidden' || style.display === 'none') continue;
 
           const foreground = luminance(style.color);
-          const background = luminance(opaqueBackground(element));
-          if (foreground === null || background === null) continue;
+          const background = luminanceOf(opaqueBackground(element));
+          if (foreground === null) continue;
 
           const [lighter, darker] =
             foreground > background ? [foreground, background] : [background, foreground];

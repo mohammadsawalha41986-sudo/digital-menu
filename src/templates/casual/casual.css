@@ -315,19 +315,19 @@
 .casual__hours-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-2); }
 .casual__hours-badge {
   border-radius: 0.5rem; padding: 0.35em 0.8em; font-weight: 700; font-size: 0.85rem;
-  background: color-mix(in srgb, var(--brand-muted) 15%, transparent); color: var(--brand-muted);
+  background: color-mix(in srgb, var(--brand-color-muted) 15%, transparent); color: var(--brand-color-muted);
 }
 .casual__hours-state[data-open='true'] .casual__hours-badge {
-  background: var(--brand-accent); color: var(--brand-background);
+  background: var(--brand-color-accent); color: var(--brand-color-on-accent);
 }
-.casual__hours-detail { font-size: 0.85rem; color: var(--brand-muted); }
+.casual__hours-detail { font-size: 0.85rem; color: var(--brand-color-muted); }
 .casual__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
 .casual__hours-row {
   display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-3);
   padding: var(--sys-space-2) var(--sys-space-3);
-  background: var(--brand-surface); border-radius: 0.5rem;
+  background: var(--brand-color-surface); border-radius: 0.5rem;
 }
-.casual__hours-row[data-today] { outline: 2px solid var(--brand-accent); }
+.casual__hours-row[data-today] { outline: 2px solid var(--brand-color-accent); }
 .casual__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }
 
 /* --- Offer placement ------------------------------------------------------
@@ -337,22 +337,22 @@
 /* HERO — a big friendly card with the image bled to the edges. */
 .casual__hero-offer {
   margin-block-end: var(--sys-space-6); border-radius: 0.75rem; overflow: hidden;
-  background: var(--brand-surface); box-shadow: 0 1px 0 var(--brand-border);
+  background: var(--brand-color-surface); box-shadow: 0 1px 0 var(--brand-color-border);
 }
 .casual__hero-offer-image { inline-size: 100%; block-size: clamp(12rem, 42vw, 19rem); object-fit: cover; }
 .casual__hero-offer-body { padding: var(--sys-space-5); display: grid; gap: var(--sys-space-2); justify-items: start; }
-.casual__hero-offer-discount { background: var(--brand-accent); color: var(--brand-background); padding: 0.25em 0.7em; border-radius: 0.4rem; font-weight: 800; font-size: 1.2rem; }
+.casual__hero-offer-discount { background: var(--brand-color-accent); color: var(--brand-color-on-accent); padding: 0.25em 0.7em; border-radius: 0.4rem; font-weight: 800; font-size: 1.2rem; }
 .casual__hero-offer-title { font-size: clamp(1.3rem, 5.5vw, 2.1rem); font-weight: 700; }
 .casual__hero-offer-was { opacity: 0.55; margin-inline-end: 0.5em; }
 .casual__hero-offer-now { font-size: 1.4rem; font-weight: 800; }
-.casual__hero-offer-cta { background: var(--brand-accent); color: var(--brand-background); border-radius: 0.5rem; padding: 0.65em 1.4em; font-weight: 700; }
+.casual__hero-offer-cta { background: var(--brand-color-accent); color: var(--brand-color-on-accent); border-radius: 0.5rem; padding: 0.65em 1.4em; font-weight: 700; }
 
 /* BANNER — a soft tinted strip that reads as a note, not an ad. */
 .casual__offer-banners { display: grid; gap: var(--sys-space-2); margin-block-end: var(--sys-space-5); }
 .casual__offer-banner {
   display: flex; justify-content: space-between; align-items: center; gap: var(--sys-space-3);
   border-radius: 0.5rem; padding: var(--sys-space-3);
-  background: color-mix(in srgb, var(--brand-accent) 12%, transparent);
+  background: color-mix(in srgb, var(--brand-color-accent) 12%, transparent);
   font-weight: 600;
 }
-.casual__offer-banner-discount { color: var(--brand-accent); font-weight: 800; }
+.casual__offer-banner-discount { color: var(--brand-color-accent-text); font-weight: 800; }

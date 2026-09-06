@@ -71,10 +71,22 @@ export function contrastRatio(foreground: string, background: string): number {
 }
 
 /** Chooses white or near-black text for a background, whichever reads better. */
-export function readableForeground(background: string): string {
-  return contrastRatio('#ffffff', background) >= contrastRatio('#16181a', background)
-    ? '#ffffff'
-    : '#16181a';
+export function readableForeground(background: string, target = 4.5): string {
+  const light = contrastRatio('#ffffff', background);
+  const dark = contrastRatio('#16181a', background);
+
+  const softened = light >= dark ? '#ffffff' : '#16181a';
+  if (Math.max(light, dark) >= target) return softened;
+
+  /*
+   * The softened near-black is a deliberate choice — pure #000 on a coloured
+   * chip reads as a hole — but it costs a little contrast, and for a mid-tone
+   * accent that cost is the difference between passing and not: a bakery's
+   * #D9534F chip measured 4.47:1 against #16181a and 5.24:1 against #000.
+   * When the soft pair cannot clear the target, take the extreme rather than
+   * ship an unreadable chip.
+   */
+  return light >= dark ? '#ffffff' : '#000000';
 }
 
 /**
@@ -201,10 +213,20 @@ export function brandTokensToStyle(tokens: BrandTokens): CSSProperties {
     '--brand-color-border': tokens.colorBorder,
     '--brand-color-on-primary': readableForeground(tokens.colorPrimary),
     '--brand-color-on-accent': readableForeground(tokens.colorAccent),
-    // The brand colours, made legible as text on this brand's own background.
-    '--brand-color-primary-text': readableOn(tokens.colorPrimary, tokens.colorBackground),
-    '--brand-color-accent-text': readableOn(tokens.colorAccent, tokens.colorBackground),
-    '--brand-color-secondary-text': readableOn(tokens.colorSecondary, tokens.colorBackground),
+    /*
+     * The brand colours, made legible as text on this brand's own background.
+     *
+     * Solved to 5.5:1 rather than the 4.5:1 the guideline asks for. These are
+     * resolved against the *page* background, but templates put them on cards,
+     * banners and tinted chips whose backgrounds sit a little off it. Solving
+     * to exactly 4.5 left no headroom for that, and produced text measuring
+     * 4.16 and 4.32 on surfaces one step away from the page — passing the
+     * calculation and failing the page. The extra margin costs a slightly
+     * deeper colour and removes the whole class of near-miss.
+     */
+    '--brand-color-primary-text': readableOn(tokens.colorPrimary, tokens.colorBackground, 5.5),
+    '--brand-color-accent-text': readableOn(tokens.colorAccent, tokens.colorBackground, 5.5),
+    '--brand-color-secondary-text': readableOn(tokens.colorSecondary, tokens.colorBackground, 5.5),
     '--brand-font-heading': fontStack(tokens.fontHeading),
     '--brand-font-body': fontStack(tokens.fontBody),
     '--brand-radius-sm': `var(--sys-radius-${scale}-sm)`,

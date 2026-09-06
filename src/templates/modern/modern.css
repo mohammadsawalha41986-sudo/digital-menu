@@ -438,15 +438,15 @@
 .modern__hours-state { display: flex; align-items: center; gap: var(--sys-space-2); }
 .modern__hours-badge {
   font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  color: var(--brand-muted);
+  color: var(--brand-color-muted);
 }
 .modern__hours-badge::before {
   content: ''; display: inline-block; inline-size: 0.5em; block-size: 0.5em;
   border-radius: 50%; background: currentColor; margin-inline-end: 0.5em;
   vertical-align: 0.05em;
 }
-.modern__hours-state[data-open='true'] .modern__hours-badge { color: var(--brand-accent); }
-.modern__hours-detail { font-size: 0.8rem; color: var(--brand-muted); }
+.modern__hours-state[data-open='true'] .modern__hours-badge { color: var(--brand-color-accent-text); }
+.modern__hours-detail { font-size: 0.8rem; color: var(--brand-color-muted); }
 .modern__hours-list {
   margin-block-start: var(--sys-space-3);
   display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: var(--sys-space-2);
@@ -454,7 +454,7 @@
 }
 .modern__hours-row { display: flex; justify-content: space-between; gap: var(--sys-space-2); }
 .modern__hours-row[data-today] { font-weight: 600; }
-.modern__hours-day { color: var(--brand-muted); }
+.modern__hours-day { color: var(--brand-color-muted); }
 .modern__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }
 
 /* --- Offer placement ------------------------------------------------------
@@ -469,17 +469,17 @@
 @media (min-width: 48rem) { .modern__hero-offer { grid-template-columns: 1.1fr 1fr; } }
 .modern__hero-offer-image { inline-size: 100%; block-size: clamp(11rem, 34vw, 18rem); object-fit: cover; }
 .modern__hero-offer-body { display: grid; gap: var(--sys-space-2); justify-items: start; }
-.modern__hero-offer-discount { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; color: var(--brand-accent); }
+.modern__hero-offer-discount { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; color: var(--brand-color-accent-text); }
 .modern__hero-offer-title { font-size: clamp(1.2rem, 4.5vw, 1.9rem); font-weight: 600; letter-spacing: -0.02em; }
-.modern__hero-offer-note { color: var(--brand-muted); font-size: 0.9rem; }
+.modern__hero-offer-note { color: var(--brand-color-muted); font-size: 0.9rem; }
 .modern__hero-offer-was { opacity: 0.5; margin-inline-end: 0.5em; }
 .modern__hero-offer-now { font-weight: 700; }
-.modern__hero-offer-cta { background: var(--brand-text); color: var(--brand-background); padding: 0.55em 1.2em; font-size: 0.9rem; font-weight: 600; }
+.modern__hero-offer-cta { background: var(--brand-color-text); color: var(--brand-color-background); padding: 0.55em 1.2em; font-size: 0.9rem; font-weight: 600; }
 
 /* BANNER — a compact inline row, matching the dense navigation. */
 .modern__offer-banners { display: flex; flex-wrap: wrap; gap: var(--sys-space-2); margin-block-end: var(--sys-space-5); }
 .modern__offer-banner {
   display: inline-flex; align-items: center; gap: var(--sys-space-2);
-  border: 1px solid var(--brand-border); padding: 0.35em 0.8em; font-size: 0.85rem;
+  border: 1px solid var(--brand-color-border); padding: 0.35em 0.8em; font-size: 0.85rem;
 }
-.modern__offer-banner-discount { color: var(--brand-accent); font-weight: 700; }
+.modern__offer-banner-discount { color: var(--brand-color-accent-text); font-weight: 700; }

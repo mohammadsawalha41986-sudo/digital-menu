@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { generatePassword, hashPassword } from '../src/server/auth/password';
+import { seedArtwork } from './seed-artwork';
 
 /**
  * Deterministic development seed.
@@ -494,6 +495,10 @@ async function main() {
 
   await seedShowcase(staff.id);
 
+  // Last, because it reads back the categories, items and offers the steps
+  // above created and gives each of them a picture.
+  const artwork = await seedArtwork(prisma);
+
   console.log(
     [
       'Seed complete.',
@@ -505,6 +510,8 @@ async function main() {
       '  /m/DEM006  casual     bakery',
       '  /m/DEM007  hospitality salon (services, durations)',
       '  /m/DRAFT1  draft — deliberately not public',
+      '',
+      `  Brand artwork: ${artwork.images} new image(s) across ${artwork.businesses} businesses.`,
     ].join('\n'),
   );
 }

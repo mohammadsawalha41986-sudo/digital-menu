@@ -351,21 +351,21 @@
 .luxury__hours-state {
   display: flex; align-items: baseline; gap: var(--sys-space-3);
   padding-block-end: var(--sys-space-3);
-  border-block-end: 1px solid var(--brand-border);
+  border-block-end: 1px solid var(--brand-color-border);
 }
 .luxury__hours-badge {
   font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--brand-muted);
+  color: var(--brand-color-muted);
 }
-.luxury__hours-state[data-open='true'] .luxury__hours-badge { color: var(--brand-accent); }
-.luxury__hours-detail { font-size: 0.85rem; color: var(--brand-muted); }
+.luxury__hours-state[data-open='true'] .luxury__hours-badge { color: var(--brand-color-accent-text); }
+.luxury__hours-detail { font-size: 0.85rem; color: var(--brand-color-muted); }
 .luxury__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
 .luxury__hours-row {
   display: grid; grid-template-columns: 1fr auto; gap: var(--sys-space-4);
   align-items: baseline; font-size: 0.9rem;
 }
-.luxury__hours-row[data-today] { color: var(--brand-text); font-weight: 500; }
-.luxury__hours-day { color: var(--brand-muted); letter-spacing: 0.06em; }
+.luxury__hours-row[data-today] { color: var(--brand-color-text); font-weight: 500; }
+.luxury__hours-day { color: var(--brand-color-muted); letter-spacing: 0.06em; }
 .luxury__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; }
 
 /* --- Offer placement ------------------------------------------------------
@@ -374,19 +374,34 @@
 
 /* HERO — a centred plate: image behind, type above, everything ceremonial. */
 .luxury__hero-offer { position: relative; margin-block-end: var(--sys-space-7); text-align: center; }
-.luxury__hero-offer-image { inline-size: 100%; block-size: clamp(14rem, 46vw, 24rem); object-fit: cover; filter: brightness(0.72); }
+.luxury__hero-offer-image { inline-size: 100%; block-size: clamp(21rem, 74vw, 34rem); object-fit: cover; filter: brightness(0.72); }
 .luxury__hero-offer-body {
   position: absolute; inset-block-end: 0; inset-inline: 0; padding: var(--sys-space-6);
   display: grid; gap: var(--sys-space-2); justify-items: center;
   /* Scrim and foreground both come from brand tokens, so an inverted theme
-     stays legible and this family still contains no colour of its own. */
-  background: linear-gradient(to top, var(--brand-text) 15%, transparent);
-  color: var(--brand-background);
+     stays legible and this family still contains no colour of its own.
+
+     The scrim is opaque, and the picture above it is tall enough to survive
+     that. It began as a gradient fading to transparent, which read beautifully
+     over this demo's dark artwork and would have put near-white type on
+     near-white photography the first time an operator uploaded a pale hero
+     shot — legibility that depends on the image is not legibility. An opaque
+     caption plate under a taller picture is both the safe answer and the more
+     editorial one. */
+  color: var(--brand-color-background);
+}
+.luxury__hero-offer:has(.luxury__hero-offer-image) .luxury__hero-offer-body {
+  background-color: var(--brand-color-text);
 }
 .luxury__hero-offer:not(:has(.luxury__hero-offer-image)) .luxury__hero-offer-body {
-  position: static; color: var(--brand-text); border-block: 1px solid var(--brand-border);
+  position: static; color: var(--brand-color-text); border-block: 1px solid var(--brand-color-border);
 }
-.luxury__hero-offer-discount { font-size: clamp(2.5rem, 12vw, 5rem); line-height: 0.9; letter-spacing: -0.03em; color: var(--brand-accent); }
+/* The one place the raw accent is right rather than its readable-on-background
+   variant: this sits on the inverted scrim above, not on the page. Darkening it
+   for a light page would bury it in the scrim. The E2E contrast pass measures
+   it against that scrim, so a brand whose accent is too dark for its own text
+   colour is still caught. */
+.luxury__hero-offer-discount { font-size: clamp(2.5rem, 12vw, 5rem); line-height: 0.9; letter-spacing: -0.03em; color: var(--brand-color-accent); }
 .luxury__hero-offer-title { font-size: clamp(1.25rem, 5vw, 2rem); letter-spacing: 0.06em; }
 .luxury__hero-offer-note { max-inline-size: 34ch; opacity: 0.85; }
 .luxury__hero-offer-was { opacity: 0.6; margin-inline-end: 0.6em; }
@@ -397,7 +412,7 @@
 .luxury__offer-banners { display: grid; gap: 0; margin-block-end: var(--sys-space-6); }
 .luxury__offer-banner {
   display: flex; justify-content: center; align-items: baseline; gap: var(--sys-space-3);
-  padding-block: var(--sys-space-3); border-block-end: 1px solid var(--brand-border);
+  padding-block: var(--sys-space-3); border-block-end: 1px solid var(--brand-color-border);
   font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase;
 }
-.luxury__offer-banner-discount, .luxury__offer-banner-price { color: var(--brand-accent); }
+.luxury__offer-banner-discount, .luxury__offer-banner-price { color: var(--brand-color-accent-text); }

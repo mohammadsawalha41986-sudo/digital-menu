@@ -301,19 +301,19 @@
    most prominent treatment of any template: a full-width panel. */
 .hospitality__hours {
   margin-block: var(--sys-space-6);
-  padding: var(--sys-space-5); background: var(--brand-surface);
-  border: 1px solid var(--brand-border);
+  padding: var(--sys-space-5); background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
 }
 .hospitality__hours-state {
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--sys-space-3);
-  padding-block-end: var(--sys-space-3); border-block-end: 1px solid var(--brand-border);
+  padding-block-end: var(--sys-space-3); border-block-end: 1px solid var(--brand-color-border);
 }
 .hospitality__hours-badge {
   padding: 0.35em 0.9em; font-weight: 700; font-size: 0.85rem;
-  background: color-mix(in srgb, var(--brand-muted) 15%, transparent); color: var(--brand-muted);
+  background: color-mix(in srgb, var(--brand-color-muted) 15%, transparent); color: var(--brand-color-muted);
 }
 .hospitality__hours-state[data-open='true'] .hospitality__hours-badge {
-  background: var(--brand-accent); color: var(--brand-background);
+  background: var(--brand-color-accent); color: var(--brand-color-on-accent);
 }
 .hospitality__hours-detail { font-size: 0.9rem; }
 .hospitality__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
@@ -322,7 +322,7 @@
   padding-block: var(--sys-space-2);
 }
 .hospitality__hours-row[data-today] { font-weight: 700; }
-.hospitality__hours-day { color: var(--brand-muted); }
+.hospitality__hours-day { color: var(--brand-color-muted); }
 .hospitality__hours-intervals { list-style: none; margin: 0; padding: 0; text-align: end; font-variant-numeric: tabular-nums; }
 
 /* --- Offer placement ------------------------------------------------------
@@ -332,23 +332,23 @@
 /* HERO — a practical panel: image left, details right, CTA obvious. */
 .hospitality__hero-offer {
   margin-block-end: var(--sys-space-6); display: grid; gap: 0;
-  border: 1px solid var(--brand-border); background: var(--brand-surface);
+  border: 1px solid var(--brand-color-border); background: var(--brand-color-surface);
 }
 @media (min-width: 44rem) { .hospitality__hero-offer { grid-template-columns: 1fr 1.2fr; } }
 .hospitality__hero-offer-image { inline-size: 100%; block-size: 100%; min-block-size: 11rem; object-fit: cover; }
 .hospitality__hero-offer-body { padding: var(--sys-space-5); display: grid; gap: var(--sys-space-2); align-content: center; justify-items: start; }
-.hospitality__hero-offer-discount { background: var(--brand-accent); color: var(--brand-background); padding: 0.25em 0.7em; font-weight: 700; }
+.hospitality__hero-offer-discount { background: var(--brand-color-accent); color: var(--brand-color-on-accent); padding: 0.25em 0.7em; font-weight: 700; }
 .hospitality__hero-offer-title { font-size: clamp(1.2rem, 4.5vw, 1.8rem); }
 .hospitality__hero-offer-was { opacity: 0.55; margin-inline-end: 0.5em; }
 .hospitality__hero-offer-now { font-size: 1.25rem; font-weight: 700; }
-.hospitality__hero-offer-cta { background: var(--brand-accent); color: var(--brand-background); padding: 0.65em 1.4em; font-weight: 600; }
+.hospitality__hero-offer-cta { background: var(--brand-color-accent); color: var(--brand-color-on-accent); padding: 0.65em 1.4em; font-weight: 600; }
 
 /* BANNER — a bordered notice, the same shape as the hours panel. */
 .hospitality__offer-banners { display: grid; gap: var(--sys-space-2); margin-block-end: var(--sys-space-5); }
 .hospitality__offer-banner {
   display: flex; justify-content: space-between; align-items: center; gap: var(--sys-space-3);
-  border: 1px solid var(--brand-border); border-inline-start-width: 4px;
-  border-inline-start-color: var(--brand-accent);
+  border: 1px solid var(--brand-color-border); border-inline-start-width: 4px;
+  border-inline-start-color: var(--brand-color-accent);
   padding: var(--sys-space-3);
 }
-.hospitality__offer-banner-discount { color: var(--brand-accent); font-weight: 700; }
+.hospitality__offer-banner-discount { color: var(--brand-color-accent-text); font-weight: 700; }

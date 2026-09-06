@@ -551,20 +551,20 @@
 .editorial__hours-state {
   display: flex; align-items: baseline; gap: var(--sys-space-3);
   padding-block: var(--sys-space-2);
-  border-block: 1px solid var(--brand-border);
+  border-block: 1px solid var(--brand-color-border);
 }
 .editorial__hours-badge {
-  font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-muted);
+  font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-color-muted);
 }
-.editorial__hours-state[data-open='true'] .editorial__hours-badge { color: var(--brand-text); }
-.editorial__hours-detail { font-size: 0.85rem; font-style: italic; color: var(--brand-muted); }
+.editorial__hours-state[data-open='true'] .editorial__hours-badge { color: var(--brand-color-text); }
+.editorial__hours-detail { font-size: 0.85rem; font-style: italic; color: var(--brand-color-muted); }
 .editorial__hours-list { margin-block-start: var(--sys-space-4); display: grid; gap: var(--sys-space-2); }
 .editorial__hours-row {
   display: grid; grid-template-columns: 8rem 1fr; gap: var(--sys-space-4); align-items: baseline;
   font-size: 0.9rem;
 }
 .editorial__hours-row[data-today] { font-weight: 600; }
-.editorial__hours-day { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-muted); }
+.editorial__hours-day { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-color-muted); }
 .editorial__hours-intervals { list-style: none; margin: 0; padding: 0; }
 
 /* --- Offer placement ------------------------------------------------------
@@ -574,10 +574,10 @@
 /* HERO — set like a cover line: rule above, oversized title, image beneath. */
 .editorial__hero-offer { margin-block-end: var(--sys-space-7); display: grid; gap: var(--sys-space-3); }
 .editorial__hero-offer-image { inline-size: 100%; block-size: clamp(12rem, 40vw, 21rem); object-fit: cover; order: 2; }
-.editorial__hero-offer-body { display: grid; gap: var(--sys-space-2); border-block-start: 2px solid var(--brand-text); padding-block-start: var(--sys-space-3); }
-.editorial__hero-offer-discount { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-accent); }
+.editorial__hero-offer-body { display: grid; gap: var(--sys-space-2); border-block-start: 2px solid var(--brand-color-text); padding-block-start: var(--sys-space-3); }
+.editorial__hero-offer-discount { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-color-accent-text); }
 .editorial__hero-offer-title { font-size: clamp(1.6rem, 7vw, 3rem); line-height: 1.05; letter-spacing: -0.02em; }
-.editorial__hero-offer-note { max-inline-size: 46ch; color: var(--brand-muted); font-style: italic; }
+.editorial__hero-offer-note { max-inline-size: 46ch; color: var(--brand-color-muted); font-style: italic; }
 .editorial__hero-offer-was { opacity: 0.55; margin-inline-end: 0.5em; }
 .editorial__hero-offer-now { font-variant-numeric: tabular-nums; font-weight: 600; }
 .editorial__hero-offer-cta { justify-self: start; font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; border-block-end: 1px solid currentColor; }
@@ -586,7 +586,7 @@
 .editorial__offer-banners { display: grid; gap: 0; margin-block-end: var(--sys-space-6); }
 .editorial__offer-banner {
   display: flex; justify-content: space-between; gap: var(--sys-space-3); align-items: baseline;
-  border-block-start: 1px solid var(--brand-border); padding-block: var(--sys-space-2);
+  border-block-start: 1px solid var(--brand-color-border); padding-block: var(--sys-space-2);
   font-style: italic; font-size: 0.9rem;
 }
 .editorial__offer-banner-discount { font-style: normal; font-variant-numeric: tabular-nums; letter-spacing: 0.06em; }
