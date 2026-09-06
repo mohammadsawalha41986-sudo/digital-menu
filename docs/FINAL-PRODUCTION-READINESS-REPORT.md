@@ -293,7 +293,7 @@ Genuinely outstanding, nothing already done:
 
 | # | Item | Severity | Note |
 |---|---|---|---|
-| 1 | Production smoke tests never run | **Blocking a "ready" claim** | Needs a deploy this environment cannot verify |
+| 1 | Browser smoke tests never run | **Blocking a "ready" claim** | Deployed; this environment cannot reach the URL |
 | 2 | Public menu search / filter (§18) | High | Largest visitor-facing gap on a long menu |
 | 3 | R2 storage provider (§32) | High for scale | Local disk means one writable node |
 | 4 | In-process rate limiting | High for scale | Counters multiply per replica |
@@ -312,9 +312,18 @@ Genuinely outstanding, nothing already done:
 
 ## Deployment status
 
-**Not deployed.** All work is committed and pushed to
-`claude/digital-menu-production-oih46i`. The live service continues to serve
-`claude/goals-ohhrg2` and is unaffected by this pass.
+**Deployed 2026-09-06.** After merging `claude/goals-ohhrg2` into this branch
+(it carried two commits this branch lacked), the Railway service `digital-menu`
+was repointed to `claude/digital-menu-production-oih46i` and deployed commit
+`bf7c085`. Status **SUCCESS**. Deploy logs confirm: 17 migrations found,
+`20260906060528_link_health` applied to the production database, staff account
+left unchanged, server ready on `0.0.0.0:8080`. Same database, same volume,
+same domain, same secrets — nothing was reset or rotated.
+
+**Browser smoke tests remain NOT RUN.** This sandbox's egress proxy refuses the
+production host, so the twenty checks in `docs/PRODUCTION-RUNBOOK.md` could not
+be executed. Server-side evidence (migrations, database connectivity, process
+start) is the nearest verification available from here.
 
 ---
 
@@ -332,7 +341,7 @@ Genuinely outstanding, nothing already done:
 | Security | 8 / 10 | Id leak closed, SSRF defended and tested; rebinding accepted, no monitoring |
 | Performance | 7 / 10 | Sound by construction; **never measured** |
 | Testing | 9 / 10 | 760 tests, 0 skipped, guards verified by reverting fixes |
-| Deployment | 5 / 10 | Config and migrations sound; **never exercised**; no backups |
+| Deployment | 7 / 10 | Deployed and migrated successfully; **browser smoke tests still not run**; no backups |
 | Commercial readiness | 8 / 10 | A restaurant owner would recognise this as their menu |
 
 ---
