@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Digital Profile OS">
+  <rect width="32" height="32" rx="7" fill="#16181a"/>
+  <!-- Three finder patterns and one block: the QR silhouette, which is the one
+       mark every profile in this product carries. Nothing finer than 2px, so it
+       still reads at 16 -->
+  <g fill="#f5f3ef">
+    <path d="M6 6h9v9H6V6Zm2 2v5h5V8H8Z"/>
+    <rect x="9" y="9" width="3" height="3"/>
+    <path d="M17 6h9v9h-9V6Zm2 2v5h5V8h-5Z"/>
+    <rect x="20" y="9" width="3" height="3"/>
+    <path d="M6 17h9v9H6v-9Zm2 2v5h5v-5H8Z"/>
+    <rect x="9" y="20" width="3" height="3"/>
+    <rect x="18" y="18" width="7" height="7" rx="1"/>
+  </g>
+</svg>

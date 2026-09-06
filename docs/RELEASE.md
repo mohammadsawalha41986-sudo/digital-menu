@@ -166,6 +166,24 @@ Two test defects of my own were found alongside it: an analytics poll that
 raced against `offer_view` beacons, and a PDF CMap scanner that read `bfchar`
 but not `bfrange`.
 
+### 4. No app icon — found in the production HTTP log
+
+Every page load asked for `/favicon.ico` and got a 404, because the app defined
+no icon at all: the tab showed the browser's blank-page glyph, and an installed
+or bookmarked profile had nothing to show for itself.
+
+`src/app/icon.svg` supplies one — a QR mark, since a QR code is the one thing
+every profile in this product carries. It is a single static SVG, so Next emits
+`<link rel="icon" ... sizes="any">` on every page and browsers stop falling back
+to `/favicon.ico`. Verified on the built server: `/icon.svg` serves 200 as
+`image/svg+xml`, the link tag is present, and the mark was rendered at 16, 32
+and 64px to confirm it is legible at tab size rather than assumed to be.
+
+`/favicon.ico` itself is still a 404. That is correct for an app with no `.ico`,
+and a browser that reads the link tag never asks for it.
+
+---
+
 ---
 
 ## Live smoke tests — NOT PERFORMED
