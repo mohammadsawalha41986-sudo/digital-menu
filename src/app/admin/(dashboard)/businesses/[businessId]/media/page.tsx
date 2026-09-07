@@ -78,12 +78,8 @@ export default async function MediaPage({
         categoryKeys={categoryKeys}
         uploadMedia={uploadMediaAction.bind(null, business.id, business.publicId)}
         assignMedia={assignMediaAction.bind(null, business.id, business.publicId)}
-        setFocalPoint={(businessId, publicId, mediaId) =>
-          setFocalPointAction.bind(null, businessId, publicId, mediaId)
-        }
-        setAltText={(businessId, publicId, mediaId) =>
-          setAltTextAction.bind(null, businessId, publicId, mediaId)
-        }
+        setFocalPoint={setFocalPointAction}
+        setAltText={setAltTextAction}
         optimiseAll={backfillDerivativesAction}
         deleteMedia={deleteMediaAction}
       />

@@ -45,12 +45,16 @@ export function MediaLibrary({
     businessId: string,
     publicId: string,
     mediaId: string,
-  ) => (previous: ActionState, formData: FormData) => Promise<ActionState>;
+    previous: ActionState,
+    formData: FormData,
+  ) => Promise<ActionState>;
   setAltText: (
     businessId: string,
     publicId: string,
     mediaId: string,
-  ) => (previous: ActionState, formData: FormData) => Promise<ActionState>;
+    previous: ActionState,
+    formData: FormData,
+  ) => Promise<ActionState>;
   optimiseAll: (businessId: string, publicId: string) => Promise<ActionState>;
 }) {
   return (
@@ -194,14 +198,14 @@ export function MediaLibrary({
                     alt={entry.altEn ?? entry.altAr ?? ''}
                     focalX={entry.focalX}
                     focalY={entry.focalY}
-                    action={setFocalPoint(businessId, publicId, entry.id)}
+                    action={setFocalPoint.bind(null, businessId, publicId, entry.id)}
                   />
                 </details>
 
                 <details>
                   <summary className="admin__label">Alt text</summary>
                   <ActionForm
-                    action={setAltText(businessId, publicId, entry.id)}
+                    action={setAltText.bind(null, businessId, publicId, entry.id)}
                     submitLabel="Save alt text"
                   >
                     <TextField
