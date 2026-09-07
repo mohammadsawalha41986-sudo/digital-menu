@@ -16,8 +16,12 @@ import type { PublicProfile } from './types';
 export async function buildProfileMetadata(
   profile: PublicProfile | null,
   searchParams: SearchParams,
-  branchKey?: string,
+  scope: { branchKey?: string; menuKey?: string } | string = {},
 ): Promise<Metadata> {
+  // Accepts the old positional branch key so the branch route needs no change.
+  const { branchKey, menuKey } =
+    typeof scope === 'string' ? { branchKey: scope, menuKey: undefined } : scope;
+
   if (!profile) {
     return { title: 'Not found', robots: { index: false, follow: false } };
   }
@@ -39,29 +43,46 @@ export async function buildProfileMetadata(
   )?.value;
 
   const base = getEnv().PUBLIC_URL.replace(/\/$/, '');
-  const path = branchKey
-    ? `/m/${profile.publicId}/b/${branchKey}`
-    : `/m/${profile.publicId}`;
+  const path = menuKey
+    ? `/m/${profile.publicId}/menu/${menuKey}`
+    : branchKey
+      ? `/m/${profile.publicId}/b/${branchKey}`
+      : `/m/${profile.publicId}`;
   const canonical = `${base}${path}`;
+
+  // A single menu's page is titled for that menu, not for the business, so a
+  // search result and a shared link say which menu they lead to.
+  const menu = menuKey ? profile.menus.find((candidate) => candidate.key === menuKey) : undefined;
+  const menuTitle = menu
+    ? resolveContent({ ar: menu.titleAr, en: menu.titleEn }, locale)?.value
+    : undefined;
 
   const languages = Object.fromEntries(
     LOCALES.map((candidate) => [bcp47Of(candidate), `${canonical}?lang=${candidate}`]),
   );
 
+  const pageTitle = menuTitle ? `${menuTitle} — ${title}` : title;
+  const pageDescription = menu
+    ? (resolveContent({ ar: menu.descriptionAr, en: menu.descriptionEn }, locale)?.value ??
+       description)
+    : description;
+
   return {
-    title,
-    description,
+    title: pageTitle,
+    description: pageDescription,
     alternates: { canonical, languages },
     robots: profile.seo.indexProfile
       ? { index: true, follow: true }
       : { index: false, follow: false },
     openGraph: {
-      title,
-      description,
+      title: pageTitle,
+      description: pageDescription,
       url: canonical,
       type: 'website',
       locale: bcp47Of(locale),
-      images: profile.seo.ogImage?.url
+      images: menu?.cover?.url
+        ? [{ url: `${base}${menu.cover.url}` }]
+        : profile.seo.ogImage?.url
         ? [{ url: `${base}${profile.seo.ogImage.url}` }]
         : profile.logo?.url
           ? [{ url: `${base}${profile.logo.url}` }]

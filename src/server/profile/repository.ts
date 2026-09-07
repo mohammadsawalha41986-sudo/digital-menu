@@ -36,6 +36,14 @@ import type {
 export interface GetPublicProfileOptions {
   /** Branch key from `/m/{publicId}/b/{branchKey}`, when present. */
   branchKey?: string | null;
+  /**
+   * Menu key from `/m/{publicId}/menu/{menuKey}`, when present.
+   *
+   * Narrows the profile to one menu rather than loading a different shape:
+   * the single-menu page is the same profile with a smaller `menus` array, so
+   * every template renders it without knowing the route exists.
+   */
+  menuKey?: string | null;
 }
 
 export async function getPublicProfile(
@@ -181,6 +189,10 @@ async function loadProfile(
           key: true,
           titleAr: true,
           titleEn: true,
+          descriptionAr: true,
+          descriptionEn: true,
+          currency: true,
+          cover: { select: MEDIA_SELECT },
           startsAt: true,
           endsAt: true,
           dailyFrom: true,
@@ -259,6 +271,15 @@ async function loadProfile(
 
   const overrides = activeBranch ? await loadBranchOverrides(business.id, activeBranch.key) : null;
 
+  /*
+   * A named menu that does not resolve is *not* treated as "no menu": unlike a
+   * renamed branch, a menu URL is a QR code's whole destination, and silently
+   * showing every menu instead would be a different page than the one printed
+   * on the table. The caller turns an unresolved key into a 404 by checking
+   * `activeMenuKey` against an empty `menus`.
+   */
+  const activeMenuKey = options.menuKey ?? null;
+
   // A menu without its own timezone is scheduled in the business's, which is
   // the one its opening hours already use.
   const businessTimezone =
@@ -315,6 +336,7 @@ async function loadProfile(
       workingHours: parseWorkingHours(branch.workingHours),
     })),
     activeBranchKey: activeBranch?.key ?? null,
+    activeMenuKey,
     // Scheduling is applied here rather than in the query, because a daily
     // window depends on the business's timezone and on the clock — neither of
     // which is expressible in a Prisma `where`. Staff previewing their work
@@ -325,7 +347,10 @@ async function loadProfile(
           internal.includeUnpublished ||
           isMenuLive(menu, { timezone: businessTimezone }),
       )
-      .map((menu): PublicMenu => toMenu(menu, overrides)),
+      // Narrowed *after* the scheduling filter, so a menu outside its window
+      // is not reachable by naming it in the URL either.
+      .filter((menu) => !activeMenuKey || menu.key === activeMenuKey)
+      .map((menu): PublicMenu => toMenu(menu, overrides, business.currency)),
     offers: business.offers.map((offer) => ({
       key: offer.key,
       titleAr: offer.titleAr,
@@ -485,6 +510,10 @@ interface MenuRow {
   key: string;
   titleAr: string;
   titleEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  currency: string | null;
+  cover: MediaRow | null;
   currentVersion: { version: number; publishedAt: Date | null } | null;
   design: DesignRowLike | null;
   categories: CategoryRow[];
@@ -522,7 +551,11 @@ interface ItemRow {
   gallery: { media: MediaRow }[];
 }
 
-function toMenu(menu: MenuRow, overrides: OverrideMap | null): PublicMenu {
+function toMenu(
+  menu: MenuRow,
+  overrides: OverrideMap | null,
+  businessCurrency: string,
+): PublicMenu {
   // A menu with no design row renders in the default theme rather than
   // unstyled — see src/menu-studio/resolve.ts.
   const design = resolveDesign(menu.design);
@@ -531,6 +564,12 @@ function toMenu(menu: MenuRow, overrides: OverrideMap | null): PublicMenu {
     key: menu.key,
     titleAr: menu.titleAr,
     titleEn: menu.titleEn,
+    descriptionAr: menu.descriptionAr,
+    descriptionEn: menu.descriptionEn,
+    // Null means "inherit", not "no currency": a menu without an override is
+    // priced in the business's own.
+    currency: menu.currency ?? businessCurrency,
+    cover: toImage(menu.cover),
     publishedVersion: menu.currentVersion?.version ?? null,
     publishedAt: menu.currentVersion?.publishedAt ?? null,
     design,

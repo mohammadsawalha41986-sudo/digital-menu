@@ -1682,3 +1682,86 @@
      beats a sidescrolling panel. */
   overflow-wrap: anywhere;
 }
+
+/* --- Share: links, embed, QR ---------------------------------------------- */
+
+.admin__share-list { margin: var(--sys-space-4) 0 0; padding: 0; list-style: none; display: grid; gap: var(--sys-space-3); }
+
+.admin__share-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem var(--sys-space-3);
+  align-items: center;
+  padding-block-end: var(--sys-space-3);
+  border-block-end: 1px solid var(--admin-border);
+}
+
+.admin__share-label { font-weight: 600; font-size: 0.85rem; }
+.admin__share-url { grid-column: 1; font-size: 0.85rem; overflow-wrap: anywhere; }
+.admin__share-row .admin__hint { grid-column: 1; }
+.admin__share-actions { grid-column: 2; grid-row: 1 / span 3; align-self: center; display: flex; gap: var(--sys-space-2); flex-wrap: wrap; align-items: center; }
+
+.admin__embed { margin-block-start: var(--sys-space-4); }
+.admin__embed-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sys-space-3); margin-block-end: var(--sys-space-2); }
+
+.admin__embed-code {
+  inline-size: 100%;
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: 0.4rem;
+  background: var(--admin-bg);
+  color: var(--admin-ink);
+  font-family: var(--sys-font-stack-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  /* The snippet is meant to be selected, not edited. Wrapping keeps it
+     readable on a phone, where an operator may well be doing this. */
+  white-space: pre-wrap;
+  resize: vertical;
+}
+
+.admin__share-menus { margin: var(--sys-space-4) 0 0; padding: 0; list-style: none; display: grid; gap: var(--sys-space-5); }
+
+.admin__share-menu { padding-block-end: var(--sys-space-5); border-block-end: 1px solid var(--admin-border); }
+.admin__share-menu:last-child { border-block-end: 0; padding-block-end: 0; }
+
+.admin__share-menu-head { display: flex; align-items: center; gap: var(--sys-space-3); flex-wrap: wrap; }
+.admin__share-menu-title { margin: 0; font-size: 1rem; }
+
+/* --- Reordering ----------------------------------------------------------- */
+
+.admin__move { display: inline-flex; gap: 0.25rem; }
+
+.admin__move button {
+  min-inline-size: var(--sys-tap-target);
+  min-block-size: var(--sys-tap-target);
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.35rem;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin__move button:hover:not(:disabled) { border-color: var(--admin-accent); }
+.admin__move button:disabled { opacity: 0.4; cursor: default; }
+
+.admin__row-actions { display: inline-flex; gap: var(--sys-space-2); align-items: center; flex-wrap: wrap; }
+.admin__inline-form { display: inline-flex; gap: var(--sys-space-2); align-items: center; }
+
+.admin__section-list { margin: var(--sys-space-3) 0 0; padding: 0; list-style: none; display: grid; gap: var(--sys-space-2); }
+
+.admin__section-list > li {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-3);
+  flex-wrap: wrap;
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: 0.4rem;
+  background: var(--admin-surface);
+}
+
+.admin__section-name { font-weight: 600; margin-inline-end: auto; }

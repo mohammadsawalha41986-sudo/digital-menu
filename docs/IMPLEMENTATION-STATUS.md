@@ -3,7 +3,7 @@
 **The single source of truth for what is built.** If another document disagrees
 with this one, this one is right and the other is stale.
 
-**Last verified:** 2026-09-06, against a real PostgreSQL 16 with all migrations
+**Last verified:** 2026-09-07, against a real PostgreSQL 16 with all migrations
 applied and a production build.
 
 Statuses: **DONE** · **IN PROGRESS** · **BLOCKED** · **NOT STARTED**
@@ -17,12 +17,12 @@ Statuses: **DONE** · **IN PROGRESS** · **BLOCKED** · **NOT STARTED**
 | `npm ci` on a clean clone | **PASS** |
 | `npm run lint` | **PASS** |
 | `npm run typecheck` | **PASS** |
-| `npm test` (unit + integration) | **PASS** — 670 passed, **0 skipped** |
+| `npm test` (unit + integration) | **PASS** — 681 passed, **0 skipped** |
 | `npm run build` | **PASS** |
-| `npx playwright test` (E2E, production build) | **PASS** — 90 passed |
-| `prisma migrate deploy` | **PASS** — 17 migrations, no drift |
-| Live production deployment | **NOT RUN** |
-| Production smoke tests | **NOT RUN** — depends on the above |
+| `npx playwright test` (E2E, production build) | **PASS** — 104 passed |
+| `prisma migrate deploy` | **PASS** — 18 migrations, no drift |
+| Live production deployment | **PASS** — deployed 2026-09-07, migrations applied |
+| Production browser smoke tests | **BLOCKED** — this environment cannot reach the production host |
 
 > Integration and E2E were previously **BLOCKED** for want of a database, with
 > 167 tests skipping silently. Both now run. CI enforces it with
@@ -80,7 +80,9 @@ Statuses: **DONE** · **IN PROGRESS** · **BLOCKED** · **NOT STARTED**
 | QR permanence | **DONE** | |
 | QR print kit | **DONE** | Table tent, counter card, A4, A5, QR-only |
 | Analytics capture and reporting | **DONE** | Owner previews excluded |
-| **Public menu search / filter** | **NOT STARTED** | Largest remaining visitor-facing gap |
+| **Public menu search / filter** | **DONE** | Offered from six items up; template-agnostic; Arabic folded |
+| **Per-menu public address** | **DONE** | `/m/{publicId}/menu/{menuKey}`, own title, canonical and OG |
+| **Website embedding** | **DONE** | `/embed/...`, cross-origin framable, self-sizing, `noindex` |
 
 ## Media
 
@@ -102,6 +104,9 @@ Statuses: **DONE** · **IN PROGRESS** · **BLOCKED** · **NOT STARTED**
 | **Command palette (`Ctrl/⌘ K`)** | **DONE** | Native `<dialog>`, keyboard-only tested |
 | **Link Health** | **DONE** | With a tested SSRF guard |
 | Explicit save with pending state | **DONE** | |
+| **Links, QR & embed screen** | **DONE** | Profile, branch and per-menu links with copy-paste embed snippets |
+| **Duplicate menu / section / item** | **DONE** | Copies are drafts; item codes rewritten; a copied dish arrives hidden |
+| **Reorder sections and items** | **DONE** | Up/down server actions — works with no JavaScript, keyboard and phone |
 | **True autosave** | **NOT STARTED** | Explicit save only; no timer, no retry affordance |
 | **Undo / redo** | **NOT STARTED** | Price history and rollback mitigate the worst case |
 
@@ -146,9 +151,11 @@ when the fix is reverted:
 
 ## Next, in order
 
-1. **Public menu search** — the largest remaining visitor-facing gap.
-2. **R2 storage provider** — required before a second application node.
-3. **Deploy and run the production smoke tests** — the last thing standing
-   between this codebase and an honest production-ready claim.
-4. Backups and error monitoring.
-5. Autosave, then undo/redo, then the API write surface.
+1. **Production browser smoke tests** — the deployment is live and migrated;
+   what has never been done is opening it in a browser and working the
+   checklist in `PRODUCTION-RUNBOOK.md`.
+2. **Backups** — a platform holding client menus and uploaded media with no
+   rehearsed restore is one volume failure from losing work.
+3. **R2 storage provider** — required before a second application node.
+4. Error monitoring, then autosave, then undo/redo, then the API write
+   surface.

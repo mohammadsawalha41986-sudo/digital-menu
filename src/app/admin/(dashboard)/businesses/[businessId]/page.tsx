@@ -109,6 +109,12 @@ export default async function BusinessPage({
           >
             Files
           </Link>
+          <Link
+            href={`/admin/businesses/${business.id}/share`}
+            className="admin__button admin__button--secondary"
+          >
+            Links, QR &amp; embed
+          </Link>
           <Link href={`/admin/businesses/${business.id}/qr`} className="admin__button">
             QR codes
           </Link>

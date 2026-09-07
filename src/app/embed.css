@@ -1,0 +1,36 @@
+/*
+ * Embed mode.
+ *
+ * An embedded menu is a *component on someone else's page*, and almost every
+ * embed that feels cheap does so for one of three reasons: it paints its own
+ * full-height background over the host's, it scrolls inside its frame, or it
+ * carries margins the host cannot remove. All three are addressed here.
+ */
+
+.embed-root {
+  /* Transparent, so the host's own background shows through and the menu sits
+     on the page rather than in a box on it. The templates paint their own
+     surfaces where they need them. */
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  /* Height is content height: the frame is resized by the host from the
+     posted height, so an inner scrollbar would be a bug, not a feature. */
+  min-block-size: 0;
+  overflow: visible;
+}
+
+/* A profile root inside an embed must not reserve a viewport it does not own. */
+.embed-root [data-profile-root] {
+  min-block-size: 0;
+}
+
+/* The platform footer is ours, not the host's. An embed carries the
+   restaurant's menu and nothing about the platform serving it.
+
+   Matched on the class suffix every family shares (`editorial__platform`,
+   `luxury__platform`, …) rather than by adding a marker attribute to ten
+   template files for one rule. */
+.embed-root [class$='__platform'] {
+  display: none;
+}

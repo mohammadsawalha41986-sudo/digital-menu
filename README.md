@@ -81,6 +81,7 @@ the two things standing between this and a production-ready claim.
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Threat model, defences, and accepted risks |
 | [`docs/TESTING.md`](docs/TESTING.md) | The layers, how to run them, and what PASS means |
 | [`docs/MEDIA.md`](docs/MEDIA.md) | The upload pipeline, alt text, and the demo artwork |
+| [`docs/EMBEDDING.md`](docs/EMBEDDING.md) | Putting a menu inside any website |
 
 ## Quick start
 
