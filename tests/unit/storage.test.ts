@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -92,5 +92,70 @@ describe('LocalStorageProvider', () => {
     expect(url).toMatch(/signature=[0-9a-f]{32}/);
     // The signing secret itself never appears in the URL.
     expect(url).not.toContain('test-secret');
+  });
+});
+
+describe('storage readiness probe', () => {
+  it('passes on a usable root and leaves nothing behind', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'dpos-probe-ok-'));
+    const provider = new LocalStorageProvider({
+      root,
+      publicPrefix: '/uploads',
+      signingSecret: 'test-secret',
+    });
+
+    await expect(provider.probe()).resolves.toBeUndefined();
+
+    // The probe object is temporary; a store that accumulated one per health
+    // check would fill a volume on its own.
+    await expect(readdir(path.join(root, '.probe')).catch(() => [])).resolves.toEqual([]);
+  });
+
+  it('fails on a root nothing can be written beneath', async () => {
+    // A root that is a file rather than a directory. This one the old check
+    // would also have caught — `exists` throws ENOTDIR — but it pins the
+    // probe's basic contract: an unusable store does not pass.
+    const parent = await mkdtemp(path.join(tmpdir(), 'dpos-probe-bad-'));
+    const root = path.join(parent, 'storage');
+    await writeFile(root, 'not a directory');
+
+    const provider = new LocalStorageProvider({
+      root,
+      publicPrefix: '/uploads',
+      signingSecret: 'test-secret',
+    });
+
+    await expect(provider.probe()).rejects.toThrow();
+  });
+
+  it('catches a read-only store that `exists` reports as healthy', async () => {
+    // This is the case the old check missed and the reason the probe exists:
+    // `stat` succeeds, so `exists` answers a clean "no" and the store looks
+    // like a healthy empty one — while every write fails. A read-only mount
+    // and a full disk both land here.
+    //
+    // Skipped for root, who is not subject to the permission bits that make
+    // the store read-only. The assertion is about the provider, not the OS.
+    if (process.getuid?.() === 0) {
+      return;
+    }
+
+    const parent = await mkdtemp(path.join(tmpdir(), 'dpos-probe-ro-'));
+    const root = path.join(parent, 'storage');
+    await mkdir(root);
+    await chmod(root, 0o500);
+
+    const provider = new LocalStorageProvider({
+      root,
+      publicPrefix: '/uploads',
+      signingSecret: 'test-secret',
+    });
+
+    try {
+      await expect(provider.exists('.healthcheck')).resolves.toBe(false);
+      await expect(provider.probe()).rejects.toThrow();
+    } finally {
+      await chmod(root, 0o700);
+    }
   });
 });

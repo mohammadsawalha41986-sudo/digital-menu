@@ -1,7 +1,8 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  StorageError,
   assertSafeKey,
   type PutObjectInput,
   type SignedUrlOptions,
@@ -110,6 +111,23 @@ export class LocalStorageProvider implements StorageProvider {
       .slice(0, 32);
 
     return `${this.publicPrefix}/${key}?expires=${expires}&signature=${signature}`;
+  }
+
+  async probe(): Promise<void> {
+    // Unique per call so two probes racing cannot delete each other's object.
+    const key = `.probe/${randomUUID()}`;
+    const body = new TextEncoder().encode('ok');
+
+    try {
+      await this.put({ key, body, contentType: 'text/plain' });
+
+      const read = await this.get(key);
+      if (!read || read.byteLength !== body.byteLength) {
+        throw new StorageError('Storage probe wrote an object it could not read back');
+      }
+    } finally {
+      await this.delete(key).catch(() => {});
+    }
   }
 }
 

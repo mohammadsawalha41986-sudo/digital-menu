@@ -41,6 +41,24 @@ export interface StorageProvider {
   publicUrl(key: string): string;
   /** Time-limited URL for private objects. */
   signedUrl(key: string, options?: SignedUrlOptions): Promise<string>;
+
+  /**
+   * Round-trips a throwaway object: write, read back, delete.
+   *
+   * Readiness needs a write. Asking whether some key exists answers "no" for a
+   * healthy empty store and "no" for a store that cannot be written to at all
+   * — an unmounted volume, a read-only mount, a full disk, expired remote
+   * credentials — so the check passed for a deployment that could not accept a
+   * single upload.
+   *
+   * What it cannot detect: a root that is writable but simply the wrong
+   * directory. Writing and reading in an empty wrong place succeeds. That
+   * failure shows up as images 404ing, not as a health check, and the defence
+   * against it is deployment configuration rather than a probe.
+   *
+   * Throws on failure; the caller decides what to do with it.
+   */
+  probe(): Promise<void>;
 }
 
 export class StorageError extends Error {
