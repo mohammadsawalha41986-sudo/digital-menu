@@ -218,3 +218,60 @@ video {
     scroll-behavior: auto !important;
   }
 }
+
+/* --- Public menu search ---------------------------------------------------
+   Brand-token driven, so it belongs to the business rather than to the
+   platform, and works in all ten families without any of them knowing. */
+
+.menu-search {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.35rem;
+  margin-block: 1rem;
+  padding: 0.6rem 0;
+  background: var(--brand-color-background, #fff);
+}
+
+.menu-search__label {
+  font-size: 0.8rem;
+  color: var(--brand-color-muted, #666);
+}
+
+.menu-search__field { display: flex; gap: 0.5rem; align-items: stretch; }
+
+.menu-search__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  min-block-size: 2.75rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--brand-color-border, #ddd);
+  border-radius: var(--brand-radius-md, 0.5rem);
+  background: var(--brand-color-surface, #fff);
+  color: var(--brand-color-text, #111);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.menu-search__clear {
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  padding-inline: 0.9rem;
+  border: 1px solid var(--brand-color-border, #ddd);
+  border-radius: var(--brand-radius-md, 0.5rem);
+  background: var(--brand-color-surface, #fff);
+  color: var(--brand-color-text, #111);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Hidden until there is something to clear. */
+.menu-search:not([data-active='true']) .menu-search__clear { display: none; }
+
+.menu-search__status {
+  margin: 0;
+  min-block-size: 1.2em;
+  font-size: 0.8rem;
+  color: var(--brand-color-muted, #666);
+}

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 
+import { MoveButtons } from '../../../move-buttons';
+import { DuplicateButton } from '../../../duplicate-button';
 import { ActionButton, ActionForm, SelectField, TextField } from '../../../components';
 import type { ActionState } from '@/server/admin/actions';
 
@@ -144,12 +146,13 @@ export function MenuEditor({
                   <th scope="col" className="admin__numeric">Price ({currency})</th>
                   <th scope="col" className="admin__numeric">Calories</th>
                   <th scope="col">Availability</th>
+                  <th scope="col">Order</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {menu.categories.flatMap((category) =>
-                  category.items.map((item) => (
+                  category.items.map((item, index) => (
                     <tr key={item.id} data-item-admin={item.itemCode}>
                       <td>
                         <code>{item.itemCode}</code>
@@ -160,6 +163,22 @@ export function MenuEditor({
                       <td className="admin__numeric">{item.calories ?? '—'}</td>
                       <td>{item.availability}</td>
                       <td>
+                        <MoveButtons
+                          businessId={businessId}
+                          scope="item"
+                          id={item.id}
+                          label={item.nameEn ?? item.nameAr}
+                          isFirst={index === 0}
+                          isLast={index === category.items.length - 1}
+                        />
+                      </td>
+                      <td className="admin__row-actions">
+                        <DuplicateButton
+                          businessId={businessId}
+                          scope="item"
+                          id={item.id}
+                          label={item.nameEn ?? item.nameAr}
+                        />
                         <ActionButton
                           action={deleteItem.bind(null, businessId, item.id, publicId)}
                           label="Remove"
@@ -172,7 +191,7 @@ export function MenuEditor({
                 )}
                 {menu.categories.every((category) => category.items.length === 0) ? (
                   <tr>
-                    <td colSpan={7} className="admin__empty">
+                    <td colSpan={8} className="admin__empty">
                       No items yet.
                     </td>
                   </tr>
@@ -197,17 +216,41 @@ export function MenuEditor({
           </details>
 
           {menu.categories.length > 0 ? (
-            <div className="admin__actions">
-              {menu.categories.map((category) => (
-                <ActionButton
-                  key={category.id}
-                  action={deleteCategory.bind(null, businessId, category.id, publicId)}
-                  label={`Remove category ${category.key}`}
-                  variant="danger"
-                  confirm={`Remove category ${category.key} and its items?`}
-                />
-              ))}
-            </div>
+            <>
+              <h3 className="admin__label">Sections</h3>
+              <ul className="admin__section-list">
+                {menu.categories.map((category, index) => (
+                  <li key={category.id} data-category-admin={category.key}>
+                    <span className="admin__section-name">
+                      {category.nameEn ?? category.nameAr}
+                      <span className="admin__hint"> · {category.key}</span>
+                    </span>
+                    <MoveButtons
+                      businessId={businessId}
+                      scope="category"
+                      id={category.id}
+                      label={category.nameEn ?? category.nameAr}
+                      isFirst={index === 0}
+                      isLast={index === menu.categories.length - 1}
+                    />
+                    <span className="admin__row-actions">
+                      <DuplicateButton
+                        businessId={businessId}
+                        scope="category"
+                        id={category.id}
+                        label={category.nameEn ?? category.nameAr}
+                      />
+                      <ActionButton
+                        action={deleteCategory.bind(null, businessId, category.id, publicId)}
+                        label="Remove"
+                        variant="danger"
+                        confirm={`Remove category ${category.key} and its items?`}
+                      />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
         </section>
       ))}

@@ -94,6 +94,11 @@ export interface PublicMenu {
   key: string;
   titleAr: string;
   titleEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  /** The menu's own currency when it overrides the business's. */
+  currency: string;
+  cover: PublicImage | null;
   publishedVersion: number | null;
   publishedAt: Date | null;
   categories: PublicCategory[];
@@ -170,6 +175,12 @@ export interface PublicProfile {
   branches: PublicBranch[];
   /** The branch this view is scoped to, when the URL named one. */
   activeBranchKey: string | null;
+  /**
+   * Set when the visitor is on a single menu's own page,
+   * `/m/{publicId}/menu/{menuKey}`. `menus` then holds exactly that menu, so
+   * templates need no special case: they render the menus they are given.
+   */
+  activeMenuKey: string | null;
 
   menus: PublicMenu[];
   offers: PublicOffer[];

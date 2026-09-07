@@ -250,6 +250,18 @@ model Menu {
   titleEn    String?
   sortOrder  Int        @default(0)
 
+  /// Per-menu copy, authored per language and never machine-translated.
+  descriptionAr String?
+  descriptionEn String?
+
+  /// Currency for this menu, when it differs from the business's own. A hotel
+  /// pricing its spa in one currency and its restaurant in another is the case
+  /// this exists for; null means "inherit the business's".
+  currency String?
+
+  /// Menu cover, shown on the menu's own public page.
+  coverMediaId String?
+
   /// Scheduling (master spec §57). A breakfast menu, a Ramadan menu, a
   /// seasonal one: outside its window the menu simply is not served.
   ///
@@ -274,6 +286,7 @@ model Menu {
   categories     MenuCategory[]
   versions       MenuVersion[]  @relation("MenuVersions")
   design         MenuDesign?
+  cover          Media?         @relation("MenuCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
   currentVersion MenuVersion?   @relation("MenuCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
 
   @@unique([businessId, key])
@@ -398,6 +411,7 @@ model Media {
   offerImageOf    Offer[]
   itemImageOf     MenuItem[]
   itemGallery     MenuItemImage[]
+  menuCoverOf     Menu[]          @relation("MenuCover")
 
   @@index([businessId, kind])
   @@map("media")

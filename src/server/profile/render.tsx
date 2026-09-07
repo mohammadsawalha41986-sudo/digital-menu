@@ -13,6 +13,9 @@ import { resolveTemplate } from '@/templates/registry';
 import { preloadFontsFor } from '@/menu-studio/typography';
 import { looksLikeQrScan, recordEventByPublicId } from '@/server/analytics/record';
 import { AnalyticsScript } from './analytics-script';
+import { EmbedHeightScript } from './embed-script';
+import { MenuSearch } from './menu-search';
+import { menuSearchStrings } from './menu-search-strings';
 import type { PublicProfile } from './types';
 
 /**
@@ -25,6 +28,17 @@ import type { PublicProfile } from './types';
  */
 
 export type SearchParams = Record<string, string | string[] | undefined>;
+
+/** Item count at which the public menu offers a search box. */
+const MENU_SEARCH_THRESHOLD = 6;
+
+function countItems(profile: PublicProfile): number {
+  return profile.menus.reduce(
+    (total, menu) =>
+      total + menu.categories.reduce((n, category) => n + category.items.length, 0),
+    0,
+  );
+}
 
 export async function resolveRequestLocale(
   searchParams: SearchParams,
@@ -47,6 +61,16 @@ export interface RenderProfileOptions {
    * which would make the numbers on the analytics screen a lie (GOALS I9).
    */
   preview?: boolean;
+  /**
+   * Rendered inside someone else's page (`/embed/...`).
+   *
+   * Analytics still record — an embedded menu is a real customer looking at a
+   * real menu, and not counting it would make the numbers wrong in the other
+   * direction. What changes is chrome: an embed is a component on a host page,
+   * so it must not paint a full-viewport background over that page, and the
+   * host's own header already says whose restaurant this is.
+   */
+  embed?: boolean;
 }
 
 export async function renderProfile(
@@ -105,6 +129,7 @@ export async function renderProfile(
       data-locale={locale}
       data-branch={profile.activeBranchKey ?? undefined}
       data-preview={options.preview ? '' : undefined}
+      data-embed={options.embed ? '' : undefined}
       // Brand identity enters as CSS custom properties here and nowhere else.
       style={brandTokensToStyle(profile.brand)}
     >
@@ -116,6 +141,16 @@ export async function renderProfile(
       {options.preview ? null : (
         <AnalyticsScript publicId={profile.publicId} branchKey={profile.activeBranchKey} locale={locale} />
       )}
+      {/* Rendered last and relocated by its own script — see MenuSearch.
+
+          Offered from six items up. That is roughly where a menu stops fitting
+          on one phone screen, and past the fold "search" beats "scroll and
+          hope". Below it the control would be a box that finds things already
+          visible, which is clutter rather than help. */}
+      {countItems(profile) >= MENU_SEARCH_THRESHOLD ? (
+        <MenuSearch strings={menuSearchStrings(locale)} />
+      ) : null}
+      {options.embed ? <EmbedHeightScript /> : null}
     </div>
   );
 }
