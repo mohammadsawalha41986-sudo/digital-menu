@@ -1,24 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openCommandPalette, signIn } from './support/admin';
 
 /**
  * The multi-menu platform: per-menu addresses, embedding, search, ordering
  * and duplication — driven the way an operator and a visitor drive them.
  */
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
-
 async function openBusiness(page: Page, publicId: string) {
-  await page.keyboard.press('ControlOrMeta+k');
-  await page.getByRole('combobox', { name: /Search businesses/ }).fill(publicId);
+  const search = await openCommandPalette(page);
+  await search.fill(publicId);
   await page.getByRole('option').first().click();
   await expect(page).toHaveURL(/\/admin\/businesses\/[^/]+$/);
   return new URL(page.url()).pathname.split('/')[3] as string;

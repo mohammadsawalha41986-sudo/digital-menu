@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { signIn } from './support/admin';
 
 /**
  * THE GUIDED CREATION JOURNEY.
@@ -18,20 +19,10 @@ import { expect, test, type Page } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
 const RUN = Date.now().toString(36).slice(-5);
 
 /** A real PNG — the brand engine decodes it, so a fake blob would prove nothing. */
 const LOGO = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAvklEQVR4nOXOMQEAIAzAsFqYEWzgXxGTkYMjf5p73s/SAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBLR3Q0gEtHdDSAS0d0NIBbQF9PlFpseQysQAAAABJRU5ErkJggg==', 'base64');
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
 
 test.describe('a new restaurant, start to finish', () => {
   test.slow();

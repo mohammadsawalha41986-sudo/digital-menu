@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signIn } from './support/admin';
 
 /**
  * MENU STUDIO — the §41 QA list, driven through the real interface.
@@ -9,18 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
  * content, which is asserted around every design switch.
  */
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
 const RUN = Date.now().toString(36).slice(-6);
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
 
 /** Everything a visitor reads. Design changes must never move it. */
 async function menuContent(page: Page, publicId: string) {

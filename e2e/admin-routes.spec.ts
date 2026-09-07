@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signIn } from './support/admin';
 
 /**
  * Every admin route, rendered.
@@ -15,9 +16,6 @@ import { expect, test, type Page } from '@playwright/test';
  * admin surface and assert each route renders. A route that 500s, or that
  * renders Next's error boundary, fails here — whatever the cause.
  */
-
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
 
 /** Routes that need no business in the path. */
 const GLOBAL_ROUTES = [
@@ -54,14 +52,6 @@ const BUSINESS_ROUTES = [
   '/template',
 ];
 
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
-
 /**
  * Asserts a route renders rather than erroring.
  *
@@ -93,14 +83,16 @@ test('every per-business admin route renders', async ({ page }) => {
   await signIn(page);
 
   await page.goto('/admin/businesses');
-  const href = await page
-    .locator('a[href^="/admin/businesses/"]')
-    .first()
-    .getAttribute('href');
-  expect(href, 'no business to walk — is the database seeded?').not.toBeNull();
+  const hrefs = await page.locator('a[href^="/admin/businesses/"]').evaluateAll((links) =>
+    links.map((link) => link.getAttribute('href') ?? ''),
+  );
 
-  const businessId = href!.split('/')[3];
-  expect(businessId).toBeTruthy();
+  // `/admin/businesses/new` is the create form, not a business.
+  const businessId = hrefs
+    .map((href) => href.split('/')[3])
+    .find((segment) => Boolean(segment) && segment !== 'new');
+
+  expect(businessId, 'no business to walk — is the database seeded?').toBeTruthy();
 
   for (const suffix of BUSINESS_ROUTES) {
     await expectRenders(page, `/admin/businesses/${businessId}${suffix}`);
