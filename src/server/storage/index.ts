@@ -26,9 +26,11 @@ export function getStorage(): StorageProvider {
       return instance;
 
     case 'r2':
-      // Deliberately unimplemented in Phase 0. The environment layer already
-      // validates R2 credentials, so adding the provider here is additive.
-      throw new Error('STORAGE_PROVIDER=r2 is not implemented yet (planned: Phase 4)');
+      // Unreachable: the environment layer refuses STORAGE_PROVIDER=r2 before
+      // anything gets this far, so a misconfiguration fails at boot with a
+      // message that names it. This stays as the exhaustiveness guard, and as
+      // the seam an R2 provider drops into without touching domain code.
+      throw new Error('STORAGE_PROVIDER=r2 is not implemented');
   }
 }
 

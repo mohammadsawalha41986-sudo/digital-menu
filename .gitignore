@@ -46,6 +46,3 @@ yarn-debug.log*
 yarn-error.log*
 .vscode/
 .idea/
-
-# Local agent scratch space
-.scratch/
