@@ -74,8 +74,15 @@ test.describe('embedding', () => {
     // A real page on this origin that frames the embed, so the message is
     // posted across a genuine frame boundary rather than simulated.
     await page.goto('/m/DEM001');
+
+    // Append the frame; do not clear the body first.
+    //
+    // Clearing it raced React: hydration would commit after the wipe, restore
+    // the profile's own tree, and take the injected iframe with it. About one
+    // run in eight, the frame this test waits for had been deleted before it
+    // ever loaded — which is what made this the suite's flakiest case. An
+    // extra child alongside the hydrated root is left alone.
     await page.evaluate((src) => {
-      document.body.innerHTML = '';
       (window as unknown as { __height: number }).__height = 0;
       window.addEventListener('message', (event: MessageEvent) => {
         const data = event.data as { type?: string; height?: number } | null;

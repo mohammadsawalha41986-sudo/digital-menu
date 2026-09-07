@@ -46,6 +46,24 @@ test.describe('the command palette', () => {
     await expect(palette(page)).toBeVisible();
   });
 
+  test('reopens immediately after Escape, with no pause to recover', async ({ page }) => {
+    // The defect: the shortcut toggled React state, which lagged the dialog.
+    // Escape closed the element and queued `open: false`; a Cmd+K inside that
+    // window read `open` as still true and toggled it back to false, so the
+    // palette stayed shut and a second press was the only way in. A stale
+    // effect could also snap an already-open dialog closed.
+    //
+    // Both need a tight loop to show up — one open-and-dismiss proves nothing,
+    // which is why this ran green for so long. No waiting between the presses.
+    for (let cycle = 0; cycle < 8; cycle += 1) {
+      await page.keyboard.press('ControlOrMeta+k');
+      await expect(palette(page), `cycle ${cycle}: did not open`).toBeVisible();
+
+      await page.keyboard.press('Escape');
+      await expect(palette(page), `cycle ${cycle}: did not close`).toBeHidden();
+    }
+  });
+
   test('offers destinations before anything is typed', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+k');
 
