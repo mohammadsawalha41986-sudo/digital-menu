@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signIn } from './support/admin';
 import { listTemplates } from '../src/templates/registry';
 
 /**
@@ -17,17 +18,6 @@ import { listTemplates } from '../src/templates/registry';
  * the page looks fine until a person looks at it. So these tests assert on
  * what is actually *inside* the frame, not that a route exists.
  */
-
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
 
 /**
  * Resolves a business id from its public id, through the admin list.

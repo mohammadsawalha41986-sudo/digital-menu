@@ -1,24 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openCommandPalette, signIn } from './support/admin';
 
 /**
  * The multi-menu platform: per-menu addresses, embedding, search, ordering
  * and duplication — driven the way an operator and a visitor drive them.
  */
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
-
 async function openBusiness(page: Page, publicId: string) {
-  await page.keyboard.press('ControlOrMeta+k');
-  await page.getByRole('combobox', { name: /Search businesses/ }).fill(publicId);
+  const search = await openCommandPalette(page);
+  await search.fill(publicId);
   await page.getByRole('option').first().click();
   await expect(page).toHaveURL(/\/admin\/businesses\/[^/]+$/);
   return new URL(page.url()).pathname.split('/')[3] as string;
@@ -84,8 +74,15 @@ test.describe('embedding', () => {
     // A real page on this origin that frames the embed, so the message is
     // posted across a genuine frame boundary rather than simulated.
     await page.goto('/m/DEM001');
+
+    // Append the frame; do not clear the body first.
+    //
+    // Clearing it raced React: hydration would commit after the wipe, restore
+    // the profile's own tree, and take the injected iframe with it. About one
+    // run in eight, the frame this test waits for had been deleted before it
+    // ever loaded — which is what made this the suite's flakiest case. An
+    // extra child alongside the hydrated root is left alone.
     await page.evaluate((src) => {
-      document.body.innerHTML = '';
       (window as unknown as { __height: number }).__height = 0;
       window.addEventListener('message', (event: MessageEvent) => {
         const data = event.data as { type?: string; height?: number } | null;

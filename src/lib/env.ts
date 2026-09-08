@@ -68,6 +68,19 @@ const schema = baseSchema.superRefine((value, ctx) => {
         });
       }
     }
+
+    // The R2 provider is not written yet. Without this the credentials
+    // validate, the app boots, and the first thing anyone learns is a health
+    // check reporting `storage: down` with nothing saying why — a deploy that
+    // fails for a reason nobody can read. Refuse here, where the message can
+    // name the cause.
+    ctx.addIssue({
+      code: 'custom',
+      path: ['STORAGE_PROVIDER'],
+      message:
+        'STORAGE_PROVIDER=r2 is configured but the R2 provider is not implemented. ' +
+        'Use STORAGE_PROVIDER=local.',
+    });
   }
 });
 

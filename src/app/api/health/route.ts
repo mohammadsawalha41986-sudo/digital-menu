@@ -54,12 +54,49 @@ async function checkDatabase(): Promise<CheckStatus> {
   }
 }
 
+/**
+ * Storage readiness, cached briefly.
+ *
+ * The probe is a real write-read-delete rather than a lookup: asking whether
+ * some key exists answers "no" for a healthy empty store and "no" for one that
+ * cannot be written at all, so an unmounted or read-only volume reported `up`
+ * and the first upload was where anyone found out.
+ *
+ * The cache is why that is safe to do here. This endpoint is public and
+ * unauthenticated, and without it every request would become a disk write —
+ * an amplifier anyone could pull on. Readiness does not change from
+ * millisecond to millisecond, so a short window costs an orchestrator probing
+ * every 30s nothing and makes request volume irrelevant. Failures are cached
+ * too: a broken store that recovers is reported up within the window, which is
+ * the same latency a probe interval already imposes.
+ */
+const STORAGE_CACHE_MS = 10_000;
+
+let storageCache: { status: CheckStatus; checkedAt: number } | undefined;
+let storageInFlight: Promise<CheckStatus> | undefined;
+
 async function checkStorage(): Promise<CheckStatus> {
-  try {
-    // Cheap round trip: a miss is a healthy answer, a throw is not.
-    await getStorage().exists('.healthcheck');
-    return 'up';
-  } catch {
-    return 'down';
+  const now = Date.now();
+
+  if (storageCache && now - storageCache.checkedAt < STORAGE_CACHE_MS) {
+    return storageCache.status;
   }
+
+  // Concurrent requests share one probe rather than racing a write each.
+  storageInFlight ??= runStorageProbe().finally(() => {
+    storageInFlight = undefined;
+  });
+
+  return storageInFlight;
 }
+
+async function runStorageProbe(): Promise<CheckStatus> {
+  const status: CheckStatus = await getStorage()
+    .probe()
+    .then<CheckStatus>(() => 'up')
+    .catch<CheckStatus>(() => 'down');
+
+  storageCache = { status, checkedAt: Date.now() };
+  return status;
+}
+

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { ADMIN_EMAIL, signIn } from './support/admin';
 
 /**
  * Phase 3 — the admin surface, driven the way an operator drives it.
@@ -8,17 +9,6 @@ import { expect, test, type Page } from '@playwright/test';
  * the assertions read the resulting public profile.
  */
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
-
 test('admin requires authentication', async ({ page }) => {
   await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin\/login/);
@@ -27,7 +17,7 @@ test('admin requires authentication', async ({ page }) => {
 
 test('a wrong password is refused with a message that reveals nothing', async ({ page }) => {
   await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
+  await page.getByLabel('Email').fill(ADMIN_EMAIL);
   await page.getByLabel('Password').fill('definitely-the-wrong-password');
   await page.getByRole('button', { name: 'Sign in' }).click();
 

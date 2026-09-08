@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openCommandPalette, signIn } from './support/admin';
 
 /**
  * The command palette (master spec §43), driven by keyboard only.
@@ -7,23 +8,20 @@ import { expect, test, type Page } from '@playwright/test';
  * assertion here opens it, moves in it and activates from it without a click.
  */
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
-
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Command palette' });
 const field = (page: Page) => page.getByRole('combobox', { name: /Search businesses/ });
 
 test.describe('the command palette', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page);
+
+    // The shortcut is handled by a client component, so it does nothing until
+    // that component hydrates. Open and close the palette once here: every
+    // test below can then assert that a single press opens it, which is the
+    // behaviour they are actually about.
+    await openCommandPalette(page);
+    await page.keyboard.press('Escape');
+    await expect(palette(page)).toBeHidden();
   });
 
   test('opens on the keyboard shortcut and takes focus', async ({ page }) => {
@@ -46,6 +44,24 @@ test.describe('the command palette', () => {
     // leave the toggle inverted.
     await page.keyboard.press('ControlOrMeta+k');
     await expect(palette(page)).toBeVisible();
+  });
+
+  test('reopens immediately after Escape, with no pause to recover', async ({ page }) => {
+    // The defect: the shortcut toggled React state, which lagged the dialog.
+    // Escape closed the element and queued `open: false`; a Cmd+K inside that
+    // window read `open` as still true and toggled it back to false, so the
+    // palette stayed shut and a second press was the only way in. A stale
+    // effect could also snap an already-open dialog closed.
+    //
+    // Both need a tight loop to show up — one open-and-dismiss proves nothing,
+    // which is why this ran green for so long. No waiting between the presses.
+    for (let cycle = 0; cycle < 8; cycle += 1) {
+      await page.keyboard.press('ControlOrMeta+k');
+      await expect(palette(page), `cycle ${cycle}: did not open`).toBeVisible();
+
+      await page.keyboard.press('Escape');
+      await expect(palette(page), `cycle ${cycle}: did not close`).toBeHidden();
+    }
   });
 
   test('offers destinations before anything is typed', async ({ page }) => {

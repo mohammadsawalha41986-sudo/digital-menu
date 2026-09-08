@@ -35,6 +35,18 @@ const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`
 
 const SUFFIX = 'ISO';
 
+/**
+ * A real 1x1 PNG. The upload probe has to carry a file the validator would
+ * accept, or it could pass by being rejected for its bytes rather than for
+ * crossing a tenant boundary — which is the thing under test.
+ */
+const PIXEL_PNG = new Uint8Array(
+  Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  ),
+);
+
 let alphaId = '';
 let betaId = '';
 let alphaUser: AuthenticatedUser = { id: '', role: 'STAFF' };
@@ -413,6 +425,97 @@ describe.skipIf(!databaseReachable)('the newer surfaces respect the same boundar
     await expect(
       createStaffUser(alphaUser, { email: 'nope@example.test', name: 'No', role: 'STAFF' }),
     ).rejects.toThrow();
+  });
+
+  it('cannot upload, assign, delete or optimise media in the other business', async () => {
+    const { assignMedia, backfillDerivatives, deleteMedia, listMedia, uploadMedia } =
+      await import('@/server/media/service');
+
+    await expect(listMedia(alphaUser, betaId)).rejects.toThrow(TenantAccessError);
+    await expect(
+      uploadMedia(alphaUser, betaId, {
+        kind: 'ITEM_IMAGE',
+        upload: {
+          fileName: 'pixel.png',
+          declaredContentType: 'image/png',
+          bytes: PIXEL_PNG,
+        },
+      }),
+    ).rejects.toThrow(TenantAccessError);
+    await expect(
+      assignMedia(alphaUser, betaId, null, { type: 'business-logo' }),
+    ).rejects.toThrow(TenantAccessError);
+    await expect(deleteMedia(alphaUser, betaId, 'any-media-id')).rejects.toThrow(
+      TenantAccessError,
+    );
+    await expect(backfillDerivatives(alphaUser, betaId)).rejects.toThrow(TenantAccessError);
+  });
+
+  it('cannot read or write the other business’s offers', async () => {
+    const { deleteOffer, listOffersForAdmin, upsertOffer } = await import(
+      '@/server/offers/service'
+    );
+
+    await expect(listOffersForAdmin(alphaUser, betaId)).rejects.toThrow(TenantAccessError);
+    await expect(
+      upsertOffer(alphaUser, betaId, {
+        key: 'iso-offer',
+        titleAr: 'عرض',
+        titleEn: 'Offer',
+        placement: 'FEATURED',
+        isActive: true,
+      }),
+    ).rejects.toThrow(TenantAccessError);
+    await expect(deleteOffer(alphaUser, betaId, 'any-offer-id')).rejects.toThrow(
+      TenantAccessError,
+    );
+  });
+
+  it('cannot read or write the other business’s public files', async () => {
+    const {
+      createExternalLink,
+      deletePublicFile,
+      listFilesForAdmin,
+      setFileVisibility,
+    } = await import('@/server/files/service');
+
+    await expect(listFilesForAdmin(alphaUser, betaId)).rejects.toThrow(TenantAccessError);
+    await expect(
+      createExternalLink(alphaUser, betaId, {
+        key: 'iso-link',
+        titleAr: 'رابط',
+        titleEn: 'Link',
+        externalUrl: 'https://example.com',
+        isPublic: true,
+      }),
+    ).rejects.toThrow(TenantAccessError);
+    await expect(
+      setFileVisibility(alphaUser, betaId, 'any-file-id', true),
+    ).rejects.toThrow(TenantAccessError);
+    await expect(deletePublicFile(alphaUser, betaId, 'any-file-id')).rejects.toThrow(
+      TenantAccessError,
+    );
+  });
+
+  it('cannot export the other business’s menu, which would exfiltrate all of it', async () => {
+    const { exportMenu } = await import('@/server/import/export');
+
+    await expect(exportMenu(alphaUser, betaId, { audience: 'admin', format: 'csv' })).rejects.toThrow(
+      TenantAccessError,
+    );
+  });
+
+  it('cannot read the other business’s analytics', async () => {
+    const { buildReport } = await import('@/server/analytics/report');
+
+    await expect(buildReport(alphaUser, betaId, '30d')).rejects.toThrow(TenantAccessError);
+  });
+
+  it('cannot read or run link health on the other business', async () => {
+    const { checkLinks, getLinkHealth } = await import('@/server/links/service');
+
+    await expect(getLinkHealth(alphaUser, betaId)).rejects.toThrow(TenantAccessError);
+    await expect(checkLinks(alphaUser, betaId)).rejects.toThrow(TenantAccessError);
   });
 
   it('the attention dashboard shows only the businesses the user may see', async () => {

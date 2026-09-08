@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { parsePublicId } from '@/lib/public-id';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n/config';
 import { prisma } from '@/server/db/client';
@@ -46,6 +47,33 @@ export interface GetPublicProfileOptions {
   menuKey?: string | null;
 }
 
+/**
+ * One profile load per request, however many callers ask for it.
+ *
+ * Every public page reads the profile twice — once in `generateMetadata` for
+ * the title, description and share image, once in the component that renders
+ * it — and both went to the database. A single menu view was around forty
+ * queries where twenty would do, on the route that has to be fast on a phone.
+ *
+ * `cache` is request-scoped, so this is deduplication and not caching: nothing
+ * outlives the response, and a price saved a moment ago is still read fresh by
+ * the next visitor. That matters here, because it is the property the
+ * cross-request profile cache could not offer without a way to express an
+ * offer that expires at 22:00.
+ *
+ * The key is the three primitives rather than the options object, whose
+ * identity differs between two callers that mean the same thing — the
+ * single-menu page passes a fresh `{ menuKey }` in each of its two calls.
+ */
+const loadPublicProfile = cache(
+  (
+    publicId: string,
+    branchKey: string | null,
+    menuKey: string | null,
+  ): Promise<PublicProfile | null> =>
+    loadProfile({ publicId, status: 'ACTIVE' }, { branchKey, menuKey }),
+);
+
 export async function getPublicProfile(
   rawPublicId: string,
   options: GetPublicProfileOptions = {},
@@ -56,7 +84,7 @@ export async function getPublicProfile(
   // arbitrary strings to the data layer (master spec §127).
   if (!publicId) return null;
 
-  return loadProfile({ publicId, status: 'ACTIVE' }, options);
+  return loadPublicProfile(publicId, options.branchKey ?? null, options.menuKey ?? null);
 }
 
 /**

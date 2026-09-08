@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openCommandPalette, signIn } from './support/admin';
 
 /**
  * Link Health (master spec §19), driven through the admin.
@@ -11,21 +12,10 @@ import { expect, test, type Page } from '@playwright/test';
  * looked.
  */
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
-
 /** The demo restaurant, found the way an operator finds it. */
 async function openDemoHealth(page: Page) {
-  await page.keyboard.press('ControlOrMeta+k');
-  await page.getByRole('combobox', { name: /Search businesses/ }).fill('DEM001');
+  const search = await openCommandPalette(page);
+  await search.fill('DEM001');
   await page.getByRole('option', { name: /Demo Restaurant/ }).first().click();
   await expect(page).toHaveURL(/\/admin\/businesses\/[^/]+$/);
 

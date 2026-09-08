@@ -35,6 +35,21 @@ describe('environment validation', () => {
     expect(() => parseEnv({ ...base, STORAGE_PROVIDER: 'r2' })).toThrow(/STORAGE_BUCKET/);
   });
 
+  it('refuses r2 outright, because the provider is not written yet', () => {
+    // Fully credentialled and still refused. The alternative is a deploy that
+    // boots and then reports `storage: down` with nothing naming the cause.
+    expect(() =>
+      parseEnv({
+        ...base,
+        STORAGE_PROVIDER: 'r2',
+        STORAGE_BUCKET: 'menus',
+        STORAGE_ENDPOINT: 'https://example.r2.cloudflarestorage.com',
+        STORAGE_ACCESS_KEY: 'key',
+        STORAGE_SECRET_KEY: 'secret',
+      }),
+    ).toThrow(/not implemented/);
+  });
+
   it('rejects an unknown storage provider rather than silently defaulting', () => {
     expect(() => parseEnv({ ...base, STORAGE_PROVIDER: 'ftp' })).toThrow(/STORAGE_PROVIDER/);
   });

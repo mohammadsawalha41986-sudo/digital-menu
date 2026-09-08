@@ -85,6 +85,30 @@ export function CommandPalette() {
     setOpen(false);
   }, []);
 
+  const openPalette = useCallback(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (!dialog.open) dialog.showModal();
+    inputRef.current?.focus();
+    setOpen(true);
+  }, []);
+
+  /**
+   * Toggles against the dialog element, not against React state.
+   *
+   * `dialog.open` is updated synchronously by `showModal()` and `close()`.
+   * `open` is not: Escape closes the dialog immediately and the `close`
+   * listener below sets state on React's schedule. A Cmd+K arriving inside
+   * that window read `open` as still true and toggled it back to false, so
+   * dismissing the palette and reaching straight for the shortcut again left
+   * it shut.
+   */
+  const toggle = useCallback(() => {
+    if (dialogRef.current?.open) close();
+    else openPalette();
+  }, [close, openPalette]);
+
   // --- opening ------------------------------------------------------------
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -92,28 +116,25 @@ export function CommandPalette() {
       // shifting, and the check is case-insensitive so Caps Lock still opens it.
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setOpen((wasOpen) => !wasOpen);
+        toggle();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [toggle]);
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (open && !dialog.open) {
-      dialog.showModal();
-      inputRef.current?.focus();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-
-  // The dialog can close without us — Escape, or the backdrop. Keep the state
-  // that drives it honest, or the next Cmd+K would toggle it back closed.
+  // Nothing opens or closes the dialog from an effect on `open`.
+  //
+  // That effect used to, and it could act on an intention that was already
+  // stale: Escape fires `close`, which queues `setOpen(false)`; a Cmd+K in the
+  // same tick opens the dialog and queues `setOpen(true)`. Whichever order
+  // React settled those in, an effect seeing `open: false` next to an open
+  // dialog would shut it again — the palette snapping closed on its own.
+  //
+  // So the two imperative paths above own the element, and `open` is only a
+  // mirror: it drives rendering and the search effect, and the listener below
+  // keeps it true to whatever the dialog actually did.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -255,7 +276,7 @@ export function CommandPalette() {
       <button
         type="button"
         className="admin__palette-trigger"
-        onClick={() => setOpen(true)}
+        onClick={openPalette}
         aria-haspopup="dialog"
       >
         <span>Search or jump to…</span>

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openCommandPalette, signIn } from './support/admin';
 
 /**
  * The admin surface, measured rather than eyeballed.
@@ -13,17 +14,6 @@ import { expect, test, type Page } from '@playwright/test';
  *
  * Eyeballing did not catch either. Measuring does.
  */
-
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
 
 /** Walks the visible text of the current page and returns anything under 4.5:1. */
 async function contrastFailures(page: Page) {
@@ -128,7 +118,7 @@ test('the admin reads at 4.5:1, including the link for the page you are on', asy
 
 test('the command palette reads at 4.5:1, highlighted row included', async ({ page }) => {
   await signIn(page);
-  await page.keyboard.press('ControlOrMeta+k');
+  await openCommandPalette(page);
   await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
 
   // The highlighted row inverts to accent-on-accent-ink; its hint text is the

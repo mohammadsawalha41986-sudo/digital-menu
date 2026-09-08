@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { signIn } from './support/admin';
 
 /**
  * THE MANDATORY END-TO-END JOURNEY (master spec §138).
@@ -13,20 +14,9 @@ import { expect, test, type Page } from '@playwright/test';
  * Nothing is stubbed and nothing is asserted from fixture data.
  */
 
-const EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'staff@example.com';
-const PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'devpassword12345';
-
 // Unique per run so the journey never collides with a previous one.
 const RUN = Date.now().toString(36).slice(-6);
 const SLUG = `journey-${RUN}`;
-
-async function signIn(page: Page) {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-}
 
 function panel(page: Page, heading: string) {
   return page.locator('.admin__panel').filter({ hasText: heading });
