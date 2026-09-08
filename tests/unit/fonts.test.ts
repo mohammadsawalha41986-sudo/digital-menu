@@ -89,6 +89,45 @@ describe('preloading', () => {
   it('ignores unknown keys rather than guessing a file', () => {
     expect(preloadFontsFor(['no-such-face', null, undefined], 'latin')).toEqual([]);
   });
+
+  it('never preloads a file that is not on disk — every face, both scripts', () => {
+    // The defect this replaced: the href was built from the family name and
+    // the page's script without consulting the face's own `scripts` field, so
+    // an Arabic page on a Latin-only family — Playfair Display, Inter — asked
+    // for a subset that was never generated. Every Arabic luxury menu fired a
+    // preload that 404ed and spent a connection on it.
+    //
+    // The earlier cases all happened to use Arabic-capable families, which is
+    // why they passed. This one is exhaustive on purpose: any future face
+    // whose subsets do not match its declaration fails here.
+    for (const face of FONT_FACES) {
+      for (const script of ['arabic', 'latin'] as const) {
+        for (const href of preloadFontsFor([face.key], script)) {
+          expect(
+            existsSync(path.join(ROOT, 'public', href)),
+            `${face.key} (${script}) preloads ${href}, which does not exist`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('preloads nothing for a Latin-only family on an Arabic page', () => {
+    expect(preloadFontsFor(['latin-editorial'], 'arabic')).toEqual([]);
+    expect(preloadFontsFor(['latin-neutral'], 'arabic')).toEqual([]);
+
+    // ...and still preloads them where they are actually drawn.
+    expect(preloadFontsFor(['latin-editorial'], 'latin')).toEqual([
+      '/fonts/playfair-display-400-latin.woff2',
+    ]);
+  });
+
+  it('still preloads the Arabic-capable family beside a Latin-only one', () => {
+    // A mixed pair must not lose the face the page genuinely needs.
+    expect(preloadFontsFor(['latin-editorial', 'system-sans'], 'arabic')).toEqual([
+      '/fonts/cairo-400-arabic.woff2',
+    ]);
+  });
 });
 
 describe('brand tokens resolve through the one catalogue', () => {

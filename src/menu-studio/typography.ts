@@ -255,7 +255,18 @@ export function preloadFontsFor(
 
   for (const key of keys) {
     const face = BY_KEY.get(key ?? '');
-    if (face?.family) families.add(face.family);
+    if (!face?.family) continue;
+
+    // A family is only preloadable in a script it actually ships. Playfair
+    // Display and Inter are Latin-only, and asking for their Arabic subset
+    // built a URL for a file that was never generated: every Arabic page on a
+    // theme using them fired a preload that 404ed, and spent a connection on
+    // it. The Latin subset is not substituted here — on an Arabic page the
+    // headings these faces serve are Arabic, and the stack already falls back
+    // to a face that can draw them.
+    if (!face.scripts.includes(script)) continue;
+
+    families.add(face.family);
   }
 
   return [...families]
