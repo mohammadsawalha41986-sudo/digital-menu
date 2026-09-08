@@ -8,6 +8,8 @@ interface MediaRow {
   id: string;
   kind: string;
   url: string;
+  /** Set when the image is hosted elsewhere and only linked to. */
+  sourceUrl: string | null;
   altAr: string | null;
   altEn: string | null;
   originalName: string | null;
@@ -168,11 +170,14 @@ export function MediaLibrary({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={entry.url} alt={entry.altEn ?? entry.altAr ?? ''} loading="lazy" />
                 <figcaption className="admin__hint">
-                  {entry.originalName ?? entry.id} · {entry.kind} · {entry.sizeKb} KB
+                  {entry.sourceUrl ? 'Linked' : (entry.originalName ?? entry.id)} · {entry.kind}
+                  {entry.sourceUrl ? '' : ` · ${entry.sizeKb} KB`}
                   {entry.width && entry.height ? ` · ${entry.width}×${entry.height}` : ''}
-                  {entry.derivativeWidths.length > 0
-                    ? ` · ${entry.derivativeWidths.length} smaller versions`
-                    : ' · not optimised'}
+                  {entry.sourceUrl
+                    ? ' · served from its own origin'
+                    : entry.derivativeWidths.length > 0
+                      ? ` · ${entry.derivativeWidths.length} smaller versions`
+                      : ' · not optimised'}
                   {entry.altAr || entry.altEn ? '' : ' · no alt text'}
                 </figcaption>
 

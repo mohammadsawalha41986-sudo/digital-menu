@@ -8,6 +8,7 @@ import { resolveDesign, type DesignRowLike } from '@/menu-studio/resolve';
 import { parseWorkingHours } from '@/server/business/hours';
 import { isMenuLive } from '@/server/menus/scheduling';
 import { buildSrcSet, objectPosition } from '@/server/media/derivatives';
+import { resolveMediaUrl } from '@/server/media/url';
 import type {
   PublicCategory,
   PublicDownload,
@@ -448,6 +449,7 @@ async function loadProfile(
 
 const MEDIA_SELECT = {
   storageKey: true,
+  sourceUrl: true,
   altAr: true,
   altEn: true,
   width: true,
@@ -473,6 +475,7 @@ const BRAND_SELECT = {
 
 interface MediaRow {
   storageKey: string;
+  sourceUrl?: string | null;
   altAr: string | null;
   altEn: string | null;
   width: number | null;
@@ -485,7 +488,7 @@ interface MediaRow {
 function toImage(media: MediaRow | null | undefined): PublicImage | null {
   if (!media) return null;
 
-  const url = getStorage().publicUrl(media.storageKey);
+  const url = resolveMediaUrl(media, (key) => getStorage().publicUrl(key));
 
   return {
     // The storage key never reaches the browser directly; the provider decides

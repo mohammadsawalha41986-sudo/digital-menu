@@ -8,11 +8,13 @@ import {
   assignMediaAction,
   backfillDerivativesAction,
   deleteMediaAction,
+  linkMediaAction,
   setAltTextAction,
   setFocalPointAction,
   uploadMediaAction,
 } from '@/server/admin/media-actions';
 import { MediaLibrary } from './library';
+import { LinkImageForm } from './link-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +58,8 @@ export default async function MediaPage({
         </Link>
       </header>
 
+      <LinkImageForm action={linkMediaAction.bind(null, business.id, business.publicId)} />
+
       <MediaLibrary
         businessId={business.id}
         publicId={business.publicId}
@@ -63,6 +67,7 @@ export default async function MediaPage({
           id: entry.id,
           kind: entry.kind,
           url: entry.url,
+          sourceUrl: entry.sourceUrl,
           altAr: entry.altAr,
           altEn: entry.altEn,
           originalName: entry.originalName,

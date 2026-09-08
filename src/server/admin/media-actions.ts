@@ -7,6 +7,7 @@ import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { FileValidationError } from '@/server/files/validation';
 import {
+  addMediaByUrl,
   assignMedia,
   backfillDerivatives,
   deleteMedia,
@@ -66,6 +67,54 @@ export async function uploadMediaAction(
     invalidateProfile(publicId);
 
     return { ok: true, message: 'Image uploaded' };
+  } catch (error) {
+    if (error instanceof FileValidationError) return { error: error.message };
+    if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
+    throw error;
+  }
+}
+
+const linkSchema = uploadSchema.extend({
+  url: z.string().trim().min(1).max(2048),
+});
+
+/**
+ * Registers an image hosted elsewhere.
+ *
+ * The counterpart to `uploadMediaAction` for restaurants whose photography
+ * already lives on a CDN. It shares the same validation shape and the same
+ * revalidation, so an image arrives on the public profile identically however
+ * it was added.
+ */
+export async function linkMediaAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+
+  const parsed = linkSchema.safeParse(formDataToObject(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+
+  try {
+    const { deduplicated } = await addMediaByUrl(user, businessId, {
+      url: parsed.data.url,
+      kind: parsed.data.kind,
+      altAr: parsed.data.altAr,
+      altEn: parsed.data.altEn,
+      width: parsed.data.width ?? null,
+      height: parsed.data.height ?? null,
+    });
+
+    revalidatePath(`/admin/businesses/${businessId}/media`);
+    revalidatePath(`/admin/build/${businessId}`, 'layout');
+    invalidateProfile(publicId);
+
+    return {
+      ok: true,
+      message: deduplicated ? 'That URL was already in the library — updated it' : 'Image added',
+    };
   } catch (error) {
     if (error instanceof FileValidationError) return { error: error.message };
     if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };

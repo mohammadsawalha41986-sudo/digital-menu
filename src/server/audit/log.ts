@@ -38,6 +38,8 @@ export type AuditAction =
   | 'offer.updated'
   | 'offer.deleted'
   | 'file.uploaded'
+  /// An image registered by URL rather than uploaded — no bytes were stored.
+  | 'file.linked'
   | 'file.replaced'
   | 'file.updated'
   | 'file.deleted'

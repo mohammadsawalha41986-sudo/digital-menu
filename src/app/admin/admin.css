@@ -1765,3 +1765,31 @@
 }
 
 .admin__section-name { font-weight: 600; margin-inline-end: auto; }
+
+/* Preview for an image being added by URL. The browser loading it is the
+   validation — the server never fetches a pasted address — so the frame has to
+   show all three outcomes honestly: loading, loaded, and failed. */
+.admin__url-preview {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.admin__url-preview img {
+  max-width: min(100%, 22rem);
+  max-height: 12rem;
+  object-fit: contain;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: var(--admin-bg);
+}
+
+/* A failed load leaves a broken-image glyph; hide it and let the message
+   below carry the meaning rather than showing the browser's icon. */
+.admin__url-preview[data-state='failed'] img {
+  display: none;
+}
+
+.admin__url-preview[data-state='failed'] .admin__hint {
+  color: var(--admin-danger);
+}

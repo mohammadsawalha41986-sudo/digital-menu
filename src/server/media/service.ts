@@ -20,6 +20,7 @@ import {
   validateUpload,
   type UploadCandidate,
 } from '@/server/files/validation';
+import { parseImageUrl, resolveMediaUrl } from './url';
 
 /**
  * Media library (master spec §87, §88).
@@ -173,6 +174,90 @@ export async function uploadMedia(
   return result.media;
 }
 
+/**
+ * Registers an image that lives on someone else's origin.
+ *
+ * No bytes are stored and nothing is fetched: the URL is validated, recorded,
+ * and handed to the browser as-is. That is deliberate — see `./url.ts` for why
+ * the server never follows the address itself.
+ *
+ * Adding the same URL twice returns the existing medium rather than a second
+ * row. The synthetic storage key is derived from the URL and the column is
+ * unique, so the database decides that, and two people pasting the same CDN
+ * link at the same moment cannot race their way to a duplicate.
+ */
+export async function addMediaByUrl(
+  user: AuthenticatedUser,
+  businessId: string,
+  input: {
+    url: string;
+    kind: MediaKind;
+    altAr?: string | null;
+    altEn?: string | null;
+    width?: number | null;
+    height?: number | null;
+  },
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const parsed = parseImageUrl(input.url);
+
+  const existing = await prisma.media.findUnique({
+    where: { storageKey: parsed.storageKey },
+    select: { id: true, businessId: true },
+  });
+
+  // A key collision across tenants would mean one business's library exposing
+  // another's row. The key is a hash of a public URL, so two businesses using
+  // the same CDN image is ordinary — each gets its own record.
+  if (existing && existing.businessId === context.businessId) {
+    const updated = await prisma.media.update({
+      where: { id: existing.id },
+      data: {
+        kind: input.kind,
+        altAr: input.altAr ?? null,
+        altEn: input.altEn ?? null,
+        ...(input.width ? { width: input.width } : {}),
+        ...(input.height ? { height: input.height } : {}),
+      },
+    });
+
+    return { media: updated, deduplicated: true };
+  }
+
+  const media = await prisma.media.create({
+    data: {
+      businessId: context.businessId,
+      kind: input.kind,
+      // Unique per tenant, so the same URL can be used by two businesses.
+      storageKey: existing ? `${parsed.storageKey}/${context.businessId}` : parsed.storageKey,
+      sourceUrl: parsed.url,
+      contentType: parsed.contentType,
+      // Nothing was stored, so there is nothing to report a size for. Zero is
+      // the honest answer; the library shows "linked" rather than a byte count.
+      sizeBytes: 0,
+      width: input.width ?? null,
+      height: input.height ?? null,
+      altAr: input.altAr ?? null,
+      altEn: input.altEn ?? null,
+      originalName: parsed.url,
+      // No bytes to resize, so no derivatives; `buildSrcSet` emits no srcset
+      // for an empty list and the browser loads the original.
+      derivativeWidths: [],
+    },
+  });
+
+  await recordAudit({
+    action: 'file.linked',
+    entity: 'media',
+    entityId: media.id,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { kind: input.kind, sourceUrl: parsed.url },
+  });
+
+  return { media, deduplicated: false };
+}
+
 export type AssignTarget =
   | { type: 'business-logo' }
   | { type: 'business-og' }
@@ -271,7 +356,8 @@ export async function listMedia(user: AuthenticatedUser, businessId: string) {
   return media.map((entry) => ({
     id: entry.id,
     kind: entry.kind,
-    url: storage.publicUrl(entry.storageKey),
+    url: resolveMediaUrl(entry, (key) => storage.publicUrl(key)),
+    sourceUrl: entry.sourceUrl,
     altAr: entry.altAr,
     altEn: entry.altEn,
     originalName: entry.originalName,

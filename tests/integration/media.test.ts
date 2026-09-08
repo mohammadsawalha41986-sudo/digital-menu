@@ -5,7 +5,13 @@ import path from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma/client';
 import { LocalStorageProvider, setStorageForTesting } from '@/server/storage';
-import { assignMedia, deleteMedia, listMedia, uploadMedia } from '@/server/media/service';
+import {
+  addMediaByUrl,
+  assignMedia,
+  deleteMedia,
+  listMedia,
+  uploadMedia,
+} from '@/server/media/service';
 import { getPublicProfile } from '@/server/profile/repository';
 import { FileValidationError } from '@/server/files/validation';
 import { TenantAccessError, type AuthenticatedUser } from '@/server/tenancy/context';
@@ -264,5 +270,98 @@ describe.skipIf(!databaseReachable)('deletion', () => {
     const media = await listMedia(user, businessId);
     expect(media.length).toBeGreaterThan(0);
     expect(media[0]?.url).toContain('/uploads/');
+  });
+});
+
+describe.skipIf(!databaseReachable)('images added by URL', () => {
+  const URL_A = 'https://cdn.example.test/dishes/hummus.jpg';
+
+  it('stores the address and renders it unchanged', async () => {
+    const { media } = await addMediaByUrl(user, businessId, {
+      url: URL_A,
+      kind: 'ITEM_IMAGE',
+      altEn: 'Hummus',
+      width: 900,
+      height: 900,
+    });
+
+    expect(media.sourceUrl).toBe(URL_A);
+    // Nothing was stored, so nothing may claim to have been.
+    expect(media.sizeBytes).toBe(0);
+    expect(media.derivativeWidths).toEqual([]);
+
+    const listed = (await listMedia(user, businessId)).find((m) => m.id === media.id);
+    // The library shows the external address, not a storage path that 404s.
+    expect(listed?.url).toBe(URL_A);
+  });
+
+  it('reaches the public profile, and carries no fabricated srcset', async () => {
+    const { media } = await addMediaByUrl(user, businessId, {
+      url: 'https://cdn.example.test/dishes/fattoush.jpg',
+      kind: 'ITEM_IMAGE',
+      altEn: 'Fattoush',
+      width: 800,
+      height: 600,
+    });
+
+    await assignMedia(user, businessId, media.id, { type: 'item', itemCode: 'MD-001' });
+
+    const profile = await getPublicProfile(PUBLIC_ID);
+    const item = profile?.menus
+      .flatMap((menu) => menu.categories)
+      .flatMap((category) => category.items)
+      .find((entry) => entry.code === 'MD-001');
+
+    expect(item?.image?.url).toBe('https://cdn.example.test/dishes/fattoush.jpg');
+    // No bytes were resized, so promising widths that do not exist would
+    // hand the browser a set of 404s to choose between.
+    expect(item?.image?.srcSet ?? null).toBeNull();
+  });
+
+  it('adding the same URL twice updates rather than duplicates', async () => {
+    const first = await addMediaByUrl(user, businessId, { url: URL_A, kind: 'ITEM_IMAGE' });
+    const again = await addMediaByUrl(user, businessId, {
+      url: URL_A,
+      kind: 'GALLERY',
+      altEn: 'Reused',
+    });
+
+    expect(again.deduplicated).toBe(true);
+    expect(again.media.id).toBe(first.media.id);
+    expect(again.media.kind).toBe('GALLERY');
+
+    const rows = await prisma.media.findMany({ where: { businessId, sourceUrl: URL_A } });
+    expect(rows).toHaveLength(1);
+  });
+
+  it('refuses a scheme that could execute, before it reaches the database', async () => {
+    for (const hostile of ['javascript:alert(1)', 'data:image/svg+xml;base64,PHN2Zz4=']) {
+      await expect(
+        addMediaByUrl(user, businessId, { url: hostile, kind: 'ITEM_IMAGE' }),
+        hostile,
+      ).rejects.toThrow(FileValidationError);
+    }
+
+    expect(await prisma.media.count({ where: { businessId, sourceUrl: { contains: 'javascript' } } })).toBe(0);
+  });
+
+  it('refuses another tenant, like every other media write', async () => {
+    await expect(
+      addMediaByUrl(outsider, businessId, { url: 'https://cdn.example.test/x.jpg', kind: 'LOGO' }),
+    ).rejects.toThrow(TenantAccessError);
+  });
+
+  it('deletes cleanly, clearing the reference it was assigned to', async () => {
+    const { media } = await addMediaByUrl(user, businessId, {
+      url: 'https://cdn.example.test/dishes/to-remove.jpg',
+      kind: 'ITEM_IMAGE',
+    });
+    await assignMedia(user, businessId, media.id, { type: 'item', itemCode: 'MD-001' });
+
+    await deleteMedia(user, businessId, media.id);
+
+    const item = await prisma.menuItem.findFirstOrThrow({ where: { businessId, itemCode: 'MD-001' } });
+    expect(item.imageMediaId).toBeNull();
+    expect(await prisma.media.findUnique({ where: { id: media.id } })).toBeNull();
   });
 });

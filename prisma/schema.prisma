@@ -373,9 +373,19 @@ model Media {
   kind       MediaKind @default(ITEM_IMAGE)
 
   /// Key understood by the active StorageProvider.
+  ///
+  /// An image added by URL stores no bytes, so its key is synthetic:
+  /// `external/<sha256 of the URL>`. That keeps the column non-null and makes
+  /// the existing unique constraint do the deduplication — the same URL added
+  /// twice resolves to the same row rather than a second copy.
   storageKey  String @unique
   contentType String
   sizeBytes   Int
+
+  /// Absolute http(s) URL for an image hosted elsewhere, or null for an
+  /// uploaded file. When set it *is* the public URL: nothing is fetched,
+  /// copied or resized, and the browser loads it straight from its origin.
+  sourceUrl String?
   width       Int?
   height      Int?
 
