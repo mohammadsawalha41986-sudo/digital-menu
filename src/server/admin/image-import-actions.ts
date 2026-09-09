@@ -54,11 +54,15 @@ export async function previewImageZipAction(
       where: { businessId, itemCode: { not: null } },
       select: { itemCode: true, nameAr: true, nameEn: true },
     });
-    const byCode = new Map(
-      items
-        .filter((item): item is typeof item & { itemCode: string } => Boolean(item.itemCode))
-        .map((item) => [normalizeItemCode(item.itemCode), item]),
-    );
+    const byCode = new Map<string, { itemCode: string; nameAr: string; nameEn: string | null }>();
+    for (const item of items) {
+      if (!item.itemCode) continue;
+      byCode.set(normalizeItemCode(item.itemCode), {
+        itemCode: item.itemCode,
+        nameAr: item.nameAr,
+        nameEn: item.nameEn,
+      });
+    }
 
     const matches: { fileName: string; itemCode: string; itemName: string }[] = [];
     const unmatched: { fileName: string; itemCode: string }[] = [];
@@ -109,6 +113,7 @@ export async function confirmImageZipAction(
   const user = await requireUser();
   const file = formData.get('imageZip');
   if (!(file instanceof File) || file.size === 0) return { error: 'Choose the same images ZIP to import' };
+  if (!file.name.toLowerCase().endsWith('.zip')) return { error: 'Image import must be a .zip file' };
 
   try {
     const entries = parseImageZip(new Uint8Array(await file.arrayBuffer()));
@@ -116,30 +121,20 @@ export async function confirmImageZipAction(
       where: { businessId, itemCode: { not: null } },
       select: { itemCode: true },
     });
-    const canonicalCodes = new Map(
-      items
-        .filter((item): item is { itemCode: string } => Boolean(item.itemCode))
-        .map((item) => [normalizeItemCode(item.itemCode), item.itemCode]),
-    );
+    const canonicalCodes = new Map<string, string>();
+    for (const item of items) {
+      if (item.itemCode) canonicalCodes.set(normalizeItemCode(item.itemCode), item.itemCode);
+    }
 
-    const matched = entries
-      .map((entry) => ({ entry, itemCode: canonicalCodes.get(normalizeItemCode(entry.itemCode)) }))
-      .filter((row): row is { entry: (typeof entries)[number]; itemCode: string } => Boolean(row.itemCode));
-
+    const matched: { entry: (typeof entries)[number]; itemCode: string }[] = [];
+    for (const entry of entries) {
+      const itemCode = canonicalCodes.get(normalizeItemCode(entry.itemCode));
+      if (itemCode) matched.push({ entry, itemCode });
+    }
     if (matched.length === 0) return { error: 'None of the image filenames match an existing item_id' };
 
     let assigned = 0;
-    let deduplicated = 0;
     for (const { entry, itemCode } of matched) {
-      const before = await prisma.media.findFirst({
-        where: {
-          businessId,
-          checksum: undefined,
-        },
-        select: { id: true },
-      }).catch(() => null);
-      void before; // De-duplication is authoritative inside uploadMedia.
-
       const media = await uploadMedia(user, businessId, {
         kind: 'ITEM_IMAGE',
         upload: {
@@ -150,9 +145,6 @@ export async function confirmImageZipAction(
       });
       await assignMedia(user, businessId, media.id, { type: 'item', itemCode });
       assigned += 1;
-      // An existing media row is intentionally reusable; whether it was newly
-      // stored is not exposed by uploadMedia, so this counter remains factual.
-      if (media.sizeBytes === 0) deduplicated += 1;
     }
 
     revalidatePath(`/admin/businesses/${businessId}/data`);
