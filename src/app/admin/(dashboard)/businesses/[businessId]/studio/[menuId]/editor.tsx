@@ -90,8 +90,13 @@ export function StudioEditor({
   const revisionRef = useRef(0);
   const [device, setDevice] = useState<(typeof DEVICES)[number]['key']>('mobile');
   const [locale, setLocale] = useState<'ar' | 'en'>('ar');
-  const [themeKey, setThemeKey] = useState(design.themeKey);
-  const [layoutKey, setLayoutKey] = useState(design.layoutKey);
+  type DesignChoice = { themeKey: string; layoutKey: string };
+  const [designHistory, setDesignHistory] = useState<{
+    past: DesignChoice[];
+    present: DesignChoice;
+    future: DesignChoice[];
+  }>({ past: [], present: { themeKey: design.themeKey, layoutKey: design.layoutKey }, future: [] });
+  const { themeKey, layoutKey } = designHistory.present;
 
   const frameId = useId();
   const active = DEVICES.find((entry) => entry.key === device)!;
@@ -125,6 +130,48 @@ export function StudioEditor({
     debounceRef.current = setTimeout(() => {
       if (formRef.current) queueSave(new FormData(formRef.current));
     }, 900);
+  };
+
+  const rememberDesign = (next: DesignChoice) => {
+    setDesignHistory((current) => {
+      if (
+        current.present.themeKey === next.themeKey &&
+        current.present.layoutKey === next.layoutKey
+      ) return current;
+
+      return {
+        past: [...current.past.slice(-19), current.present],
+        present: next,
+        future: [],
+      };
+    });
+  };
+
+  const travelDesignHistory = (direction: 'undo' | 'redo') => {
+    setDesignHistory((current) => {
+      if (direction === 'undo') {
+        const previous = current.past.at(-1);
+        if (!previous) return current;
+        return {
+          past: current.past.slice(0, -1),
+          present: previous,
+          future: [current.present, ...current.future],
+        };
+      }
+
+      const next = current.future[0];
+      if (!next) return current;
+      return {
+        past: [...current.past, current.present],
+        present: next,
+        future: current.future.slice(1),
+      };
+    });
+
+    // Programmatic state changes do not fire the form's onChange event. Wait
+    // for React to put the travelled values into the controls, then persist
+    // that snapshot through the same serialized autosave queue.
+    setTimeout(scheduleAutosave, 0);
   };
 
   useEffect(() => () => {
@@ -263,6 +310,26 @@ export function StudioEditor({
         <input type="hidden" name="businessId" value={businessId} />
         <input type="hidden" name="menuId" value={menuId} />
 
+        <div className="studio__history" role="group" aria-label="Design edit history">
+          <button
+            type="button"
+            className="admin__button admin__button--secondary"
+            disabled={designHistory.past.length === 0}
+            onClick={() => travelDesignHistory('undo')}
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className="admin__button admin__button--secondary"
+            disabled={designHistory.future.length === 0}
+            onClick={() => travelDesignHistory('redo')}
+          >
+            Redo
+          </button>
+          <span className="admin__hint">Recent theme and layout choices</span>
+        </div>
+
         <fieldset className="theme-library">
           <legend className="admin__label">Theme Library</legend>
           <p className="admin__hint">Preview your real menu before applying. Theme changes affect presentation only.</p>
@@ -281,8 +348,7 @@ export function StudioEditor({
                     value={entry.key}
                     checked={selected}
                     onChange={() => {
-                      setThemeKey(entry.key);
-                      setLayoutKey(cardLayout.key);
+                      rememberDesign({ themeKey: entry.key, layoutKey: cardLayout.key });
                     }}
                   />
                   <span className="theme-card__preview" aria-hidden="true">
@@ -312,7 +378,7 @@ export function StudioEditor({
             name="layoutKey"
             className="admin__select"
             value={layoutKey}
-            onChange={(event) => setLayoutKey(event.target.value)}
+            onChange={(event) => rememberDesign({ themeKey, layoutKey: event.target.value })}
             key={theme.key}
           >
             {theme.layouts.map((layout) => (
