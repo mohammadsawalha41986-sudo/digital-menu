@@ -108,7 +108,7 @@ Statuses: **DONE** · **IN PROGRESS** · **BLOCKED** · **NOT STARTED**
 | **Duplicate menu / section / item** | **DONE** | Copies are drafts; item codes rewritten; a copied dish arrives hidden |
 | **Reorder sections and items** | **DONE** | Up/down server actions — works with no JavaScript, keyboard and phone |
 | **True autosave** | **DONE** | Draft-only, 900 ms debounce, visible dirty/saving/saved/failed states, retry, and serialized writes prevent stale-request overwrite |
-| **Undo / redo** | **IN PROGRESS** | Last 20 theme/layout decisions are covered; typography and display controls still rely on autosave plus published-version rollback |
+| **Undo / redo** | **DONE** | Last 20 theme, layout, typography, photography, density and display decisions; history uses the serialized draft autosave queue |
 
 ## API and integration
 
