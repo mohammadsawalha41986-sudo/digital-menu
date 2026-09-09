@@ -15,6 +15,7 @@ export default async function ApiKeysPage() {
       name: true,
       tokenPrefix: true,
       businessIds: true,
+      scopes: true,
       marketingClientId: true,
       isActive: true,
       lastUsedAt: true,
@@ -23,7 +24,6 @@ export default async function ApiKeysPage() {
     },
   });
 
-  // Public ids for display: the internal ids stored on the key are never shown.
   const businesses = await prisma.business.findMany({
     where: { id: { in: clients.flatMap((client) => client.businessIds) } },
     select: { id: true, publicId: true },
@@ -37,8 +37,8 @@ export default async function ApiKeysPage() {
         <div>
           <h1 className="admin__title">API keys</h1>
           <p className="admin__subtitle">
-            Programmatic read access to <code>/api/v1</code>. Keys are stored as hashes — a key
-            is shown once, when it is created, and cannot be recovered afterwards.
+            Scoped programmatic access to <code>/api/v1</code>. Read/write keys are explicit,
+            stored as hashes and shown only once when issued.
           </p>
         </div>
       </header>
@@ -51,9 +51,8 @@ export default async function ApiKeysPage() {
           scope:
             client.businessIds.length === 0
               ? 'Platform-wide'
-              : client.businessIds
-                  .map((id) => publicIdById.get(id) ?? '(deleted)')
-                  .join(', '),
+              : client.businessIds.map((id) => publicIdById.get(id) ?? '(deleted)').join(', '),
+          permissions: client.scopes.join(', '),
           marketingClientId: client.marketingClientId,
           isActive: client.isActive,
           lastUsedAt: client.lastUsedAt?.toISOString() ?? null,
