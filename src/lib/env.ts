@@ -26,11 +26,11 @@ const baseSchema = z.object({
   STORAGE_LOCAL_ROOT: z.string().default('storage'),
   STORAGE_LOCAL_PUBLIC_PREFIX: z.string().startsWith('/').default('/uploads'),
 
-  STORAGE_BUCKET: z.string().optional(),
-  STORAGE_ENDPOINT: z.string().optional(),
-  STORAGE_ACCESS_KEY: z.string().optional(),
-  STORAGE_SECRET_KEY: z.string().optional(),
-  STORAGE_PUBLIC_BASE_URL: z.string().optional(),
+  STORAGE_BUCKET: z.string().min(1).optional(),
+  STORAGE_ENDPOINT: url.optional(),
+  STORAGE_ACCESS_KEY: z.string().min(1).optional(),
+  STORAGE_SECRET_KEY: z.string().min(1).optional(),
+  STORAGE_PUBLIC_BASE_URL: url.optional(),
 
   AUTH_SECRET: z.string().min(1).optional(),
   REDIS_URL: z.string().optional(),
@@ -59,7 +59,13 @@ const schema = baseSchema.superRefine((value, ctx) => {
   }
 
   if (value.STORAGE_PROVIDER === 'r2') {
-    for (const key of ['STORAGE_BUCKET', 'STORAGE_ENDPOINT', 'STORAGE_ACCESS_KEY', 'STORAGE_SECRET_KEY'] as const) {
+    for (const key of [
+      'STORAGE_BUCKET',
+      'STORAGE_ENDPOINT',
+      'STORAGE_ACCESS_KEY',
+      'STORAGE_SECRET_KEY',
+      'STORAGE_PUBLIC_BASE_URL',
+    ] as const) {
       if (!value[key]) {
         ctx.addIssue({
           code: 'custom',
@@ -68,19 +74,6 @@ const schema = baseSchema.superRefine((value, ctx) => {
         });
       }
     }
-
-    // The R2 provider is not written yet. Without this the credentials
-    // validate, the app boots, and the first thing anyone learns is a health
-    // check reporting `storage: down` with nothing saying why — a deploy that
-    // fails for a reason nobody can read. Refuse here, where the message can
-    // name the cause.
-    ctx.addIssue({
-      code: 'custom',
-      path: ['STORAGE_PROVIDER'],
-      message:
-        'STORAGE_PROVIDER=r2 is configured but the R2 provider is not implemented. ' +
-        'Use STORAGE_PROVIDER=local.',
-    });
   }
 });
 
