@@ -119,7 +119,7 @@ export default async function StudioEditorPage({
         businessId={business.id}
         menuId={menu.id}
         // Framed: the staff preview, so an unpublished menu still previews.
-        previewPath={`/admin/preview/${business.id}`}
+        previewPath={`/admin/preview/${business.id}?menu=${encodeURIComponent(menu.key)}`}
         // Linked: the real public address, which is what "open" should mean.
         publicPath={`/m/${business.publicId}`}
         design={{
@@ -137,6 +137,7 @@ export default async function StudioEditorPage({
           label: theme.label,
           description: theme.description,
           tonePreference: theme.tonePreference,
+          recommendedFor: theme.suits,
           layouts: theme.layouts.map((layout) => ({
             key: layout.key,
             label: layout.label,
