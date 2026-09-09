@@ -751,6 +751,24 @@
   padding: 0;
 }
 
+.studio__history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sys-space-2);
+  margin-block-end: var(--sys-space-4);
+}
+
+.studio__history .admin__button {
+  min-block-size: 2.25rem;
+  padding: 0.4rem 0.7rem;
+}
+
+.studio__history .admin__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .theme-library__grid {
   display: grid;
   gap: var(--sys-space-3);
