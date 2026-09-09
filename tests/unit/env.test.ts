@@ -31,13 +31,8 @@ describe('environment validation', () => {
     ).not.toThrow();
   });
 
-  it('requires credentials when a remote storage provider is selected', () => {
+  it('requires complete configuration when R2 is selected', () => {
     expect(() => parseEnv({ ...base, STORAGE_PROVIDER: 'r2' })).toThrow(/STORAGE_BUCKET/);
-  });
-
-  it('refuses r2 outright, because the provider is not written yet', () => {
-    // Fully credentialled and still refused. The alternative is a deploy that
-    // boots and then reports `storage: down` with nothing naming the cause.
     expect(() =>
       parseEnv({
         ...base,
@@ -47,7 +42,35 @@ describe('environment validation', () => {
         STORAGE_ACCESS_KEY: 'key',
         STORAGE_SECRET_KEY: 'secret',
       }),
-    ).toThrow(/not implemented/);
+    ).toThrow(/STORAGE_PUBLIC_BASE_URL/);
+  });
+
+  it('accepts a fully configured R2 provider', () => {
+    expect(() =>
+      parseEnv({
+        ...base,
+        STORAGE_PROVIDER: 'r2',
+        STORAGE_BUCKET: 'menus',
+        STORAGE_ENDPOINT: 'https://example.r2.cloudflarestorage.com',
+        STORAGE_ACCESS_KEY: 'key',
+        STORAGE_SECRET_KEY: 'secret',
+        STORAGE_PUBLIC_BASE_URL: 'https://media.example.com',
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects malformed R2 URLs at configuration time', () => {
+    expect(() =>
+      parseEnv({
+        ...base,
+        STORAGE_PROVIDER: 'r2',
+        STORAGE_BUCKET: 'menus',
+        STORAGE_ENDPOINT: 'not-a-url',
+        STORAGE_ACCESS_KEY: 'key',
+        STORAGE_SECRET_KEY: 'secret',
+        STORAGE_PUBLIC_BASE_URL: 'https://media.example.com',
+      }),
+    ).toThrow(/STORAGE_ENDPOINT/);
   });
 
   it('rejects an unknown storage provider rather than silently defaulting', () => {
