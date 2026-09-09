@@ -90,6 +90,8 @@ strength of having written the code.
 | Menu items, categories, subcategories | **Works** | `menu-studio.test.ts`, `import-export.test.ts` |
 | Images | **Works** | `media.test.ts` |
 | Live preview | **Works** | `e2e/menu-studio.spec.ts` — a real iframe of the public page |
+| Visual Theme Library | **Works** | Real lazy-loaded menu previews; selecting a theme/variant previews without a database write |
+| Draft autosave | **Works** | 900 ms debounce, explicit status and retry; requests are serialized so an older save cannot overwrite a newer edit |
 | Mobile preview | **Works** | same; the whole E2E suite runs at Pixel 7 width |
 | Import Excel and CSV, mapping, validation | **Works** | `import-export.test.ts` |
 | Export Excel and CSV | **Works** | same |
