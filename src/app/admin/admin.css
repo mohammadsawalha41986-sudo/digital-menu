@@ -742,6 +742,156 @@
   max-inline-size: 100%;
 }
 
+/* The Theme Library previews the restaurant's real menu renderer. The scaled
+   iframe is intentionally non-interactive; choosing a card updates the large,
+   accessible preview in the centre pane before anything is persisted. */
+.theme-library {
+  border: 0;
+  margin: 0 0 var(--sys-space-4);
+  padding: 0;
+}
+
+.theme-library__grid {
+  display: grid;
+  gap: var(--sys-space-3);
+  margin-block-start: var(--sys-space-3);
+}
+
+.theme-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-surface);
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.theme-card:hover,
+.theme-card:focus-within {
+  border-color: var(--admin-ink);
+  transform: translateY(-1px);
+}
+
+.theme-card[data-selected] {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-accent) 24%, transparent);
+}
+
+.theme-card__preview {
+  position: relative;
+  display: block;
+  block-size: 9rem;
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-sm);
+  background: var(--admin-bg);
+  pointer-events: none;
+}
+
+.theme-card__preview iframe {
+  position: absolute;
+  inset: 0 auto auto 0;
+  inline-size: 390px;
+  block-size: 560px;
+  border: 0;
+  transform: scale(0.47);
+  transform-origin: top left;
+}
+
+.theme-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+}
+
+.theme-card__tone {
+  color: var(--admin-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.theme-card__description,
+.theme-card__meta,
+.theme-card__action {
+  display: block;
+}
+
+.theme-card__description {
+  color: var(--admin-ink);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.theme-card__meta {
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.theme-card__preview {
+  position: relative;
+  display: block;
+  block-size: 9rem;
+  overflow: hidden;
+  border-radius: var(--sys-radius-md-sm);
+  background: var(--admin-bg);
+  pointer-events: none;
+}
+
+.theme-card__preview iframe {
+  position: absolute;
+  inset: 0 auto auto 0;
+  inline-size: 390px;
+  block-size: 620px;
+  border: 0;
+  transform: scale(0.49);
+  transform-origin: top left;
+}
+
+.theme-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+}
+
+.theme-card__tone,
+.theme-card__meta {
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+}
+
+.theme-card__tone {
+  padding: 0.12rem 0.35rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.theme-card__description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--admin-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.theme-card__action {
+  color: var(--admin-accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-card { transition: none; }
+}
+
 /* Print preview reads as a sheet, so its proportions are legible as a page. */
 .studio__frame--print {
   background: #6b7280;
