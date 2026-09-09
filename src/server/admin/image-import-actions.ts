@@ -54,12 +54,11 @@ export async function previewImageZipAction(
     const archive = new Uint8Array(await file.arrayBuffer());
     const entries = parseImageZip(archive);
     const items = await prisma.menuItem.findMany({
-      where: { businessId, itemCode: { not: null } },
+      where: { businessId },
       select: { itemCode: true, nameAr: true, nameEn: true },
     });
     const byCode = new Map<string, { itemCode: string; nameAr: string; nameEn: string | null }>();
     for (const item of items) {
-      if (!item.itemCode) continue;
       byCode.set(normalizeItemCode(item.itemCode), {
         itemCode: item.itemCode,
         nameAr: item.nameAr,
@@ -130,12 +129,12 @@ export async function confirmImageZipAction(
 
     const entries = parseImageZip(archive);
     const items = await prisma.menuItem.findMany({
-      where: { businessId, itemCode: { not: null } },
+      where: { businessId },
       select: { itemCode: true },
     });
     const canonicalCodes = new Map<string, string>();
     for (const item of items) {
-      if (item.itemCode) canonicalCodes.set(normalizeItemCode(item.itemCode), item.itemCode);
+      canonicalCodes.set(normalizeItemCode(item.itemCode), item.itemCode);
     }
 
     const matched: { entry: (typeof entries)[number]; itemCode: string }[] = [];
