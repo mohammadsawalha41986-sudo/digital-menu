@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/server/auth/current-user';
 import { requireTenantContext, TenantAccessError } from '@/server/tenancy/context';
 import { getProfileForPreview } from '@/server/profile/repository';
 import { renderProfile, type SearchParams } from '@/server/profile/render';
+import { withPreviewTheme } from '@/server/profile/preview-theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,8 +44,9 @@ export default async function BuilderPreviewPage({
 
   const resolved = await searchParams;
   const branchKey = typeof resolved.branch === 'string' ? resolved.branch : null;
+  const menuKey = typeof resolved.menu === 'string' ? resolved.menu : null;
 
-  const profile = await getProfileForPreview(context.businessId, { branchKey });
+  const profile = await getProfileForPreview(context.businessId, { branchKey, menuKey });
   if (!profile) notFound();
 
   // `?template=` lets the style picker show the owner's own menu in a style
@@ -52,9 +54,17 @@ export default async function BuilderPreviewPage({
   // only — nothing is written, and resolveTemplate falls back for a key that
   // does not exist, so a stale link cannot produce a blank page.
   const template = typeof resolved.template === 'string' ? resolved.template : null;
+  const themeKey = typeof resolved.theme === 'string' ? resolved.theme : null;
+  const layoutKey = typeof resolved.layout === 'string' ? resolved.layout : null;
+
+  // Theme Library previews are response-only. They deliberately reuse the
+  // public read model and renderer, but never write a MenuDesign row. This is
+  // what makes browsing ten designs safe: prices, content, media and the
+  // permanent QR cannot change before the operator presses Apply.
+  const previewProfile = withPreviewTheme(profile, themeKey, layoutKey);
 
   return renderProfile(
-    template ? { ...profile, templateKey: template, variantKey: 'a' } : profile,
+    template ? { ...previewProfile, templateKey: template, variantKey: 'a' } : previewProfile,
     resolved,
     { preview: true },
   );
