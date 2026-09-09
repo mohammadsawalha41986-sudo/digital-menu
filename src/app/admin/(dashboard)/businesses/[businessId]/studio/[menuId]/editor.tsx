@@ -1,7 +1,6 @@
 'use client';
 
-import { useActionState, useId, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useId, useRef, useState } from 'react';
 import { updateDesignAction } from '@/server/admin/studio-actions';
 import { fontsForRole } from '@/menu-studio/typography';
 import type { ActionState } from '@/server/admin/actions';
@@ -38,6 +37,7 @@ interface ThemeOption {
   label: string;
   description: string;
   tonePreference: string;
+  recommendedFor: readonly string[];
   layouts: { key: string; label: string; description: string }[];
 }
 
@@ -82,18 +82,59 @@ export function StudioEditor({
   costSummary: { covered: number; total: number; averageRatio: number | null };
   currency: string;
 }) {
-  const [state, save] = useActionState<ActionState, FormData>(updateDesignAction, {});
+  const [state, setState] = useState<ActionState>({});
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'dirty' | 'saving' | 'saved' | 'failed'>('idle');
+  const formRef = useRef<HTMLFormElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const revisionRef = useRef(0);
   const [device, setDevice] = useState<(typeof DEVICES)[number]['key']>('mobile');
   const [locale, setLocale] = useState<'ar' | 'en'>('ar');
   const [themeKey, setThemeKey] = useState(design.themeKey);
+  const [layoutKey, setLayoutKey] = useState(design.layoutKey);
 
   const frameId = useId();
   const active = DEVICES.find((entry) => entry.key === device)!;
   const theme = themes.find((entry) => entry.key === themeKey) ?? themes[0]!;
 
+  const queueSave = (formData: FormData) => {
+    const revision = ++revisionRef.current;
+    setSaveStatus('saving');
+
+    // Saves are deliberately serial. If an earlier request is slow it must
+    // finish before the newer snapshot is sent, so it can never arrive last
+    // and overwrite the operator's newest choice.
+    saveQueueRef.current = saveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const result = await updateDesignAction({}, formData);
+        if (revision !== revisionRef.current) return;
+        setState(result);
+        setSaveStatus(result.ok ? 'saved' : 'failed');
+      })
+      .catch((error: unknown) => {
+        if (revision !== revisionRef.current) return;
+        setState({ error: error instanceof Error ? error.message : 'Design could not be saved.' });
+        setSaveStatus('failed');
+      });
+  };
+
+  const scheduleAutosave = () => {
+    setSaveStatus('dirty');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (formRef.current) queueSave(new FormData(formRef.current));
+    }, 900);
+  };
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
+
   // Reloads when the saved design changes, so the preview reflects the last
   // successful save rather than an optimistic guess.
-  const previewSrc = `${previewPath}?lang=${locale}&studio=${state.ok ? 'saved' : 'draft'}`;
+  const previewSeparator = previewPath.includes('?') ? '&' : '?';
+  const previewSrc = `${previewPath}${previewSeparator}lang=${locale}&theme=${encodeURIComponent(theme.key)}&layout=${encodeURIComponent(layoutKey)}&studio=${state.ok ? 'saved' : 'draft'}`;
 
   return (
     <div className="studio">
@@ -192,7 +233,20 @@ export function StudioEditor({
         </p>
       </section>
 
-      <form action={save} className="studio__pane studio__pane--design" aria-label="Design">
+      <form
+        ref={formRef}
+        action={async (formData) => {
+          await updateDesignAction({}, formData);
+        }}
+        onChange={scheduleAutosave}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (debounceRef.current) clearTimeout(debounceRef.current);
+          queueSave(new FormData(event.currentTarget));
+        }}
+        className="studio__pane studio__pane--design"
+        aria-label="Design"
+      >
         <h2 className="studio__pane-title">Design</h2>
 
         {state.error ? (
@@ -209,25 +263,45 @@ export function StudioEditor({
         <input type="hidden" name="businessId" value={businessId} />
         <input type="hidden" name="menuId" value={menuId} />
 
-        <div className="admin__field">
-          <label className="admin__label" htmlFor="studio-theme">
-            Theme
-          </label>
-          <select
-            id="studio-theme"
-            name="themeKey"
-            className="admin__select"
-            value={themeKey}
-            onChange={(event) => setThemeKey(event.target.value)}
-          >
-            {themes.map((entry) => (
-              <option key={entry.key} value={entry.key}>
-                {entry.label}
-              </option>
-            ))}
-          </select>
-          <span className="admin__hint">{theme.description}</span>
-        </div>
+        <fieldset className="theme-library">
+          <legend className="admin__label">Theme Library</legend>
+          <p className="admin__hint">Preview your real menu before applying. Theme changes affect presentation only.</p>
+          <div className="theme-library__grid">
+            {themes.map((entry) => {
+              const selected = entry.key === themeKey;
+              const cardLayout = entry.layouts[0]!;
+              const cardSrc = `${previewPath}${previewSeparator}lang=${locale}&theme=${encodeURIComponent(entry.key)}&layout=${encodeURIComponent(cardLayout.key)}`;
+
+              return (
+                <label className="theme-card" data-selected={selected ? '' : undefined} key={entry.key}>
+                  <input
+                    className="admin__visually-hidden"
+                    type="radio"
+                    name="themeKey"
+                    value={entry.key}
+                    checked={selected}
+                    onChange={() => {
+                      setThemeKey(entry.key);
+                      setLayoutKey(cardLayout.key);
+                    }}
+                  />
+                  <span className="theme-card__preview" aria-hidden="true">
+                    <iframe src={cardSrc} title="" loading="lazy" tabIndex={-1} />
+                  </span>
+                  <span className="theme-card__head">
+                    <strong>{entry.label}</strong>
+                    <span className="theme-card__tone">{entry.tonePreference}</span>
+                  </span>
+                  <span className="theme-card__description">{entry.description}</span>
+                  <span className="theme-card__meta">
+                    {entry.recommendedFor.length > 0 ? `Best for ${entry.recommendedFor.join(', ')}` : 'Flexible style'} · {entry.layouts.length} variants
+                  </span>
+                  <span className="theme-card__action">{selected ? 'Previewing' : 'Preview'}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
 
         <div className="admin__field">
           <label className="admin__label" htmlFor="studio-layout">
@@ -237,7 +311,8 @@ export function StudioEditor({
             id="studio-layout"
             name="layoutKey"
             className="admin__select"
-            defaultValue={theme.key === design.themeKey ? design.layoutKey : 'a'}
+            value={layoutKey}
+            onChange={(event) => setLayoutKey(event.target.value)}
             key={theme.key}
           >
             {theme.layouts.map((layout) => (
@@ -330,7 +405,26 @@ export function StudioEditor({
         </fieldset>
 
         <div className="admin__actions">
-          <SaveButton />
+          <button type="submit" className="admin__button">
+            {saveStatus === 'saving'
+              ? 'Saving…'
+              : saveStatus === 'failed'
+                ? 'Retry'
+                : saveStatus === 'saved'
+                  ? 'Saved'
+                  : 'Save design'}
+          </button>
+          <span className="admin__hint" role="status" aria-live="polite">
+            {saveStatus === 'dirty'
+              ? 'Unsaved changes'
+              : saveStatus === 'saving'
+                ? 'Saving draft changes…'
+                : saveStatus === 'saved'
+                  ? 'Draft saved'
+                  : saveStatus === 'failed'
+                    ? 'Save failed. Retry when ready.'
+                    : 'Draft autosave is on'}
+          </span>
         </div>
 
         <p className="admin__hint">
@@ -394,15 +488,5 @@ function Toggle({
       <input id={id} name={name} type="checkbox" defaultChecked={defaultChecked} />
       <label htmlFor={id}>{label}</label>
     </div>
-  );
-}
-
-function SaveButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <button type="submit" className="admin__button" disabled={pending}>
-      {pending ? 'Saving…' : 'Save design'}
-    </button>
   );
 }
