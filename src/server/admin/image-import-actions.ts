@@ -1,5 +1,6 @@
 'use server';
 
+import { createHash } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/server/auth/current-user';
 import { prisma } from '@/server/db/client';
@@ -12,6 +13,7 @@ import type { ActionState } from './actions';
 export interface ImageZipPreviewState extends ActionState {
   preview?: {
     fileName: string;
+    digest: string;
     imageCount: number;
     matchedCount: number;
     unmatchedCount: number;
@@ -49,7 +51,8 @@ export async function previewImageZipAction(
   if (!business) return { error: 'Not found or access denied' };
 
   try {
-    const entries = parseImageZip(new Uint8Array(await file.arrayBuffer()));
+    const archive = new Uint8Array(await file.arrayBuffer());
+    const entries = parseImageZip(archive);
     const items = await prisma.menuItem.findMany({
       where: { businessId, itemCode: { not: null } },
       select: { itemCode: true, nameAr: true, nameEn: true },
@@ -84,6 +87,7 @@ export async function previewImageZipAction(
       message: `${matches.length} images match menu items; ${unmatched.length} do not match.`,
       preview: {
         fileName: file.name,
+        digest: createHash('sha256').update(archive).digest('hex'),
         imageCount: entries.length,
         matchedCount: matches.length,
         unmatchedCount: unmatched.length,
@@ -101,8 +105,8 @@ export async function previewImageZipAction(
 
 /**
  * Re-reads the confirmed archive rather than carrying image bytes through a
- * hidden field. The whole archive is validated before the first upload, so a
- * corrupt or dangerous entry cannot produce a half-import.
+ * hidden field. The archive digest must equal the read-only preview, and the
+ * whole archive is validated before the first upload.
  */
 export async function confirmImageZipAction(
   businessId: string,
@@ -112,11 +116,19 @@ export async function confirmImageZipAction(
 ): Promise<ActionState> {
   const user = await requireUser();
   const file = formData.get('imageZip');
+  const expectedDigest = String(formData.get('expectedDigest') ?? '');
   if (!(file instanceof File) || file.size === 0) return { error: 'Choose the same images ZIP to import' };
   if (!file.name.toLowerCase().endsWith('.zip')) return { error: 'Image import must be a .zip file' };
+  if (!/^[a-f0-9]{64}$/.test(expectedDigest)) return { error: 'Preview the ZIP before importing' };
 
   try {
-    const entries = parseImageZip(new Uint8Array(await file.arrayBuffer()));
+    const archive = new Uint8Array(await file.arrayBuffer());
+    const actualDigest = createHash('sha256').update(archive).digest('hex');
+    if (actualDigest !== expectedDigest) {
+      return { error: 'This ZIP is different from the one you previewed. Preview it first.' };
+    }
+
+    const entries = parseImageZip(archive);
     const items = await prisma.menuItem.findMany({
       where: { businessId, itemCode: { not: null } },
       select: { itemCode: true },
