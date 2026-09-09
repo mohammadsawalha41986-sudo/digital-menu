@@ -13,7 +13,7 @@ import type { ActionState } from './actions';
  * API key management.
  *
  * Platform-level, so it requires a super admin rather than a tenant grant:
- * issuing a key that can read several businesses is not something a
+ * issuing a key that can read or write several businesses is not something a
  * single-business operator should be able to do.
  */
 
@@ -25,6 +25,7 @@ export interface ApiKeyState extends ActionState {
 const schema = z.object({
   name: z.string().trim().min(1).max(120),
   businessPublicIds: z.string().trim().max(2000).optional().default(''),
+  access: z.enum(['read', 'write']).default('read'),
   marketingClientId: z
     .string()
     .trim()
@@ -70,6 +71,7 @@ export async function createApiKeyAction(
   }
 
   const issued = generateApiToken();
+  const scopes = parsed.data.access === 'write' ? ['read', 'write'] : ['read'];
 
   const client = await prisma.apiClient.create({
     data: {
@@ -77,6 +79,7 @@ export async function createApiKeyAction(
       tokenPrefix: issued.prefix,
       tokenHash: issued.hash,
       businessIds,
+      scopes,
       marketingClientId: parsed.data.marketingClientId,
       expiresAt: parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : null,
     },
@@ -87,7 +90,7 @@ export async function createApiKeyAction(
     entity: 'api_client',
     entityId: client.id,
     userId: user.id,
-    metadata: { name: client.name, scopedTo: publicIds.length || 'platform-wide' },
+    metadata: { name: client.name, scopedTo: publicIds.length || 'platform-wide', scopes },
   });
 
   revalidatePath('/admin/api-keys');
