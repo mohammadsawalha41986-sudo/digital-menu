@@ -1,4 +1,4 @@
-import { inflateRawSync } from 'node:zlib';
+import { crc32, inflateRawSync } from 'node:zlib';
 import { ALLOWED_IMAGE_TYPES, validateUpload } from '@/server/files/validation';
 
 const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
@@ -72,6 +72,7 @@ export function parseImageZip(bytes: Uint8Array): ImageZipEntry[] {
 
     const flags = u16(view, offset + 8);
     const method = u16(view, offset + 10);
+    const expectedCrc = u32(view, offset + 16);
     const compressedSize = u32(view, offset + 20);
     const uncompressedSize = u32(view, offset + 24);
     const nameLength = u16(view, offset + 28);
@@ -114,6 +115,9 @@ export function parseImageZip(bytes: Uint8Array): ImageZipEntry[] {
       uncompressedSize,
       localOffset,
     });
+    if ((crc32(fileBytes) >>> 0) !== expectedCrc) {
+      throw new ImageZipError(`Checksum mismatch for ${fileName}`);
+    }
 
     // The ordinary media validator remains authoritative for extension, MIME,
     // size and magic-byte checks. A ZIP does not bypass upload security.
@@ -194,8 +198,10 @@ function assertSafePath(fileName: string): void {
   if (fileName.includes('\\') || fileName.startsWith('/') || /^[A-Za-z]:/.test(fileName)) {
     throw new ImageZipError(`Unsafe path in ZIP: ${fileName}`);
   }
-  const segments = fileName.split('/');
-  if (segments.some((segment) => segment === '..' || segment === '')) {
+  const pathForValidation = fileName.endsWith('/') ? fileName.slice(0, -1) : fileName;
+  if (!pathForValidation) throw new ImageZipError(`Unsafe path in ZIP: ${fileName}`);
+  const segments = pathForValidation.split('/');
+  if (segments.some((segment) => segment === '..' || segment === '.' || segment === '')) {
     throw new ImageZipError(`Unsafe path in ZIP: ${fileName}`);
   }
 }
