@@ -1,4 +1,4 @@
-import { crc32, inflateRawSync } from 'node:zlib';
+import { inflateRawSync } from 'node:zlib';
 import { ALLOWED_IMAGE_TYPES, validateUpload } from '@/server/files/validation';
 
 const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
@@ -115,12 +115,10 @@ export function parseImageZip(bytes: Uint8Array): ImageZipEntry[] {
       uncompressedSize,
       localOffset,
     });
-    if ((crc32(fileBytes) >>> 0) !== expectedCrc) {
+    if (calculateCrc32(fileBytes) !== expectedCrc) {
       throw new ImageZipError(`Checksum mismatch for ${fileName}`);
     }
 
-    // The ordinary media validator remains authoritative for extension, MIME,
-    // size and magic-byte checks. A ZIP does not bypass upload security.
     validateUpload(
       { fileName, declaredContentType: contentType, bytes: fileBytes },
       ALLOWED_IMAGE_TYPES,
@@ -186,7 +184,6 @@ function extractEntry(
 }
 
 function findEndOfCentralDirectory(view: DataView): number {
-  // EOCD is 22 bytes plus a maximum 65,535-byte comment.
   const minimum = Math.max(0, view.byteLength - 65_557);
   for (let offset = view.byteLength - 22; offset >= minimum; offset -= 1) {
     if (u32(view, offset) === EOCD_SIGNATURE) return offset;
@@ -218,6 +215,18 @@ function contentTypeFor(fileName: string): string | null {
   if (lower.endsWith('.png')) return 'image/png';
   if (lower.endsWith('.webp')) return 'image/webp';
   return null;
+}
+
+/** ZIP CRC32, kept local so the parser works throughout the declared Node >=20.11 range. */
+function calculateCrc32(bytes: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
 }
 
 function u16(view: DataView, offset: number): number {
