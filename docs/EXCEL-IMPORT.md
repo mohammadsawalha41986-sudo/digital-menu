@@ -111,7 +111,39 @@ Formats: `.xlsx` and `.csv`.
 ## Limits
 
 - 5,000 data rows per file.
-- Image ZIP import (§71) is **not implemented**. The `image_url` column is validated but
-  images are not fetched during import; media is uploaded through the media library
-  instead. Fetching arbitrary URLs server-side is an SSRF surface that needs an allowlist
-  and a fetch budget to do safely, and that was not worth shipping half-done.
+- The `image_url` column is validated, never fetched. A server that follows an
+  operator-supplied address is an SSRF; the browser reports whether an image loads more
+  cheaply and more honestly than the server can.
+
+## Bulk item photography (image ZIP)
+
+Photographs arrive as a ZIP alongside the spreadsheet, on the same **Data** screen. Each
+image is named after the stable `item_id` the spreadsheet already uses — `BURGER-001.jpg`
+— which is what lets a re-import update a dish rather than duplicate it, and what lets
+photography catch up with it later.
+
+The workflow is `preview → confirm → assign`:
+
+1. **Preview** parses and validates the whole archive and matches basenames to item codes
+   for *this* business. It writes nothing: no medium is stored and no row changes. The
+   operator sees what will be assigned, which files replace an existing photograph, and
+   which filenames match nothing.
+2. **Confirm** re-reads the archive and refuses it unless its SHA-256 equals the one
+   previewed, so a reviewed ZIP and an imported ZIP cannot differ. Image bytes are never
+   carried through a hidden form field.
+3. **Assign** uploads each image through the ordinary media pipeline — the same content
+   validation, deduplication, generated storage key and derivatives as a hand upload.
+   There is no second pipeline to keep in step.
+
+What the archive parser rejects, before any byte reaches storage: path traversal,
+absolute and backslash paths, drive letters, encrypted entries, ZIP64, multi-disk
+archives, unsupported compression methods, CRC mismatches, more than 500 entries, an
+archive over 100MB, more than 80MB uncompressed, suspicious compression ratios, two
+images claiming the same item code, and any file whose bytes do not match the image type
+its extension claims. Decompression is bounded by the size the entry declares, so an
+entry that under-declares cannot expand into memory before it is caught.
+
+**Atomicity.** No transaction can span object storage and the database, so the guarantee
+is per item: an image is uploaded *and* assigned, or that item keeps exactly the
+photograph it had. One bad file costs itself and is named in the report, which counts
+new, replaced, skipped and failed. An item the archive does not name is never touched.

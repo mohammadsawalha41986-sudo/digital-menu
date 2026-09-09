@@ -90,9 +90,10 @@ strength of having written the code.
 | Menu items, categories, subcategories | **Works** | `menu-studio.test.ts`, `import-export.test.ts` |
 | Images | **Works** | `media.test.ts` |
 | Live preview | **Works** | `e2e/menu-studio.spec.ts` — a real iframe of the public page |
-| Visual Theme Library | **Works** | Real lazy-loaded menu previews; selecting a theme/variant previews without a database write |
+| Visual Theme Library | **Works** | Ten cards, each a lazy-loaded iframe of *this* menu through the public renderer. Selecting a card previews only — it writes nothing — and a separate Apply commits it. `e2e/menu-studio.spec.ts` asserts the live menu is unchanged after browsing two themes |
 | Draft autosave | **Works** | 900 ms debounce, explicit status and retry; requests are serialized so an older save cannot overwrite a newer edit |
-| Design undo / redo | **Works** | Last 20 choices across theme, layout, typography, photography, density and display; travelling history uses the same draft autosave queue |
+| Design undo / redo | **Works** | Last 20 choices across theme, layout, typography, photography, density and display; travelling history uses the same draft autosave queue. `e2e/menu-studio.spec.ts` walks every control back and forward, asserts a new edit clears the redo branch, and asserts the menu's content is byte-identical throughout |
+| Bulk item photography (image ZIP) | **Works** | `tests/unit/image-zip.test.ts`, `tests/integration/image-zip-import.test.ts`, `e2e/image-zip-import.spec.ts` — see `docs/EXCEL-IMPORT.md` |
 | Mobile preview | **Works** | same; the whole E2E suite runs at Pixel 7 width |
 | Import Excel and CSV, mapping, validation | **Works** | `import-export.test.ts` |
 | Export Excel and CSV | **Works** | same |
