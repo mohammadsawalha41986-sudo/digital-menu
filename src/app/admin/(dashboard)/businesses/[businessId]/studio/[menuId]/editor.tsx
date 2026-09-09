@@ -90,13 +90,30 @@ export function StudioEditor({
   const revisionRef = useRef(0);
   const [device, setDevice] = useState<(typeof DEVICES)[number]['key']>('mobile');
   const [locale, setLocale] = useState<'ar' | 'en'>('ar');
-  type DesignChoice = { themeKey: string; layoutKey: string };
+  type DesignChoice = {
+    themeKey: string; layoutKey: string;
+    fontHeading: string; fontBody: string; fontPrice: string; fontAccent: string;
+    imageStyle: string; density: string;
+    showPrices: boolean; showImages: boolean; showCalories: boolean;
+  };
   const [designHistory, setDesignHistory] = useState<{
     past: DesignChoice[];
     present: DesignChoice;
     future: DesignChoice[];
-  }>({ past: [], present: { themeKey: design.themeKey, layoutKey: design.layoutKey }, future: [] });
-  const { themeKey, layoutKey } = designHistory.present;
+  }>({
+    past: [],
+    present: {
+      themeKey: design.themeKey, layoutKey: design.layoutKey,
+      fontHeading: design.fonts.heading ?? '', fontBody: design.fonts.body ?? '',
+      fontPrice: design.fonts.price ?? '', fontAccent: design.fonts.accent ?? '',
+      imageStyle: design.imageStyle ?? '', density: design.density ?? '',
+      showPrices: design.showPrices, showImages: design.showImages,
+      showCalories: design.showCalories,
+    },
+    future: [],
+  });
+  const choice = designHistory.present;
+  const { themeKey, layoutKey } = choice;
 
   const frameId = useId();
   const active = DEVICES.find((entry) => entry.key === device)!;
@@ -134,10 +151,7 @@ export function StudioEditor({
 
   const rememberDesign = (next: DesignChoice) => {
     setDesignHistory((current) => {
-      if (
-        current.present.themeKey === next.themeKey &&
-        current.present.layoutKey === next.layoutKey
-      ) return current;
+      if (JSON.stringify(current.present) === JSON.stringify(next)) return current;
 
       return {
         past: [...current.past.slice(-19), current.present],
@@ -327,7 +341,7 @@ export function StudioEditor({
           >
             Redo
           </button>
-          <span className="admin__hint">Recent theme and layout choices</span>
+          <span className="admin__hint">Last 20 design changes</span>
         </div>
 
         <fieldset className="theme-library">
@@ -348,7 +362,7 @@ export function StudioEditor({
                     value={entry.key}
                     checked={selected}
                     onChange={() => {
-                      rememberDesign({ themeKey: entry.key, layoutKey: cardLayout.key });
+                      rememberDesign({ ...choice, themeKey: entry.key, layoutKey: cardLayout.key });
                     }}
                   />
                   <span className="theme-card__preview" aria-hidden="true">
@@ -378,7 +392,7 @@ export function StudioEditor({
             name="layoutKey"
             className="admin__select"
             value={layoutKey}
-            onChange={(event) => rememberDesign({ themeKey, layoutKey: event.target.value })}
+            onChange={(event) => rememberDesign({ ...choice, layoutKey: event.target.value })}
             key={theme.key}
           >
             {theme.layouts.map((layout) => (
@@ -393,10 +407,10 @@ export function StudioEditor({
           <legend className="admin__label">Typography</legend>
           {(
             [
-              ['fontHeading', 'Heading', 'heading', design.fonts.heading],
-              ['fontBody', 'Body', 'body', design.fonts.body],
-              ['fontPrice', 'Price', 'price', design.fonts.price],
-              ['fontAccent', 'Accent', 'accent', design.fonts.accent],
+              ['fontHeading', 'Heading', 'heading', choice.fontHeading],
+              ['fontBody', 'Body', 'body', choice.fontBody],
+              ['fontPrice', 'Price', 'price', choice.fontPrice],
+              ['fontAccent', 'Accent', 'accent', choice.fontAccent],
             ] as const
           ).map(([name, label, role, current]) => (
             <div className="admin__field" key={name}>
@@ -407,7 +421,8 @@ export function StudioEditor({
                 id={`studio-${name}`}
                 name={name}
                 className="admin__select"
-                defaultValue={current ?? ''}
+                value={current}
+                onChange={(event) => rememberDesign({ ...choice, [name]: event.target.value })}
               >
                 <option value="">Theme default</option>
                 {fontsForRole(role).map((face) => (
@@ -433,7 +448,8 @@ export function StudioEditor({
             id="studio-image-style"
             name="imageStyle"
             className="admin__select"
-            defaultValue={design.imageStyle ?? ''}
+            value={choice.imageStyle}
+            onChange={(event) => rememberDesign({ ...choice, imageStyle: event.target.value })}
           >
             <option value="">Theme default</option>
             {['none', 'thumbnail', 'rounded', 'circle', 'editorial', 'full-bleed', 'polaroid', 'floating', 'grid'].map(
@@ -454,7 +470,8 @@ export function StudioEditor({
             id="studio-density"
             name="density"
             className="admin__select"
-            defaultValue={design.density ?? ''}
+            value={choice.density}
+            onChange={(event) => rememberDesign({ ...choice, density: event.target.value })}
           >
             <option value="">Theme default</option>
             <option value="compact">Compact</option>
@@ -465,9 +482,9 @@ export function StudioEditor({
 
         <fieldset className="admin__fieldset">
           <legend className="admin__label">Show</legend>
-          <Toggle name="showPrices" label="Prices" defaultChecked={design.showPrices} />
-          <Toggle name="showImages" label="Photographs" defaultChecked={design.showImages} />
-          <Toggle name="showCalories" label="Calories where entered" defaultChecked={design.showCalories} />
+          <Toggle name="showPrices" label="Prices" checked={choice.showPrices} onChange={(checked) => rememberDesign({ ...choice, showPrices: checked })} />
+          <Toggle name="showImages" label="Photographs" checked={choice.showImages} onChange={(checked) => rememberDesign({ ...choice, showImages: checked })} />
+          <Toggle name="showCalories" label="Calories where entered" checked={choice.showCalories} onChange={(checked) => rememberDesign({ ...choice, showCalories: checked })} />
         </fieldset>
 
         <div className="admin__actions">
@@ -541,17 +558,19 @@ function CategoryNode({ category, currency }: { category: Category; currency: st
 function Toggle({
   name,
   label,
-  defaultChecked,
+  checked,
+  onChange,
 }: {
   name: string;
   label: string;
-  defaultChecked: boolean;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
 }) {
   const id = useId();
 
   return (
     <div className="admin__checkbox">
-      <input id={id} name={name} type="checkbox" defaultChecked={defaultChecked} />
+      <input id={id} name={name} type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       <label htmlFor={id}>{label}</label>
     </div>
   );
