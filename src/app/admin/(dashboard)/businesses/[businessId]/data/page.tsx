@@ -9,8 +9,13 @@ import {
   previewImportAction,
   rollbackImportAction,
 } from '@/server/admin/import-actions';
+import {
+  confirmImageZipAction,
+  previewImageZipAction,
+} from '@/server/admin/image-import-actions';
 import { ActionButton } from '../../../components';
 import { ImportWizard } from './import-wizard';
+import { ImageZipImporter } from './image-zip-importer';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,6 +86,11 @@ export default async function DataPage({
         menuKeys={business.menus.map((menu) => menu.key)}
         preview={previewImportAction.bind(null, business.id)}
         confirm={confirmImportAction.bind(null, business.id, business.publicId)}
+      />
+
+      <ImageZipImporter
+        preview={previewImageZipAction.bind(null, business.id)}
+        confirm={confirmImageZipAction.bind(null, business.id, business.publicId)}
       />
 
       <section className="admin__panel">
