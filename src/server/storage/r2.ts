@@ -206,9 +206,21 @@ export class R2StorageProvider implements StorageProvider {
         'x-amz-date': amzDate,
         authorization,
       },
-      ...(body ? { body } : {}),
+      ...(body ? { body: toBodyInit(body) } : {}),
     });
   }
+}
+
+/**
+ * `Uint8Array` is generic over its backing buffer, which may be a
+ * `SharedArrayBuffer`, and `BodyInit` accepts only `ArrayBuffer`-backed views.
+ * Upload bytes always come from Node buffers, so re-view them in place; the
+ * copy is a safety net that never runs on the server path.
+ */
+function toBodyInit(bytes: Uint8Array): BodyInit {
+  return bytes.buffer instanceof ArrayBuffer
+    ? new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    : new Uint8Array(bytes);
 }
 
 async function expectSuccess(response: Response, operation: string): Promise<void> {
