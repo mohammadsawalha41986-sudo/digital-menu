@@ -797,6 +797,31 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-accent) 24%, transparent);
 }
 
+/* The applied theme stays identifiable while another one is being previewed,
+   so the operator can always see what they will return to. */
+.theme-card[data-applied]:not([data-selected]) {
+  border-style: dashed;
+  border-color: var(--admin-ink);
+}
+
+/* Applying is a deliberate, separate act: previewing writes nothing. */
+.theme-library__apply {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sys-space-2);
+  margin-block-start: var(--sys-space-3);
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-accent);
+  border-radius: var(--sys-radius-md-sm);
+  background: color-mix(in srgb, var(--admin-accent) 8%, var(--admin-surface));
+}
+
+.theme-library__apply .admin__hint {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
 .theme-card__preview {
   position: relative;
   display: block;
@@ -818,46 +843,10 @@
   transform-origin: top left;
 }
 
-.theme-card__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sys-space-2);
-}
-
-.theme-card__tone {
-  color: var(--admin-muted);
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
 .theme-card__description,
 .theme-card__meta,
 .theme-card__action {
   display: block;
-}
-
-.theme-card__description {
-  color: var(--admin-ink);
-  font-size: 0.76rem;
-  line-height: 1.45;
-}
-
-.theme-card__meta {
-  color: var(--admin-muted);
-  font-size: 0.7rem;
-  line-height: 1.4;
-}
-
-.theme-card__preview {
-  position: relative;
-  display: block;
-  block-size: 9rem;
-  overflow: hidden;
-  border-radius: var(--sys-radius-md-sm);
-  background: var(--admin-bg);
-  pointer-events: none;
 }
 
 .theme-card__preview iframe {

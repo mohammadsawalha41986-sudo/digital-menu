@@ -8,6 +8,14 @@ import type { PublicProfile } from './types';
  * Returning a new read model, instead of updating MenuDesign, is the safety
  * boundary behind "Preview": the operator can browse freely and discard the
  * choice without changing content, versions or the permanent QR destination.
+ *
+ * Only the theme and its layout are replaced. The typography, photography
+ * style and density the operator has already chosen are carried over from the
+ * stored row, because the question the preview answers is "what will my menu
+ * look like in this theme", not "what does this theme look like with my
+ * choices discarded". Resolution then falls back to the *new* theme for every
+ * setting the operator has left on its default, so switching theme still
+ * changes the fonts they never picked.
  */
 export function withPreviewTheme(
   profile: PublicProfile,
@@ -21,17 +29,9 @@ export function withPreviewTheme(
     menus: profile.menus.map((menu) => ({
       ...menu,
       design: resolveDesign({
+        ...menu.designOverrides,
         themeKey,
         layoutKey: layoutKey ?? 'a',
-        fontHeading: null,
-        fontBody: null,
-        fontPrice: null,
-        fontAccent: null,
-        imageStyle: null,
-        density: null,
-        showPrices: menu.design.showPrices,
-        showImages: menu.design.showImages,
-        showCalories: menu.design.showCalories,
       }),
     })),
   };

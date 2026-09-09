@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, isLocale } from '@/i18n/config';
 import { prisma } from '@/server/db/client';
 import { getStorage } from '@/server/storage';
 import { discountPercent, liveOfferWhere } from '@/server/offers/scheduling';
-import { resolveDesign, type DesignRowLike } from '@/menu-studio/resolve';
+import { resolveDesign, UNSTYLED, type DesignRowLike } from '@/menu-studio/resolve';
 import { parseWorkingHours } from '@/server/business/hours';
 import { isMenuLive } from '@/server/menus/scheduling';
 import { buildSrcSet, objectPosition } from '@/server/media/derivatives';
@@ -604,6 +604,7 @@ function toMenu(
     publishedVersion: menu.currentVersion?.version ?? null,
     publishedAt: menu.currentVersion?.publishedAt ?? null,
     design,
+    designOverrides: menu.design ?? UNSTYLED,
     categories: menu.categories
       .map((category): PublicCategory => withPresentation(toCategory(category, overrides), design))
       // A category whose every item is hidden would render as an empty heading;

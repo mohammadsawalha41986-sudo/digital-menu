@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { resolveTheme } from '@/menu-studio/themes';
 import { withPreviewTheme } from '@/server/profile/preview-theme';
 import type { PublicProfile } from '@/server/profile/types';
 
@@ -50,6 +51,12 @@ function profileFixture(): PublicProfile {
         borders: 'hairline', headingTransform: 'none', headingTracking: 'normal', scale: 1,
         showPrices: true, showImages: false, showCalories: true,
       },
+      designOverrides: {
+        themeKey: 'modern-minimal', layoutKey: 'a',
+        fontHeading: null, fontBody: null, fontPrice: null, fontAccent: null,
+        imageStyle: 'thumbnail', density: 'airy',
+        showPrices: true, showImages: false, showCalories: true,
+      },
     }],
   };
 }
@@ -69,6 +76,41 @@ describe('staff theme preview', () => {
     });
     expect(preview.menus[0]!.categories).toBe(original.menus[0]!.categories);
     expect(original.menus[0]!.design.themeKey).toBe('modern-minimal');
+  });
+
+  it('keeps the photography and density the operator chose', () => {
+    // Swapping theme must not silently discard settings the operator picked on
+    // purpose. Only what they left on "theme default" follows the new theme.
+    const original = profileFixture();
+    original.menus[0]!.designOverrides = {
+      ...original.menus[0]!.designOverrides,
+      imageStyle: 'polaroid',
+      density: 'compact',
+      showImages: true,
+    };
+
+    const preview = withPreviewTheme(original, 'dark-luxury', 'b');
+
+    expect(preview.menus[0]!.design.imageStyle).toBe('polaroid');
+    // dark-luxury is an airy theme; the operator asked for compact and gets it.
+    expect(resolveTheme('dark-luxury', 'b').theme.density).toBe('airy');
+    expect(preview.menus[0]!.design.density).toBe('compact');
+  });
+
+  it('lets the new theme supply every setting left on its default', () => {
+    const original = profileFixture();
+    original.menus[0]!.designOverrides = {
+      ...original.menus[0]!.designOverrides,
+      imageStyle: null,
+      density: null,
+      showImages: true,
+    };
+
+    const previewed = withPreviewTheme(original, 'bold-street', 'a').menus[0]!.design;
+    const { theme, layout } = resolveTheme('bold-street', 'a');
+
+    expect(previewed.density).toBe(theme.density);
+    expect(previewed.imageStyle).toBe(layout.imageStyle);
   });
 
   it('ignores an unknown theme or variant', () => {

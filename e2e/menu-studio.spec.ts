@@ -108,11 +108,73 @@ test.describe('the studio', () => {
     );
 
     const design = page.locator('form[aria-label="Design"]');
-    await design.getByLabel('Theme').selectOption('dark-luxury');
-    await design.getByLabel('Heading').selectOption('arabic-kufi');
-    await design.getByLabel('Density').selectOption('airy');
-    await design.getByRole('button', { name: 'Save design' }).click();
-    await expect(design.getByRole('status')).toContainText('Design saved');
+    const saveState = design.locator('[data-save-state]');
+
+    // --- The Theme Library ------------------------------------------------
+    // Every theme is a card with its own live preview of *this* menu, not a
+    // screenshot and not a dropdown.
+    const cards = design.locator('.theme-card');
+    await expect(cards).toHaveCount(10);
+
+    const luxury = design.locator('.theme-card[data-theme="dark-luxury"]');
+    await expect(luxury.locator('iframe')).toHaveAttribute(
+      'src',
+      /theme=dark-luxury/,
+    );
+    // Name, positioning, who it suits, and how many variants it carries.
+    await expect(luxury).toContainText('variants');
+    await expect(luxury.locator('.theme-card__description')).not.toBeEmpty();
+    await expect(luxury.locator('.theme-card__meta')).toContainText(/Best for|Flexible style/);
+
+    // Previewing is free of consequence: it writes nothing.
+    // The card itself is the control; its radio is visually hidden for styling.
+    await luxury.click();
+    await expect(luxury.locator('input[type="radio"]')).toBeChecked();
+    await expect(luxury.locator('.theme-card__action')).toHaveText('Previewing');
+    await expect(design.getByText('Nothing has been saved.')).toBeVisible();
+    await expect(page.locator('iframe[title="Live menu preview"]')).toHaveAttribute(
+      'src',
+      /theme=dark-luxury/,
+    );
+
+    // Look at a second theme, still without applying either.
+    const cafe = design.locator('.theme-card[data-theme="premium-cafe"]');
+    await cafe.click();
+    await expect(page.locator('iframe[title="Live menu preview"]')).toHaveAttribute(
+      'src',
+      /theme=premium-cafe/,
+    );
+
+    // The live menu is untouched by all that browsing.
+    await expect(saveState).toHaveAttribute('data-save-state', 'idle');
+    const stillOriginal = page.context();
+    const probe = await stillOriginal.newPage();
+    await probe.goto(`/m/${publicId}?lang=ar`);
+    await expect(probe.locator('[data-menu-theme]').first()).not.toHaveAttribute(
+      'data-menu-theme',
+      'dark-luxury',
+    );
+    await probe.close();
+
+    // --- Applying, and autosave -------------------------------------------
+    await luxury.click();
+    await design.getByRole('button', { name: 'Apply Dark Luxury' }).click();
+    await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
+    await expect(luxury.locator('.theme-card__action')).toHaveText('Applied');
+
+    // A typography and a density change ride the same autosave — no click.
+    await design.getByLabel('Heading', { exact: true }).selectOption('arabic-kufi');
+    await expect(saveState).toHaveText('Unsaved changes');
+    await design.getByLabel('Density', { exact: true }).selectOption('airy');
+    await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
+
+    // It survives a reload, which is the only proof that it was written.
+    await page.reload();
+    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('airy');
+    await expect(design.getByLabel('Heading', { exact: true })).toHaveValue('arabic-kufi');
+    await expect(
+      design.locator('.theme-card[data-theme="dark-luxury"] .theme-card__action'),
+    ).toHaveText('Applied');
 
     // The public page now carries the theme…
     await page.goto(`/m/${publicId}?lang=ar`);
@@ -121,6 +183,54 @@ test.describe('the studio', () => {
     await expect(menuSection).toHaveAttribute('data-density', 'airy');
 
     // …and says exactly what it said before.
+    expect(await menuContent(page, publicId)).toEqual(before);
+  });
+
+  test('undo and redo walk the design back and forward, and never touch content', async ({
+    page,
+  }) => {
+    await signIn(page);
+    const before = await menuContent(page, publicId);
+
+    await page.goto(`/admin/businesses/${businessId}/studio`);
+    await page.getByRole('link', { name: 'Open in studio' }).first().click();
+
+    const design = page.locator('form[aria-label="Design"]');
+    const saveState = design.locator('[data-save-state]');
+    const history = design.getByRole('group', { name: 'Design edit history' });
+
+    // Every design control, one after another, so history covers all of them.
+    await design.getByLabel('Density', { exact: true }).selectOption('compact');
+    await design.getByLabel('Photography', { exact: true }).selectOption('circle');
+    await design.getByLabel('Body', { exact: true }).selectOption('arabic-naskh');
+    await design.getByLabel('Prices', { exact: true }).uncheck();
+    await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
+
+    // Undo unwinds them in order.
+    await history.getByRole('button', { name: 'Undo' }).click();
+    await expect(design.getByLabel('Prices', { exact: true })).toBeChecked();
+    await history.getByRole('button', { name: 'Undo' }).click();
+    await expect(design.getByLabel('Body', { exact: true })).toHaveValue('');
+    await history.getByRole('button', { name: 'Undo' }).click();
+    await expect(design.getByLabel('Photography', { exact: true })).toHaveValue('');
+    await history.getByRole('button', { name: 'Undo' }).click();
+    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('airy');
+
+    // Redo puts one back.
+    await history.getByRole('button', { name: 'Redo' }).click();
+    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('compact');
+
+    // A new edit after undo abandons the redo branch.
+    await history.getByRole('button', { name: 'Undo' }).click();
+    await design.getByLabel('Density', { exact: true }).selectOption('regular');
+    await expect(history.getByRole('button', { name: 'Redo' })).toBeDisabled();
+
+    // Travelled state goes through the same autosave queue and survives.
+    await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
+    await page.reload();
+    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('regular');
+
+    // None of it changed a single word or price on the menu.
     expect(await menuContent(page, publicId)).toEqual(before);
   });
 
@@ -133,9 +243,11 @@ test.describe('the studio', () => {
     await page.getByRole('link', { name: 'Open in studio' }).first().click();
 
     const design = page.locator('form[aria-label="Design"]');
-    await design.getByLabel('Prices').uncheck();
-    await design.getByRole('button', { name: 'Save design' }).click();
-    await expect(design.getByRole('status')).toContainText('Design saved');
+    await design.getByLabel('Prices', { exact: true }).uncheck();
+    await design.getByRole('button', { name: 'Save now' }).click();
+    await expect(design.locator('[data-save-state]')).toHaveAttribute('data-save-state', 'saved', {
+      timeout: 15_000,
+    });
 
     await page.goto(`/m/${publicId}?lang=ar`);
 
@@ -151,9 +263,11 @@ test.describe('the studio', () => {
     await page.goto(`/admin/businesses/${businessId}/studio`);
     await page.getByRole('link', { name: 'Open in studio' }).first().click();
     const designAgain = page.locator('form[aria-label="Design"]');
-    await designAgain.getByLabel('Prices').check();
-    await designAgain.getByRole('button', { name: 'Save design' }).click();
-    await expect(designAgain.getByRole('status')).toContainText('Design saved');
+    await designAgain.getByLabel('Prices', { exact: true }).check();
+    await designAgain.getByRole('button', { name: 'Save now' }).click();
+    await expect(designAgain.locator('[data-save-state]')).toHaveAttribute('data-save-state', 'saved', {
+      timeout: 15_000,
+    });
 
     await page.goto(`/m/${publicId}?lang=ar`);
     await expect(page.locator('[data-item="SD-001"] [data-price]')).toContainText('55');

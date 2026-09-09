@@ -84,6 +84,12 @@ export function StudioEditor({
 }) {
   const [state, setState] = useState<ActionState>({});
   const [saveStatus, setSaveStatus] = useState<'idle' | 'dirty' | 'saving' | 'saved' | 'failed'>('idle');
+  // Counts successful saves. The preview is an iframe of the real page, so the
+  // only way it can show a setting that lives in the saved row — typography,
+  // density, photography, the display toggles — is to load again once the row
+  // has changed. Keying on the result message alone left it stale from the
+  // second save onward, because the message is identical every time.
+  const [savedRevision, setSavedRevision] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -115,9 +121,21 @@ export function StudioEditor({
   const choice = designHistory.present;
   const { themeKey, layoutKey } = choice;
 
+  // A theme the operator is looking at but has not applied. Holding it in
+  // component state, and passing it to the preview as a query parameter, is
+  // what keeps browsing the library free of consequence: the preview route
+  // re-resolves presentation for that one response and writes nothing, so no
+  // MenuDesign row, menu version or QR destination moves until Apply.
+  const [previewChoice, setPreviewChoice] = useState<{ themeKey: string; layoutKey: string } | null>(
+    null,
+  );
+  const viewing = previewChoice ?? { themeKey, layoutKey };
+  const previewingUnapplied =
+    viewing.themeKey !== themeKey || viewing.layoutKey !== layoutKey;
+
   const frameId = useId();
   const active = DEVICES.find((entry) => entry.key === device)!;
-  const theme = themes.find((entry) => entry.key === themeKey) ?? themes[0]!;
+  const theme = themes.find((entry) => entry.key === viewing.themeKey) ?? themes[0]!;
 
   const queueSave = (formData: FormData) => {
     const revision = ++revisionRef.current;
@@ -133,6 +151,7 @@ export function StudioEditor({
         if (revision !== revisionRef.current) return;
         setState(result);
         setSaveStatus(result.ok ? 'saved' : 'failed');
+        if (result.ok) setSavedRevision((current) => current + 1);
       })
       .catch((error: unknown) => {
         if (revision !== revisionRef.current) return;
@@ -188,6 +207,15 @@ export function StudioEditor({
     setTimeout(scheduleAutosave, 0);
   };
 
+  /** Commit the theme being previewed. Goes through history and the same
+   *  serialized queue as every other design edit, so it is undoable. */
+  const applyPreviewedTheme = () => {
+    if (!previewChoice) return;
+    rememberDesign({ ...choice, themeKey: previewChoice.themeKey, layoutKey: previewChoice.layoutKey });
+    setPreviewChoice(null);
+    setTimeout(scheduleAutosave, 0);
+  };
+
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
   }, []);
@@ -195,7 +223,7 @@ export function StudioEditor({
   // Reloads when the saved design changes, so the preview reflects the last
   // successful save rather than an optimistic guess.
   const previewSeparator = previewPath.includes('?') ? '&' : '?';
-  const previewSrc = `${previewPath}${previewSeparator}lang=${locale}&theme=${encodeURIComponent(theme.key)}&layout=${encodeURIComponent(layoutKey)}&studio=${state.ok ? 'saved' : 'draft'}`;
+  const previewSrc = `${previewPath}${previewSeparator}lang=${locale}&theme=${encodeURIComponent(viewing.themeKey)}&layout=${encodeURIComponent(viewing.layoutKey)}&studio=${previewingUnapplied ? 'preview' : 'applied'}`;
 
   return (
     <div className="studio">
@@ -279,7 +307,7 @@ export function StudioEditor({
 
         <div className={`studio__frame studio__frame--${device}`}>
           <iframe
-            key={`${device}-${locale}-${state.message ?? ''}`}
+            key={`${device}-${locale}-${savedRevision}`}
             id={frameId}
             title="Live menu preview"
             src={previewSrc}
@@ -315,12 +343,6 @@ export function StudioEditor({
             {state.error}
           </p>
         ) : null}
-        {state.ok && state.message ? (
-          <p className="admin__message admin__message--ok" role="status">
-            {state.message}
-          </p>
-        ) : null}
-
         <input type="hidden" name="businessId" value={businessId} />
         <input type="hidden" name="menuId" value={menuId} />
 
@@ -344,25 +366,53 @@ export function StudioEditor({
           <span className="admin__hint">Last 20 design changes</span>
         </div>
 
+        {/* The applied design. The library's radios are preview-only and
+            deliberately carry a different name, so browsing never submits. */}
+        <input type="hidden" name="themeKey" value={themeKey} />
+        <input type="hidden" name="layoutKey" value={layoutKey} />
+
         <fieldset className="theme-library">
           <legend className="admin__label">Theme Library</legend>
-          <p className="admin__hint">Preview your real menu before applying. Theme changes affect presentation only.</p>
-          <div className="theme-library__grid">
+          <p className="admin__hint">
+            Every card is your own menu, with your own dishes and prices, drawn by the page a
+            customer gets. Looking through them changes nothing — press Apply to keep one.
+          </p>
+          <div className="theme-library__grid" role="radiogroup" aria-label="Theme">
             {themes.map((entry) => {
-              const selected = entry.key === themeKey;
-              const cardLayout = entry.layouts[0]!;
+              const isViewing = entry.key === viewing.themeKey;
+              const isApplied = entry.key === themeKey;
+              const cardLayout =
+                (isViewing ? entry.layouts.find((l) => l.key === viewing.layoutKey) : null) ??
+                entry.layouts[0]!;
               const cardSrc = `${previewPath}${previewSeparator}lang=${locale}&theme=${encodeURIComponent(entry.key)}&layout=${encodeURIComponent(cardLayout.key)}`;
 
               return (
-                <label className="theme-card" data-selected={selected ? '' : undefined} key={entry.key}>
+                <label
+                  className="theme-card"
+                  data-theme={entry.key}
+                  data-selected={isViewing ? '' : undefined}
+                  data-applied={isApplied ? '' : undefined}
+                  key={entry.key}
+                >
                   <input
                     className="admin__visually-hidden"
                     type="radio"
-                    name="themeKey"
+                    name="themePreview"
                     value={entry.key}
-                    checked={selected}
-                    onChange={() => {
-                      rememberDesign({ ...choice, themeKey: entry.key, layoutKey: cardLayout.key });
+                    // Without this the radio's accessible name is the whole
+                    // card — heading, tone, description and variant count read
+                    // out as one run-on string.
+                    aria-label={`Preview the ${entry.label} theme`}
+                    checked={isViewing}
+                    onChange={(event) => {
+                      // Never let a preview reach the autosave listener on the
+                      // form: choosing a card must not write anything.
+                      event.stopPropagation();
+                      setPreviewChoice(
+                        entry.key === themeKey
+                          ? null
+                          : { themeKey: entry.key, layoutKey: entry.layouts[0]!.key },
+                      );
                     }}
                   />
                   <span className="theme-card__preview" aria-hidden="true">
@@ -374,13 +424,40 @@ export function StudioEditor({
                   </span>
                   <span className="theme-card__description">{entry.description}</span>
                   <span className="theme-card__meta">
-                    {entry.recommendedFor.length > 0 ? `Best for ${entry.recommendedFor.join(', ')}` : 'Flexible style'} · {entry.layouts.length} variants
+                    {entry.recommendedFor.length > 0
+                      ? `Best for ${entry.recommendedFor.join(', ')}`
+                      : 'Flexible style'}{' '}
+                    · {entry.layouts.length} variants
                   </span>
-                  <span className="theme-card__action">{selected ? 'Previewing' : 'Preview'}</span>
+                  <span className="theme-card__action">
+                    {isApplied && !previewingUnapplied
+                      ? 'Applied'
+                      : isViewing
+                        ? 'Previewing'
+                        : 'Preview'}
+                  </span>
                 </label>
               );
             })}
           </div>
+
+          {previewingUnapplied ? (
+            <div className="theme-library__apply" role="group" aria-label="Previewed theme">
+              <p className="admin__hint" role="status" aria-live="polite">
+                Previewing {theme.label}. Nothing has been saved.
+              </p>
+              <button type="button" className="admin__button" onClick={applyPreviewedTheme}>
+                Apply {theme.label}
+              </button>
+              <button
+                type="button"
+                className="admin__button admin__button--secondary"
+                onClick={() => setPreviewChoice(null)}
+              >
+                Keep current theme
+              </button>
+            </div>
+          ) : null}
         </fieldset>
 
         <div className="admin__field">
@@ -389,11 +466,19 @@ export function StudioEditor({
           </label>
           <select
             id="studio-layout"
-            name="layoutKey"
             className="admin__select"
-            value={layoutKey}
-            onChange={(event) => rememberDesign({ ...choice, layoutKey: event.target.value })}
-            key={theme.key}
+            value={viewing.layoutKey}
+            onChange={(event) => {
+              // While a theme is only being previewed the variant is part of
+              // that preview, not an edit to the applied design.
+              if (previewChoice) {
+                event.stopPropagation();
+                setPreviewChoice({ ...previewChoice, layoutKey: event.target.value });
+                return;
+              }
+              rememberDesign({ ...choice, layoutKey: event.target.value });
+            }}
+            key={viewing.themeKey}
           >
             {theme.layouts.map((layout) => (
               <option key={layout.key} value={layout.key}>
@@ -488,22 +573,26 @@ export function StudioEditor({
         </fieldset>
 
         <div className="admin__actions">
-          <button type="submit" className="admin__button">
-            {saveStatus === 'saving'
-              ? 'Saving…'
-              : saveStatus === 'failed'
-                ? 'Retry'
-                : saveStatus === 'saved'
-                  ? 'Saved'
-                  : 'Save design'}
+          {/* Autosave covers the ordinary case, but the operator keeps a way to
+              force a write — and, after a failure, to try again without having
+              to invent a change. The name stays stable so what a screen reader
+              announces on focus does not shift under the pointer; the live
+              region below is what reports progress. */}
+          <button type="submit" className="admin__button" disabled={saveStatus === 'saving'}>
+            {saveStatus === 'failed' ? 'Retry save' : 'Save now'}
           </button>
-          <span className="admin__hint" role="status" aria-live="polite">
+          <span
+            className="admin__hint"
+            role="status"
+            aria-live="polite"
+            data-save-state={saveStatus}
+          >
             {saveStatus === 'dirty'
               ? 'Unsaved changes'
               : saveStatus === 'saving'
-                ? 'Saving draft changes…'
+                ? 'Saving…'
                 : saveStatus === 'saved'
-                  ? 'Draft saved'
+                  ? 'Saved'
                   : saveStatus === 'failed'
                     ? 'Save failed. Retry when ready.'
                     : 'Draft autosave is on'}

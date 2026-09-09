@@ -1,3 +1,4 @@
+import type { DesignRowLike } from '@/menu-studio/resolve';
 import type { Locale } from '@/i18n/config';
 import type { BrandTokens } from '@/design/brand';
 import type { WorkingHours } from '@/server/business/hours';
@@ -104,6 +105,13 @@ export interface PublicMenu {
   categories: PublicCategory[];
   /** Presentation for this menu. Never null: an unstyled menu is a bug. */
   design: PublicMenuDesign;
+  /**
+   * The stored choices `design` was resolved from, kept so a staff preview can
+   * swap the theme while honouring the typography, photography and density the
+   * operator actually picked. The public renderer reads `design`; nothing is
+   * serialised from here to a visitor.
+   */
+  designOverrides: DesignRowLike;
 }
 
 export interface PublicBranch {
