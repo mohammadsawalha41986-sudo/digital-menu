@@ -65,6 +65,10 @@ export function ImageZipImporter({
               <span>Matched</span>
             </p>
             <p className="admin__card">
+              <strong>{result.replacedCount}</strong>
+              <span>Replace a photo</span>
+            </p>
+            <p className="admin__card">
               <strong>{result.unmatchedCount}</strong>
               <span>Unmatched</span>
             </p>
@@ -79,6 +83,7 @@ export function ImageZipImporter({
                     <th scope="col">Image</th>
                     <th scope="col">item_id</th>
                     <th scope="col">Menu item</th>
+                    <th scope="col">Effect</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -87,6 +92,7 @@ export function ImageZipImporter({
                       <td>{match.fileName}</td>
                       <td><code>{match.itemCode}</code></td>
                       <td>{match.itemName}</td>
+                      <td>{match.replaces ? 'Replaces the current photo' : 'Adds a first photo'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -97,7 +103,8 @@ export function ImageZipImporter({
           {result.unmatched.length > 0 ? (
             <details>
               <summary className="admin__label">
-                Unmatched filenames ({result.unmatchedCount}) — these will be skipped
+                Unmatched filenames ({result.unmatchedCount}) — skipped, and the items they name
+                keep whatever photograph they already have
               </summary>
               <ul className="admin__findings">
                 {result.unmatched.map((row) => (

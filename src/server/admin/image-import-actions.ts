@@ -5,8 +5,12 @@ import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/server/auth/current-user';
 import { prisma } from '@/server/db/client';
 import { FileValidationError } from '@/server/files/validation';
-import { ImageZipError, normalizeItemCode, parseImageZip } from '@/server/import/image-zip';
-import { assignMedia, uploadMedia } from '@/server/media/service';
+import {
+  assignPlannedImages,
+  describeImageAssignment,
+  planImageAssignment,
+} from '@/server/import/image-assignment';
+import { ImageZipError, parseImageZip } from '@/server/import/image-zip';
 import { invalidateProfile } from '@/server/profile/cache';
 import type { ActionState } from './actions';
 
@@ -16,17 +20,32 @@ export interface ImageZipPreviewState extends ActionState {
     digest: string;
     imageCount: number;
     matchedCount: number;
+    replacedCount: number;
     unmatchedCount: number;
-    matches: { fileName: string; itemCode: string; itemName: string }[];
+    matches: { fileName: string; itemCode: string; itemName: string; replaces: boolean }[];
     unmatched: { fileName: string; itemCode: string }[];
   };
 }
 
-const MAX_PREVIEW_MATCHES = 100;
+const MAX_PREVIEW_ROWS = 100;
+
+/** Staff must hold this business, or the archive is never even read. */
+async function assertBusinessAccess(businessId: string, userId: string, isSuperAdmin: boolean) {
+  return prisma.business.findFirst({
+    where: {
+      id: businessId,
+      ...(isSuperAdmin ? {} : { memberships: { some: { userId } } }),
+    },
+    select: { id: true },
+  });
+}
 
 /**
  * Read-only first step for bulk photography. Image file basenames are matched
- * to the stable item_id/itemCode used by spreadsheet import/export.
+ * to the stable item_id/itemCode used by spreadsheet import and export.
+ *
+ * Nothing is stored and nothing is written: the operator sees exactly what the
+ * archive would do — assigned, replaced, unmatched — and can walk away.
  */
 export async function previewImageZipAction(
   businessId: string,
@@ -38,60 +57,35 @@ export async function previewImageZipAction(
   if (!(file instanceof File) || file.size === 0) return { error: 'Choose an images .zip file' };
   if (!file.name.toLowerCase().endsWith('.zip')) return { error: 'Image import must be a .zip file' };
 
-  const business = await prisma.business.findFirst({
-    where: {
-      id: businessId,
-      OR: [
-        { memberships: { some: { userId: user.id } } },
-        ...(user.role === 'SUPER_ADMIN' ? [{}] : []),
-      ],
-    },
-    select: { id: true },
-  });
+  const business = await assertBusinessAccess(businessId, user.id, user.role === 'SUPER_ADMIN');
   if (!business) return { error: 'Not found or access denied' };
 
   try {
     const archive = new Uint8Array(await file.arrayBuffer());
     const entries = parseImageZip(archive);
-    const items = await prisma.menuItem.findMany({
-      where: { businessId },
+    const plan = await planImageAssignment(businessId, entries);
+
+    const names = await prisma.menuItem.findMany({
+      where: { businessId, itemCode: { in: plan.matched.map((match) => match.itemCode) } },
       select: { itemCode: true, nameAr: true, nameEn: true },
     });
-    const byCode = new Map<string, { itemCode: string; nameAr: string; nameEn: string | null }>();
-    for (const item of items) {
-      byCode.set(normalizeItemCode(item.itemCode), {
-        itemCode: item.itemCode,
-        nameAr: item.nameAr,
-        nameEn: item.nameEn,
-      });
-    }
-
-    const matches: { fileName: string; itemCode: string; itemName: string }[] = [];
-    const unmatched: { fileName: string; itemCode: string }[] = [];
-    for (const entry of entries) {
-      const item = byCode.get(normalizeItemCode(entry.itemCode));
-      if (item) {
-        matches.push({
-          fileName: entry.fileName,
-          itemCode: item.itemCode,
-          itemName: item.nameEn ?? item.nameAr,
-        });
-      } else {
-        unmatched.push({ fileName: entry.fileName, itemCode: entry.itemCode });
-      }
-    }
+    const nameByCode = new Map(names.map((item) => [item.itemCode, item.nameEn ?? item.nameAr]));
 
     return {
-      ok: true,
-      message: `${matches.length} images match menu items; ${unmatched.length} do not match.`,
       preview: {
         fileName: file.name,
         digest: createHash('sha256').update(archive).digest('hex'),
         imageCount: entries.length,
-        matchedCount: matches.length,
-        unmatchedCount: unmatched.length,
-        matches: matches.slice(0, MAX_PREVIEW_MATCHES),
-        unmatched: unmatched.slice(0, MAX_PREVIEW_MATCHES),
+        matchedCount: plan.matched.length,
+        replacedCount: plan.matched.filter((match) => match.hadImage).length,
+        unmatchedCount: plan.unmatched.length,
+        matches: plan.matched.slice(0, MAX_PREVIEW_ROWS).map((match) => ({
+          fileName: match.entry.fileName,
+          itemCode: match.itemCode,
+          itemName: nameByCode.get(match.itemCode) ?? match.itemCode,
+          replaces: match.hadImage,
+        })),
+        unmatched: plan.unmatched.slice(0, MAX_PREVIEW_ROWS),
       },
     };
   } catch (error) {
@@ -104,8 +98,9 @@ export async function previewImageZipAction(
 
 /**
  * Re-reads the confirmed archive rather than carrying image bytes through a
- * hidden field. The archive digest must equal the read-only preview, and the
- * whole archive is validated before the first upload.
+ * hidden field. The archive digest must equal the read-only preview, so the
+ * operator cannot approve one ZIP and import another, and the whole archive is
+ * validated again before the first upload.
  */
 export async function confirmImageZipAction(
   businessId: string,
@@ -120,43 +115,21 @@ export async function confirmImageZipAction(
   if (!file.name.toLowerCase().endsWith('.zip')) return { error: 'Image import must be a .zip file' };
   if (!/^[a-f0-9]{64}$/.test(expectedDigest)) return { error: 'Preview the ZIP before importing' };
 
+  const business = await assertBusinessAccess(businessId, user.id, user.role === 'SUPER_ADMIN');
+  if (!business) return { error: 'Not found or access denied' };
+
   try {
     const archive = new Uint8Array(await file.arrayBuffer());
-    const actualDigest = createHash('sha256').update(archive).digest('hex');
-    if (actualDigest !== expectedDigest) {
+    if (createHash('sha256').update(archive).digest('hex') !== expectedDigest) {
       return { error: 'This ZIP is different from the one you previewed. Preview it first.' };
     }
 
-    const entries = parseImageZip(archive);
-    const items = await prisma.menuItem.findMany({
-      where: { businessId },
-      select: { itemCode: true },
-    });
-    const canonicalCodes = new Map<string, string>();
-    for (const item of items) {
-      canonicalCodes.set(normalizeItemCode(item.itemCode), item.itemCode);
+    const plan = await planImageAssignment(businessId, parseImageZip(archive));
+    if (plan.matched.length === 0) {
+      return { error: 'None of the image filenames match an existing item_id' };
     }
 
-    const matched: { entry: (typeof entries)[number]; itemCode: string }[] = [];
-    for (const entry of entries) {
-      const itemCode = canonicalCodes.get(normalizeItemCode(entry.itemCode));
-      if (itemCode) matched.push({ entry, itemCode });
-    }
-    if (matched.length === 0) return { error: 'None of the image filenames match an existing item_id' };
-
-    let assigned = 0;
-    for (const { entry, itemCode } of matched) {
-      const media = await uploadMedia(user, businessId, {
-        kind: 'ITEM_IMAGE',
-        upload: {
-          fileName: entry.fileName.split('/').pop() ?? entry.fileName,
-          declaredContentType: entry.contentType,
-          bytes: entry.bytes,
-        },
-      });
-      await assignMedia(user, businessId, media.id, { type: 'item', itemCode });
-      assigned += 1;
-    }
+    const report = await assignPlannedImages(user, businessId, plan);
 
     revalidatePath(`/admin/businesses/${businessId}/data`);
     revalidatePath(`/admin/businesses/${businessId}/media`);
@@ -164,10 +137,18 @@ export async function confirmImageZipAction(
     revalidatePath(`/m/${publicId}`);
     invalidateProfile(publicId);
 
-    const unmatched = entries.length - matched.length;
+    const summary = describeImageAssignment(report);
+    const notAssigned = report.failed.length > 0 ? ` Not assigned: ${report.failed.join(', ')}.` : '';
+
+    if (report.created === 0 && report.replaced === 0) {
+      return { error: `No images were assigned — ${summary}.${notAssigned}` };
+    }
+
     return {
       ok: true,
-      message: `Assigned ${assigned} item images${unmatched ? `; ${unmatched} unmatched filenames were skipped` : ''}. The QR is unchanged.`,
+      message:
+        `Item photography updated: ${summary}.${notAssigned} ` +
+        'Items with no image in the ZIP keep the photograph they had, and the QR is unchanged.',
     };
   } catch (error) {
     if (error instanceof ImageZipError || error instanceof FileValidationError) {

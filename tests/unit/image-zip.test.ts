@@ -1,3 +1,4 @@
+import { deflateRawSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { createZip } from '@/server/qr/zip';
 import { ImageZipError, normalizeItemCode, parseImageZip } from '@/server/import/image-zip';
@@ -50,9 +51,61 @@ describe('image ZIP import', () => {
     expect(() => parseImageZip(archive)).toThrow(/not a valid image\/png/);
   });
 
+  it('refuses to expand an entry that lies about its uncompressed size', () => {
+    // The declared size is the archive author's to choose. Both the running
+    // uncompressed budget and the compression-ratio check read it, so an entry
+    // that under-declares passes them both; only a ceiling on the inflate
+    // itself stops 200MB being materialised from a 200KB archive.
+    const deflated = deflateRawSync(Buffer.alloc(200 * 1024 * 1024, 0));
+    const archive = zipDeclaring('ITEM-1.png', deflated, 12);
+
+    expect(() => parseImageZip(archive)).toThrow(ImageZipError);
+    expect(() => parseImageZip(archive)).toThrow(/Could not decompress/);
+    // Well under the 200MB the entry would have expanded to.
+    expect(archive.byteLength).toBeLessThan(1024 * 1024);
+  });
+
   it('rejects archives that contain no supported images', () => {
     const archive = createZip([{ name: 'README.txt', content: 'nothing to import' }]);
 
     expect(() => parseImageZip(archive)).toThrow(/contains no supported/);
   });
 });
+
+/**
+ * A single-entry ZIP whose headers declare `declaredSize` regardless of what
+ * the deflated payload actually expands to. `createZip` cannot express this,
+ * because it writes honest headers.
+ */
+function zipDeclaring(name: string, deflated: Buffer, declaredSize: number): Uint8Array {
+  const nameBytes = Buffer.from(name);
+
+  const local = Buffer.alloc(30);
+  local.writeUInt32LE(0x04034b50, 0);
+  local.writeUInt16LE(20, 4);
+  local.writeUInt16LE(8, 8);
+  local.writeUInt32LE(deflated.length, 18);
+  local.writeUInt32LE(declaredSize, 22);
+  local.writeUInt16LE(nameBytes.length, 26);
+
+  const central = Buffer.alloc(46);
+  central.writeUInt32LE(0x02014b50, 0);
+  central.writeUInt16LE(20, 4);
+  central.writeUInt16LE(20, 6);
+  central.writeUInt16LE(8, 10);
+  central.writeUInt32LE(deflated.length, 20);
+  central.writeUInt32LE(declaredSize, 24);
+  central.writeUInt16LE(nameBytes.length, 28);
+
+  const localBlock = Buffer.concat([local, nameBytes, deflated]);
+  const centralBlock = Buffer.concat([central, nameBytes]);
+
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(1, 8);
+  eocd.writeUInt16LE(1, 10);
+  eocd.writeUInt32LE(centralBlock.length, 12);
+  eocd.writeUInt32LE(localBlock.length, 16);
+
+  return new Uint8Array(Buffer.concat([localBlock, centralBlock, eocd]));
+}

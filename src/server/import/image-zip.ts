@@ -172,7 +172,22 @@ function extractEntry(
   const compressed = bytes.subarray(dataStart, dataEnd);
   let result: Uint8Array;
   try {
-    result = entry.method === 0 ? new Uint8Array(compressed) : new Uint8Array(inflateRawSync(compressed));
+    // The declared size is the attacker's to choose, so it cannot be trusted
+    // as a fact — but it can be enforced as a ceiling. Without this, an entry
+    // declaring 12 bytes and carrying 200KB of deflated zeros still expands to
+    // 200MB in memory before the size check below rejects it; a 100MB archive
+    // of those takes the container down. zlib stops at the ceiling instead.
+    result =
+      entry.method === 0
+        ? new Uint8Array(compressed)
+        : new Uint8Array(
+            inflateRawSync(compressed, {
+              maxOutputLength: Math.min(
+                Math.max(entry.uncompressedSize, 1),
+                MAX_TOTAL_UNCOMPRESSED_BYTES,
+              ),
+            }),
+          );
   } catch {
     throw new ImageZipError(`Could not decompress ${entry.fileName}`);
   }
