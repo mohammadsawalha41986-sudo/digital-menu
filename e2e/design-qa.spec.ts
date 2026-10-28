@@ -19,6 +19,7 @@ const DEMOS = [
   { publicId: 'DEM005', template: 'bold' },
   { publicId: 'DEM006', template: 'casual' },
   { publicId: 'DEM007', template: 'hospitality' },
+  { publicId: 'SBH001', template: 'street-food' },
 ] as const;
 
 test('each demo renders the template family it is configured with', async ({ page }) => {
