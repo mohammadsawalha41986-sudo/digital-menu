@@ -92,7 +92,14 @@ describe('template / theme separation', () => {
 });
 
 describe('stylesheet discipline across every family', () => {
-  const families = listTemplates().map((template) => template.key);
+  // `street-food` is a hoisted React app (the Sabah El Lail reference app
+  // ported in from its own ZIP), not a hand-written stylesheet template.
+  // Its CSS lives under `sabah/sabah.css` and its visual DNA is Tailwind
+  // utility classes compiled at build time — none of the BEM-prefix / no-hex
+  // / variant assertions below apply, so the family opts out of this suite.
+  const families = listTemplates()
+    .map((template) => template.key)
+    .filter((key) => key !== 'street-food');
 
   const stylesheets = families.map((key) => ({
     key,
@@ -152,19 +159,23 @@ describe('stylesheet discipline across every family', () => {
 });
 
 describe('template families are structurally distinct', () => {
-  const sources = listTemplates().map((template) => {
-    // Keys may be kebab-case (`street-food`); the component file name is
-    // PascalCase (`StreetFoodTemplate.tsx`). Convert consistently.
-    const pascal = template.key
-      .split('-')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join('');
-    const file = `${pascal}Template.tsx`;
-    return {
-      key: template.key,
-      source: readFileSync(path.join(process.cwd(), `src/templates/${template.key}/${file}`), 'utf8'),
-    };
-  });
+  const sources = listTemplates()
+    // `street-food` carries no BEM prefix of its own — see the opt-out
+    // note on the stylesheet-discipline suite above.
+    .filter((template) => template.key !== 'street-food')
+    .map((template) => {
+      // Keys may be kebab-case (`street-food`); the component file name is
+      // PascalCase (`StreetFoodTemplate.tsx`). Convert consistently.
+      const pascal = template.key
+        .split('-')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+      const file = `${pascal}Template.tsx`;
+      return {
+        key: template.key,
+        source: readFileSync(path.join(process.cwd(), `src/templates/${template.key}/${file}`), 'utf8'),
+      };
+    });
 
   it('gives every family its own class prefix, so no two share a stylesheet', () => {
     const prefixes = sources.map(({ key, source }) => {
@@ -203,6 +214,8 @@ describe('template families are structurally distinct', () => {
   it('implements every declared variant in the family stylesheet', () => {
     // A variant offered in admin that changes nothing would be a lie.
     for (const template of listTemplates()) {
+      // See the stylesheet-discipline opt-out above.
+      if (template.key === 'street-food') continue;
       const css = readFileSync(
         path.join(process.cwd(), `src/templates/${template.key}/${template.key}.css`),
         'utf8',
