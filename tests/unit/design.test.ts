@@ -100,7 +100,7 @@ describe('stylesheet discipline across every family', () => {
   }));
 
   it('has a stylesheet for every registered family', () => {
-    expect(stylesheets).toHaveLength(10);
+    expect(stylesheets).toHaveLength(families.length);
   });
 
   it.each(stylesheets)('$key hard-codes no colour', ({ css }) => {
@@ -153,7 +153,13 @@ describe('stylesheet discipline across every family', () => {
 
 describe('template families are structurally distinct', () => {
   const sources = listTemplates().map((template) => {
-    const file = `${template.key.charAt(0).toUpperCase()}${template.key.slice(1)}Template.tsx`;
+    // Keys may be kebab-case (`street-food`); the component file name is
+    // PascalCase (`StreetFoodTemplate.tsx`). Convert consistently.
+    const pascal = template.key
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('');
+    const file = `${pascal}Template.tsx`;
     return {
       key: template.key,
       source: readFileSync(path.join(process.cwd(), `src/templates/${template.key}/${file}`), 'utf8'),
@@ -162,7 +168,8 @@ describe('template families are structurally distinct', () => {
 
   it('gives every family its own class prefix, so no two share a stylesheet', () => {
     const prefixes = sources.map(({ key, source }) => {
-      const matches = [...source.matchAll(/className="([a-z]+)__/g)].map((match) => match[1]);
+      // Keys may contain hyphens (`street-food`); allow them in the prefix.
+      const matches = [...source.matchAll(/className="([a-z-]+)__/g)].map((match) => match[1]);
       return { key, prefix: matches[0] };
     });
 
@@ -170,7 +177,7 @@ describe('template families are structurally distinct', () => {
       expect(entry.prefix, entry.key).toBe(entry.key);
     }
 
-    expect(new Set(prefixes.map((entry) => entry.prefix)).size).toBe(10);
+    expect(new Set(prefixes.map((entry) => entry.prefix)).size).toBe(prefixes.length);
   });
 
   it('states what structurally distinguishes each family', () => {

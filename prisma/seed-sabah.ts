@@ -418,7 +418,7 @@ async function upsertImageByUrl(
   prisma: PrismaClient,
   businessId: string,
   url: string,
-  kind: 'ITEM_IMAGE' | 'CATEGORY_IMAGE' | 'BUSINESS_LOGO',
+  kind: 'ITEM_IMAGE' | 'CATEGORY_IMAGE' | 'LOGO',
   altAr: string,
   altEn: string | null = null,
 ) {
@@ -493,7 +493,7 @@ export async function seedSabahElLail(prisma: PrismaClient, staffId: string) {
     prisma,
     business.id,
     '/sabah/assets/menu/logo_crop.png',
-    'BUSINESS_LOGO',
+    'LOGO',
     'شعار مطعم صباح الليل',
     'Sabah El Lail logo',
   );

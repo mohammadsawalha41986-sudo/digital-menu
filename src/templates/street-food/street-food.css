@@ -377,19 +377,21 @@
   }
 }
 
-/* Variant B — denser grid for very long menus. */
-.street-food[data-variant="b"] .street-food__grid {
+/* Variant B — denser grid for very long menus. The `data-variant` attribute
+ * is set on the profile root by the renderer, so the selector lives there
+ * rather than on `.street-food`. */
+[data-variant='b'] .street-food__grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 @media (min-width: 720px) {
-  .street-food[data-variant="b"] .street-food__grid {
+  [data-variant='b'] .street-food__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1200px) {
-  .street-food[data-variant="b"] .street-food__grid {
+  [data-variant='b'] .street-food__grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
