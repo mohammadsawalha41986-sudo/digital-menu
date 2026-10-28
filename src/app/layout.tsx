@@ -1,8 +1,30 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { cookies, headers } from 'next/headers';
+import { Cairo, Tajawal, Outfit } from 'next/font/google';
 import { LOCALE_COOKIE, bcp47Of, directionOf, resolveLocale } from '@/i18n/config';
 import './globals.css';
+
+// Served from this origin by next/font (no CSP change needed), and exposed
+// as CSS variables so the Sabah / Street Food template can reach them.
+const cairo = Cairo({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '600', '700', '800', '900'],
+  variable: '--font-cairo',
+  display: 'swap',
+});
+const tajawal = Tajawal({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '700', '800'],
+  variable: '--font-tajawal',
+  display: 'swap',
+});
+const outfit = Outfit({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-outfit',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Digital Profile OS',
@@ -29,7 +51,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   });
 
   return (
-    <html lang={bcp47Of(locale)} dir={directionOf(locale)}>
+    <html
+      lang={bcp47Of(locale)}
+      dir={directionOf(locale)}
+      className={`${cairo.variable} ${tajawal.variable} ${outfit.variable}`}
+    >
       <body>{children}</body>
     </html>
   );
