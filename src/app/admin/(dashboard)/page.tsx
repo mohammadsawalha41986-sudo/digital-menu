@@ -3,6 +3,7 @@ import { requireUser } from '@/server/auth/current-user';
 import { prisma } from '@/server/db/client';
 import { listBusinessesForUser } from '@/server/admin/business-service';
 import { getAttention } from '@/server/quality/attention';
+import { InstallSabahButton } from './install-sabah-button';
 
 /**
  * Dashboard home (master spec §19).
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
     profileViews,
     qrScans,
     recentAudits,
+    sabahExists,
   ] = await Promise.all([
     getAttention(user),
     prisma.business.count({ where: { id: { in: visibleIds }, status: 'ACTIVE' } }),
@@ -58,6 +60,7 @@ export default async function DashboardPage() {
         user: { select: { name: true } },
       },
     }),
+    prisma.business.findUnique({ where: { publicId: 'SBH001' }, select: { id: true } }),
     ]);
 
   return (
@@ -129,6 +132,10 @@ export default async function DashboardPage() {
           </ul>
         )}
       </section>
+
+      {user.role === 'SUPER_ADMIN' ? (
+        <InstallSabahButton installed={Boolean(sabahExists)} />
+      ) : null}
 
       <section className="admin__cards" aria-label="Overview">
         <Metric label="Businesses" value={businesses.length} />
