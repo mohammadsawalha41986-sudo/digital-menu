@@ -248,6 +248,13 @@ export function StreetFoodTemplate({ profile, locale, dictionary }: TemplateRend
                     <li
                       key={item.code}
                       className="street-food__card"
+                      data-item=""
+                      data-item-code={item.code}
+                      data-item-name-ar={item.nameAr}
+                      data-item-name-en={item.nameEn ?? item.nameAr}
+                      data-item-price={item.priceMinor !== null ? String(item.priceMinor) : undefined}
+                      data-item-currency={item.currency}
+                      data-item-image={item.image?.url ?? undefined}
                       data-unavailable={item.isUnavailable || undefined}
                     >
                       <ItemDisclosure

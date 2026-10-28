@@ -547,3 +547,278 @@
   font-size: var(--sys-type-sm);
   padding-block: var(--sys-space-4);
 }
+
+/* ============================================================
+ * ORDER CART  —  injected by src/server/profile/menu-cart.tsx
+ *
+ * The DOM below is created client-side, so these selectors never
+ * match on server render. The class names are owned by this family's
+ * cart feature (no `street-food__` prefix because the elements live
+ * on `<body>`, outside the article root), and no other family uses
+ * them.
+ * ============================================================ */
+
+/* "+" button added to each item card. */
+.menu-cart__add {
+  position: absolute;
+  inset-inline-end: var(--sys-space-2);
+  inset-block-end: var(--sys-space-2);
+  z-index: 1;
+  min-inline-size: 2.4rem;
+  min-block-size: 2.4rem;
+  padding: var(--sys-space-1) var(--sys-space-2);
+  border-radius: 999px;
+  border: 0;
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
+  font-size: var(--sys-type-base);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px -4px color-mix(in oklab, var(--brand-color-primary) 60%, transparent);
+  transition: transform 160ms ease-out;
+}
+
+.menu-cart__add:hover,
+.menu-cart__add:focus-visible {
+  transform: scale(1.08);
+}
+
+.menu-cart__add[data-in-cart] {
+  background: var(--brand-color-accent);
+  color: var(--brand-color-text);
+}
+
+/* The card already has `position: relative` through its parent, but the
+ * default `.street-food__card` doesn't; promote it so the button anchors. */
+.street-food__card {
+  position: relative;
+}
+
+/* Floating basket pill at the opposite edge of the dock. */
+.menu-cart__badge {
+  position: fixed;
+  inset-block-end: calc(var(--sys-tap-target) + var(--sys-space-4));
+  inset-inline-end: var(--sys-space-4);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-3) var(--sys-space-4);
+  border-radius: 999px;
+  border: 0;
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 32px -12px color-mix(in oklab, var(--brand-color-primary) 60%, transparent);
+  transition: transform 180ms ease-out, opacity 180ms ease-out;
+}
+
+.menu-cart__badge:hover,
+.menu-cart__badge:focus-visible {
+  transform: translateY(-2px);
+}
+
+.menu-cart__badge[data-empty] {
+  opacity: 0.4;
+  pointer-events: auto; /* still clickable so a visitor can read the empty state */
+}
+
+.menu-cart__badge-icon {
+  font-size: 1.2rem;
+}
+
+.menu-cart__badge-count {
+  min-inline-size: 1.2rem;
+  text-align: center;
+}
+
+.menu-cart__badge-label {
+  font-size: var(--sys-type-sm);
+}
+
+@media (min-width: 960px) {
+  .menu-cart__badge {
+    inset-block-end: var(--sys-space-6);
+  }
+}
+
+/* Scrim + drawer. */
+.menu-cart__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: color-mix(in oklab, var(--brand-color-text) 55%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.menu-cart__drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 11;
+  inline-size: min(26rem, 100vw);
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -20px 0 40px -20px color-mix(in oklab, var(--brand-color-text) 50%, transparent);
+}
+
+/* RTL mirror — in Arabic the drawer should slide from the left visually,
+ * which `inset-inline-end` handles automatically because logical
+ * properties flip with `dir`. */
+
+.menu-cart__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sys-space-4);
+  border-block-end: 1px solid var(--brand-color-border);
+}
+
+.menu-cart__title {
+  margin: 0;
+  font-size: var(--sys-type-lg);
+  font-weight: 800;
+}
+
+.menu-cart__close {
+  min-inline-size: var(--sys-tap-target);
+  min-block-size: var(--sys-tap-target);
+  border: 0;
+  background: transparent;
+  color: var(--brand-color-text);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.menu-cart__list {
+  margin: 0;
+  padding: var(--sys-space-3);
+  list-style: none;
+  overflow-y: auto;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.menu-cart__empty {
+  margin: 0;
+  padding: var(--sys-space-5);
+  text-align: center;
+  color: var(--brand-color-muted);
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-cart__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-2);
+  border: 1px solid var(--brand-color-border);
+  border-radius: 0.75rem;
+}
+
+.menu-cart__row-image {
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.menu-cart__row-body {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.menu-cart__row-name {
+  font-weight: 600;
+  font-size: var(--sys-type-base);
+  color: var(--brand-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-cart__row-price {
+  font-weight: 700;
+  color: var(--brand-color-primary);
+  font-size: var(--sys-type-sm);
+}
+
+.menu-cart__stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sys-space-1);
+}
+
+.menu-cart__step {
+  min-inline-size: 2.2rem;
+  min-block-size: 2.2rem;
+  border: 1px solid var(--brand-color-border);
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  border-radius: 999px;
+  font-size: var(--sys-type-base);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.menu-cart__qty {
+  min-inline-size: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.menu-cart__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-4);
+  border-block-start: 1px solid var(--brand-color-border);
+  background: var(--brand-color-background);
+}
+
+.menu-cart__total {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--sys-type-lg);
+  text-align: center;
+}
+
+.menu-cart__order {
+  padding: var(--sys-space-3);
+  border-radius: 999px;
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
+  text-decoration: none;
+  text-align: center;
+  font-weight: 800;
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-cart__clear {
+  padding: var(--sys-space-2);
+  border: 1px solid var(--brand-color-border);
+  background: transparent;
+  color: var(--brand-color-muted);
+  border-radius: 999px;
+  font-size: var(--sys-type-sm);
+  cursor: pointer;
+}
+
+/* Prevent background scroll while the drawer is open. */
+body[data-cart-open] {
+  overflow: hidden;
+}

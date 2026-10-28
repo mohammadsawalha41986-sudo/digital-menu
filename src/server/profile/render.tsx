@@ -16,6 +16,8 @@ import { AnalyticsScript } from './analytics-script';
 import { EmbedHeightScript } from './embed-script';
 import { MenuSearch } from './menu-search';
 import { menuSearchStrings } from './menu-search-strings';
+import { MenuCart } from './menu-cart';
+import { menuCartStrings } from './menu-cart-strings';
 import type { PublicProfile } from './types';
 
 /**
@@ -149,6 +151,19 @@ export async function renderProfile(
           visible, which is clutter rather than help. */}
       {countItems(profile) >= MENU_SEARCH_THRESHOLD ? (
         <MenuSearch strings={menuSearchStrings(locale)} />
+      ) : null}
+      {/* Order basket + WhatsApp hand-off, only on the Street Food family
+          (its composition is designed around it) and only when the business
+          has a WhatsApp number. Embedded views have no basket — a cart on
+          someone else's website would be confusing. */}
+      {definition.key === 'street-food' && profile.contact.whatsapp && !options.embed ? (
+        <MenuCart
+          publicId={profile.publicId}
+          whatsapp={profile.contact.whatsapp.replace(/[^0-9]/g, '')}
+          currency={profile.currency}
+          locale={locale}
+          strings={menuCartStrings(locale)}
+        />
       ) : null}
       {options.embed ? <EmbedHeightScript /> : null}
     </div>

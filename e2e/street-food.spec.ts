@@ -78,6 +78,44 @@ test('items render as a vertical photo-card grid, not horizontal rows', async ({
   expect(first.left).not.toEqual(second.left);
 });
 
+test('every priced, available item has an add-to-cart button after hydration', async ({ page }) => {
+  await page.goto(`${SABAH}?lang=ar`);
+
+  // The cart injects a button into each card asynchronously via useEffect;
+  // wait for the first one before counting.
+  await page.waitForSelector('[data-menu-cart-add]');
+
+  // Items with a price AND no `data-unavailable` all gain an add button.
+  const priced = await page.evaluate(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-item]'));
+    return nodes
+      .filter((n) => n.dataset.itemPrice && !n.hasAttribute('data-unavailable'))
+      .map((n) => Boolean(n.querySelector('[data-menu-cart-add]')));
+  });
+  expect(priced.length).toBeGreaterThan(5);
+  for (const hasButton of priced) expect(hasButton).toBe(true);
+});
+
+test('adding an item opens the cart drawer with the right WhatsApp link', async ({ page }) => {
+  await page.goto(`${SABAH}?lang=ar`);
+  await page.waitForSelector('[data-menu-cart-add]');
+
+  // Add the first available item.
+  await page.locator('[data-menu-cart-add]').first().click();
+
+  // The floating badge reports a count of 1 and the drawer opens on click.
+  await expect(page.locator('.menu-cart__badge-count')).toHaveText('1');
+  await page.locator('.menu-cart__badge').click();
+  await expect(page.locator('.menu-cart__drawer')).toBeVisible();
+
+  // The WhatsApp order button points at wa.me with Sabah El Lail's number
+  // (966580060067, seeded) and a non-empty encoded body.
+  const href = await page.locator('.menu-cart__order').getAttribute('href');
+  expect(href).toMatch(/^https:\/\/wa\.me\/966580060067\?text=/);
+  const bodyParam = new URL(href ?? '').searchParams.get('text');
+  expect(bodyParam?.length).toBeGreaterThan(0);
+});
+
 test('the WhatsApp dock action is promoted with the brand primary', async ({ page }) => {
   await page.goto(`${SABAH}?lang=ar`);
 
