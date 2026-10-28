@@ -1,0 +1,547 @@
+/*
+ * STREET FOOD — delivery-app composition, phone-first, big food photography.
+ *
+ * Motion personality: springy pop on card interaction, nothing that lingers;
+ * the stylesheet keeps motion short so a visitor on a cheap phone over 3G
+ * is not held up by it.
+ *
+ * Colours: this stylesheet never names a hex. Every colour is a
+ * `--brand-*` token resolved from the business's brand preset.
+ */
+
+.street-food {
+  --sf-card-radius: 1.25rem;
+  --sf-chip-size: 3.5rem;
+  --sf-hero-radius: 1.5rem;
+
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100%;
+  padding-block-end: calc(var(--sys-tap-target) + var(--sys-space-6));
+  background: var(--brand-color-background);
+  color: var(--brand-color-text);
+}
+
+/* --- Sticky identity bar ------------------------------------------------- */
+
+.street-food__bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-3) var(--sys-space-4);
+  background: color-mix(in oklab, var(--brand-color-surface) 92%, transparent);
+  backdrop-filter: saturate(1.6) blur(10px);
+  border-block-end: 1px solid var(--brand-color-border);
+}
+
+.street-food__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-3);
+  min-inline-size: 0;
+}
+
+.street-food__logo {
+  block-size: 2.25rem;
+  inline-size: auto;
+  border-radius: 999px;
+}
+
+.street-food__title {
+  margin: 0;
+  font-size: var(--sys-type-lg);
+  font-weight: 700;
+  color: var(--brand-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.street-food__locales {
+  display: inline-flex;
+  gap: var(--sys-space-1);
+}
+
+.street-food__locale {
+  padding: var(--sys-space-1) var(--sys-space-2);
+  border-radius: 999px;
+  font-size: var(--sys-type-sm);
+  color: var(--brand-color-muted);
+}
+
+.street-food__locale[aria-current="true"] {
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
+}
+
+/* --- Hero card ----------------------------------------------------------- */
+
+.street-food__hero {
+  margin: var(--sys-space-4);
+  padding: var(--sys-space-5);
+  border-radius: var(--sf-hero-radius);
+  background: linear-gradient(
+    135deg,
+    var(--brand-color-primary) 0%,
+    color-mix(in oklab, var(--brand-color-primary) 72%, var(--brand-color-accent)) 100%
+  );
+  color: var(--brand-color-surface);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sys-space-4);
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -12px color-mix(in oklab, var(--brand-color-primary) 50%, transparent);
+}
+
+.street-food__hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  min-inline-size: 0;
+}
+
+.street-food__hero-eyebrow {
+  margin: 0;
+  font-size: var(--sys-type-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
+.street-food__hero-headline {
+  margin: 0;
+  font-size: var(--sys-type-2xl);
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.street-food__hero-cta {
+  align-self: flex-start;
+  margin-block-start: var(--sys-space-3);
+  padding: var(--sys-space-3) var(--sys-space-5);
+  border-radius: 999px;
+  background: var(--brand-color-accent);
+  color: var(--brand-color-text);
+  font-weight: 700;
+  text-decoration: none;
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  transition: transform 160ms ease-out;
+}
+
+.street-food__hero-cta:hover,
+.street-food__hero-cta:focus-visible {
+  transform: translateY(-2px);
+}
+
+.street-food__hero-image {
+  inline-size: clamp(7rem, 28vw, 11rem);
+  block-size: clamp(7rem, 28vw, 11rem);
+  border-radius: 999px;
+  object-fit: cover;
+  border: 4px solid color-mix(in oklab, var(--brand-color-surface) 80%, transparent);
+}
+
+.street-food__hero-image--empty {
+  background: color-mix(in oklab, var(--brand-color-surface) 25%, transparent);
+}
+
+@media (max-width: 540px) {
+  .street-food__hero {
+    grid-template-columns: 1fr;
+    text-align: start;
+  }
+
+  .street-food__hero-image {
+    justify-self: start;
+    order: -1;
+  }
+}
+
+/* --- Category chip rail -------------------------------------------------- */
+
+.street-food__chips {
+  position: sticky;
+  inset-block-start: calc(var(--sys-space-3) * 2 + 2.25rem);
+  z-index: 2;
+  background: color-mix(in oklab, var(--brand-color-background) 92%, transparent);
+  backdrop-filter: blur(8px);
+  padding-block: var(--sys-space-2);
+  border-block-end: 1px solid var(--brand-color-border);
+}
+
+.street-food__chips-rail {
+  margin: 0;
+  padding: 0 var(--sys-space-4);
+  list-style: none;
+  display: flex;
+  gap: var(--sys-space-3);
+  overflow-x: auto;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: none;
+}
+
+.street-food__chips-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.street-food__chip-item {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+.street-food__chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sys-space-1);
+  padding: var(--sys-space-2);
+  border-radius: 1rem;
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  color: var(--brand-color-text);
+  text-decoration: none;
+  min-inline-size: 5rem;
+  transition: transform 160ms ease-out, border-color 160ms ease-out;
+}
+
+.street-food__chip:hover,
+.street-food__chip:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--brand-color-primary);
+}
+
+.street-food__chip-image {
+  inline-size: var(--sf-chip-size);
+  block-size: var(--sf-chip-size);
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.street-food__chip-image--empty {
+  background: color-mix(in oklab, var(--brand-color-primary) 12%, transparent);
+}
+
+.street-food__chip-label {
+  font-size: var(--sys-type-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* --- Featured rail (horizontal) ------------------------------------------ */
+
+.street-food__featured {
+  margin: 0 calc(var(--sys-space-4) * -1);
+  padding-block-end: var(--sys-space-2);
+}
+
+.street-food__featured-rail {
+  margin: 0;
+  padding: 0 var(--sys-space-4);
+  list-style: none;
+  display: flex;
+  gap: var(--sys-space-3);
+  overflow-x: auto;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: none;
+}
+
+.street-food__featured-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.street-food__featured-item {
+  scroll-snap-align: start;
+  flex: 0 0 14rem;
+  display: flex;
+  flex-direction: column;
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--sf-card-radius);
+  overflow: hidden;
+}
+
+.street-food__featured-media {
+  aspect-ratio: 16 / 10;
+  background: color-mix(in oklab, var(--brand-color-primary) 6%, transparent);
+}
+
+.street-food__featured-image {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.street-food__featured-image--empty {
+  background: color-mix(in oklab, var(--brand-color-primary) 10%, transparent);
+}
+
+.street-food__featured-body {
+  padding: var(--sys-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+}
+
+.street-food__featured-name {
+  font-weight: 700;
+  font-size: var(--sys-type-base);
+}
+
+.street-food__featured-price {
+  font-weight: 800;
+  color: var(--brand-color-primary);
+}
+
+/* --- Body / menu --------------------------------------------------------- */
+
+.street-food__body {
+  padding: var(--sys-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-6);
+}
+
+.street-food__menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-5);
+}
+
+.street-food__menu-title {
+  margin: 0;
+  font-size: var(--sys-type-xl);
+  font-weight: 800;
+}
+
+.street-food__empty {
+  padding: var(--sys-space-6);
+  text-align: center;
+  color: var(--brand-color-muted);
+}
+
+.street-food__category {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  scroll-margin-block-start: 8rem;
+}
+
+.street-food__category-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+}
+
+.street-food__category-title {
+  margin: 0;
+  font-size: var(--sys-type-lg);
+  font-weight: 800;
+  color: var(--brand-color-text);
+}
+
+.street-food__category-lede {
+  margin: 0;
+  color: var(--brand-color-muted);
+  font-size: var(--sys-type-sm);
+}
+
+/* --- Card grid ----------------------------------------------------------- */
+
+.street-food__grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sys-space-3);
+}
+
+@media (min-width: 720px) {
+  .street-food__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sys-space-4);
+  }
+}
+
+@media (min-width: 1200px) {
+  .street-food__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Variant B — denser grid for very long menus. */
+.street-food[data-variant="b"] .street-food__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 720px) {
+  .street-food[data-variant="b"] .street-food__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .street-food[data-variant="b"] .street-food__grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.street-food__card {
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--sf-card-radius);
+  overflow: hidden;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out;
+}
+
+.street-food__card:hover,
+.street-food__card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -16px color-mix(in oklab, var(--brand-color-text) 40%, transparent);
+}
+
+.street-food__card[data-unavailable] {
+  opacity: 0.55;
+}
+
+.street-food__card-disclosure {
+  display: block;
+}
+
+.street-food__card-face {
+  display: flex;
+  flex-direction: column;
+}
+
+.street-food__card-media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: color-mix(in oklab, var(--brand-color-primary) 6%, transparent);
+}
+
+.street-food__card-image {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.street-food__card-image--empty {
+  background: color-mix(in oklab, var(--brand-color-primary) 10%, transparent);
+}
+
+.street-food__card-kcal {
+  position: absolute;
+  inset-block-start: var(--sys-space-2);
+  inset-inline-start: var(--sys-space-2);
+  padding: var(--sys-space-1) var(--sys-space-2);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--brand-color-text) 70%, transparent);
+  color: var(--brand-color-surface);
+  font-size: var(--sys-type-xs);
+  font-weight: 600;
+}
+
+.street-food__card-flag {
+  position: absolute;
+  inset-block-end: var(--sys-space-2);
+  inset-inline-end: var(--sys-space-2);
+  padding: var(--sys-space-1) var(--sys-space-2);
+  border-radius: 999px;
+  background: var(--brand-color-muted);
+  color: var(--brand-color-surface);
+  font-size: var(--sys-type-xs);
+}
+
+.street-food__card-body {
+  padding: var(--sys-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+}
+
+.street-food__card-name {
+  font-weight: 700;
+  font-size: var(--sys-type-base);
+  color: var(--brand-color-text);
+  line-height: 1.3;
+}
+
+.street-food__card-summary {
+  font-size: var(--sys-type-sm);
+  color: var(--brand-color-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.street-food__card-price {
+  margin-block-start: var(--sys-space-2);
+  font-weight: 800;
+  font-size: var(--sys-type-base);
+  color: var(--brand-color-primary);
+}
+
+.street-food__card-description {
+  padding: 0 var(--sys-space-3) var(--sys-space-3);
+  color: var(--brand-color-text);
+  font-size: var(--sys-type-sm);
+}
+
+/* --- Dock (mobile contact bar) ------------------------------------------- */
+
+.street-food__dock {
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: 4;
+  display: flex;
+  gap: 1px;
+  background: var(--brand-color-border);
+  border-block-start: 1px solid var(--brand-color-border);
+}
+
+.street-food__dock-action {
+  flex: 1 1 0;
+  min-block-size: var(--sys-tap-target);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-3);
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.street-food__dock-action[data-key="whatsapp"] {
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
+}
+
+@media (min-width: 960px) {
+  .street-food__dock {
+    position: static;
+    margin: var(--sys-space-4);
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+}
+
+.street-food__platform {
+  text-align: center;
+  color: var(--brand-color-muted);
+  font-size: var(--sys-type-sm);
+  padding-block: var(--sys-space-4);
+}
