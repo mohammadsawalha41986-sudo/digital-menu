@@ -8,6 +8,7 @@ import { HospitalityTemplate } from './hospitality/HospitalityTemplate';
 import { CafeTemplate } from './cafe/CafeTemplate';
 import { CasualTemplate } from './casual/CasualTemplate';
 import { PremiumTemplate } from './premium/PremiumTemplate';
+import { StreetFoodTemplate } from './street-food/StreetFoodTemplate';
 import type { ResolvedTemplate, TemplateDefinition } from './types';
 
 /**
@@ -151,6 +152,18 @@ const PREMIUM: TemplateDefinition = {
   render: PremiumTemplate,
 };
 
+const STREET_FOOD: TemplateDefinition = {
+  key: 'street-food',
+  label: 'Street Food',
+  description:
+    'Delivery-app composition: a full-bleed photo-led hero card, a horizontally snap-scrolling category chip rail as the only navigation, and items set as a vertical photo-card grid (2 columns on phone, up to 4 on wide screens). Price sits on the card, not aligned to a rule.',
+  variants: [
+    { key: 'a', label: 'Street Food A', description: 'Standard — 2/3/4 column grid.' },
+    { key: 'b', label: 'Street Food B', description: 'Compact — denser grid for very long menus.' },
+  ],
+  render: StreetFoodTemplate,
+};
+
 const TEMPLATES: readonly TemplateDefinition[] = [
   EDITORIAL,
   LUXURY,
@@ -162,6 +175,7 @@ const TEMPLATES: readonly TemplateDefinition[] = [
   CAFE,
   CASUAL,
   PREMIUM,
+  STREET_FOOD,
 ];
 
 export const DEFAULT_TEMPLATE_KEY = EDITORIAL.key;
@@ -208,7 +222,7 @@ export function resolveTemplate(templateKey: string, variantKey: string): Resolv
  * business may use any template.
  */
 export const SUGGESTED_TEMPLATES: Record<string, readonly string[]> = {
-  RESTAURANT: ['editorial', 'premium', 'bold', 'casual', 'dark'],
+  RESTAURANT: ['street-food', 'editorial', 'premium', 'bold', 'casual', 'dark'],
   CAFE: ['cafe', 'editorial', 'minimal', 'modern'],
   BAKERY: ['casual', 'cafe', 'editorial', 'premium'],
   DESSERT: ['cafe', 'casual', 'bold'],

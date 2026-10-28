@@ -60,6 +60,21 @@ const CSP = [
  */
 const EMBED_CSP = CSP.replace("frame-ancestors 'self'", 'frame-ancestors *');
 
+/**
+ * The /sabah/* exception.
+ *
+ * `/sabah/*` is a self-contained Vite-built demo of the Sabah El Lail
+ * restaurant template, kept as a static reference until the family is
+ * ported into the Next templates registry. It needs Google Fonts (Cairo /
+ * Tajawal / Outfit) and nothing else beyond the default policy. The scope
+ * is one path prefix with no admin surface, so the extra style/font origin
+ * does not widen anything that could be abused.
+ */
+const SABAH_CSP = CSP.replace(
+  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+).replace("font-src 'self' data:", "font-src 'self' data: https://fonts.gstatic.com");
+
 const SECURITY_HEADERS = [
   { key: 'Content-Security-Policy', value: CSP },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -99,13 +114,10 @@ const config: NextConfig = {
   async headers() {
     return [
       {
-        // Everything except `/embed`. Next *appends* the headers of every
-        // matching rule rather than letting a later rule win, so the embed
-        // exception has to be carved out of the catch-all: left in, this rule
-        // kept sending `X-Frame-Options: SAMEORIGIN` alongside the embed CSP,
-        // and the browsers that still read the old header refused the frame
-        // while the CSP said it was fine.
-        source: '/((?!embed/|embed$).*)',
+        // Everything except `/embed` and `/sabah`. Next *appends* the headers
+        // of every matching rule rather than letting a later rule win, so
+        // every exception has to be carved out of the catch-all.
+        source: '/((?!embed/|embed$|sabah/|sabah$).*)',
         headers: [...SECURITY_HEADERS, ...PRODUCTION_HEADERS],
       },
       {
@@ -119,6 +131,24 @@ const config: NextConfig = {
           ...PRODUCTION_HEADERS,
         ],
       },
+      {
+        source: '/sabah/:path*',
+        headers: [
+          ...SECURITY_HEADERS.filter(
+            (header) => header.key !== 'Content-Security-Policy',
+          ),
+          { key: 'Content-Security-Policy', value: SABAH_CSP },
+          ...PRODUCTION_HEADERS,
+        ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      // Serve the Vite-built index when the user hits `/sabah` with no
+      // trailing path; the Vite bundle references its own assets under
+      // `/sabah/assets/*` so no further rewrites are needed.
+      { source: '/sabah', destination: '/sabah/index.html' },
     ];
   },
 };

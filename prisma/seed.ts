@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { generatePassword, hashPassword } from '../src/server/auth/password';
 import { seedArtwork } from './seed-artwork';
+import { seedSabahElLail } from './seed-sabah';
 
 /**
  * Deterministic development seed.
@@ -463,6 +464,11 @@ async function main() {
     },
   ]);
   await seedMenu(arabicOnly.id, 'main', 'قائمة المشروبات', null, cafeMenu, staff.id);
+
+  // Sabah El Lail — a photo-led RESTAURANT seeded against the new
+  // `street-food` template, so a developer gets a real-looking demo of that
+  // family at `/m/SBH001` the first time they run the seed.
+  await seedSabahElLail(prisma, staff.id);
 
   // A draft menu on an active business: present in the database, invisible.
   await prisma.menu.upsert({

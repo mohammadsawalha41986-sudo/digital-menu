@@ -770,6 +770,24 @@ export async function listBusinessesForUser(user: AuthenticatedUser) {
       status: true,
       templateKey: true,
       updatedAt: true,
+      // Enough brand surface to render a swatch next to the business name
+      // and show the live palette in listings — the dashboard uses this to
+      // make each row visually distinguishable at a glance.
+      brandTheme: {
+        select: {
+          colorPrimary: true,
+          colorAccent: true,
+          colorBackground: true,
+        },
+      },
+      logo: {
+        select: {
+          storageKey: true,
+          sourceUrl: true,
+          altAr: true,
+          altEn: true,
+        },
+      },
       _count: { select: { menus: true, branches: true, items: true } },
     },
   });

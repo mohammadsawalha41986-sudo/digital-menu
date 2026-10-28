@@ -10,6 +10,8 @@ const config = [
       'src/generated/**',
       'playwright-report/**',
       'test-results/**',
+      // Vite-built reference demo — not hand-written source.
+      'public/sabah/**',
     ],
   },
   ...coreWebVitals,
