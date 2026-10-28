@@ -140,6 +140,46 @@ export default async function DashboardPage() {
         <Metric label="QR scans" value={qrScans} />
       </section>
 
+      {businesses.length > 0 ? (
+        <section className="admin__panel" aria-labelledby="shortcuts-heading">
+          <header className="admin__panel-head">
+            <h2 className="admin__panel-title" id="shortcuts-heading">
+              Jump to a restaurant
+            </h2>
+            <Link href="/admin/businesses" className="admin__button admin__button--secondary admin__button--small">
+              See all
+            </Link>
+          </header>
+          <div className="dashboard-shortcuts">
+            {businesses.slice(0, 6).map((business) => {
+              const brand = business.brandTheme;
+              const chipStyle: Record<string, string> = brand
+                ? { '--chip-primary': brand.colorPrimary, '--chip-accent': brand.colorAccent }
+                : {};
+              return (
+                <Link
+                  key={business.id}
+                  href={`/admin/businesses/${business.id}`}
+                  className="dashboard-shortcut"
+                  data-status={business.status.toLowerCase()}
+                  style={chipStyle}
+                >
+                  <span className="dashboard-shortcut__swatch" aria-hidden="true" />
+                  <span className="dashboard-shortcut__text">
+                    <span className="dashboard-shortcut__name">
+                      {business.nameEn ?? business.nameAr}
+                    </span>
+                    <span className="dashboard-shortcut__meta">
+                      {business._count.menus} menus · {business._count.items} items
+                    </span>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       <section className="admin__panel">
         <h2 className="admin__panel-title">Recent activity</h2>
         {recentAudits.length === 0 ? (

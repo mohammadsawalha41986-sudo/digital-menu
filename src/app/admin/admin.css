@@ -2271,3 +2271,75 @@
   padding: var(--sys-space-1) var(--sys-space-3);
   font-size: var(--sys-type-sm);
 }
+
+/* ========================================================================
+ * Dashboard shortcuts — a six-up chip rail on the admin home page.
+ * ======================================================================== */
+
+.admin__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  margin-block-end: var(--sys-space-3);
+}
+
+.dashboard-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--sys-space-2);
+}
+
+.dashboard-shortcut {
+  --chip-primary: var(--sys-color-text);
+  --chip-accent: var(--sys-color-muted);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-3);
+  border-radius: var(--sys-radius-md, 0.75rem);
+  background: var(--sys-color-surface);
+  border: 1px solid var(--sys-color-border);
+  color: var(--sys-color-text);
+  text-decoration: none;
+  min-inline-size: 0;
+  transition: transform 160ms ease-out, border-color 160ms ease-out;
+}
+
+.dashboard-shortcut:hover,
+.dashboard-shortcut:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--chip-primary);
+}
+
+.dashboard-shortcut__swatch {
+  flex: 0 0 auto;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--chip-primary), var(--chip-accent));
+}
+
+.dashboard-shortcut__text {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.dashboard-shortcut__name {
+  font-weight: 700;
+  color: var(--sys-color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-shortcut__meta {
+  color: var(--sys-color-muted);
+  font-size: var(--sys-type-sm);
+}
+
+.dashboard-shortcut[data-status='draft'] {
+  border-style: dashed;
+}
