@@ -2037,3 +2037,237 @@
   font-weight: 800;
   color: var(--preview-primary);
 }
+
+/* ========================================================================
+ * Business list — visual card grid on /admin/businesses.
+ * ======================================================================== */
+
+.business-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sys-space-3);
+  margin-block-end: var(--sys-space-4);
+}
+
+@media (max-width: 540px) {
+  .business-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.business-stats__tile {
+  padding: var(--sys-space-4);
+  border-radius: var(--sys-radius-md, 0.75rem);
+  background: var(--sys-color-surface);
+  border: 1px solid var(--sys-color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+}
+
+.business-stats__value {
+  font-size: var(--sys-type-2xl, 2rem);
+  font-weight: 800;
+  color: var(--sys-color-text);
+  line-height: 1;
+}
+
+.business-stats__label {
+  font-size: var(--sys-type-sm);
+  color: var(--sys-color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.business-stats__tile[data-tone='ok'] .business-stats__value {
+  color: #2e7d32;
+}
+
+.business-stats__tile[data-tone='warn'] .business-stats__value {
+  color: #c77c00;
+}
+
+/* --- Card grid ---------------------------------------------------------- */
+
+.business-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sys-space-4);
+}
+
+@media (min-width: 700px) {
+  .business-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .business-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.business-card {
+  --card-primary: var(--sys-color-text);
+  --card-accent: var(--sys-color-text);
+  --card-background: var(--sys-color-surface);
+
+  border-radius: var(--sys-radius-md, 0.75rem);
+  background: var(--sys-color-surface);
+  border: 1px solid var(--sys-color-border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out;
+}
+
+.business-card:hover,
+.business-card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -16px rgba(0, 0, 0, 0.25);
+}
+
+.business-card[data-status='draft'] {
+  border-style: dashed;
+}
+
+.business-card[data-status='inactive'] {
+  opacity: 0.75;
+}
+
+.business-card__cover {
+  display: block;
+  aspect-ratio: 16 / 7;
+  background: linear-gradient(135deg, var(--card-primary), var(--card-accent));
+  position: relative;
+  overflow: hidden;
+}
+
+.business-card__logo {
+  position: absolute;
+  inset-block-end: var(--sys-space-3);
+  inset-inline-start: var(--sys-space-3);
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--card-background);
+  border: 3px solid var(--card-background);
+  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.4);
+}
+
+.business-card__logo-fallback {
+  position: absolute;
+  inset-block-end: var(--sys-space-3);
+  inset-inline-start: var(--sys-space-3);
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: 999px;
+  background: var(--card-background);
+  color: var(--card-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.5rem;
+  border: 3px solid var(--card-background);
+}
+
+.business-card__body {
+  padding: var(--sys-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  flex: 1 1 0;
+}
+
+.business-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sys-space-2);
+}
+
+.business-card__name {
+  margin: 0;
+  font-size: var(--sys-type-lg);
+  font-weight: 700;
+}
+
+.business-card__name a {
+  color: var(--sys-color-text);
+  text-decoration: none;
+}
+
+.business-card__name a:hover,
+.business-card__name a:focus-visible {
+  text-decoration: underline;
+}
+
+.business-card__meta {
+  margin: 0;
+  color: var(--sys-color-muted);
+  font-size: var(--sys-type-sm);
+}
+
+.business-card__meta code {
+  background: color-mix(in oklab, var(--sys-color-text) 6%, transparent);
+  padding: 2px 6px;
+  border-radius: 0.25rem;
+  font-family: var(--sys-font-mono, ui-monospace, monospace);
+}
+
+.business-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sys-space-2);
+  margin: 0;
+}
+
+.business-card__stats > div {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sys-space-2);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--sys-color-text) 4%, transparent);
+}
+
+.business-card__stats dt {
+  font-size: var(--sys-type-xs);
+  color: var(--sys-color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.business-card__stats dd {
+  margin: 0;
+  font-size: var(--sys-type-lg);
+  font-weight: 800;
+}
+
+.business-card__swatches {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: var(--sys-space-1);
+}
+
+.business-card__swatches li {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.business-card__actions {
+  display: flex;
+  gap: var(--sys-space-2);
+  flex-wrap: wrap;
+  margin-block-start: auto;
+}
+
+.admin__button--small {
+  padding: var(--sys-space-1) var(--sys-space-3);
+  font-size: var(--sys-type-sm);
+}
