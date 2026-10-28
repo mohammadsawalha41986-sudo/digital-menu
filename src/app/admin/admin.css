@@ -1793,3 +1793,247 @@
 .admin__url-preview[data-state='failed'] .admin__hint {
   color: var(--admin-danger);
 }
+
+/* ========================================================================
+ * Brand editor — live-preview panel on /admin/businesses/[id]/brand.
+ * ======================================================================== */
+
+.brand-editor {
+  display: grid;
+  gap: var(--sys-space-5);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1100px) {
+  .brand-editor {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* --- Presets strip ------------------------------------------------------ */
+
+.brand-editor__presets {
+  margin-block-end: var(--sys-space-4);
+}
+
+.brand-editor__presets-title {
+  margin: 0 0 var(--sys-space-2);
+  color: var(--sys-color-muted);
+  font-size: var(--sys-type-sm);
+}
+
+.brand-editor__preset-row {
+  display: flex;
+  gap: var(--sys-space-2);
+  flex-wrap: wrap;
+}
+
+.brand-editor__preset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border: 1px solid var(--sys-color-border);
+  border-radius: 999px;
+  background: var(--sys-color-surface);
+  color: var(--sys-color-text);
+  cursor: pointer;
+  font-size: var(--sys-type-sm);
+  transition: border-color 160ms ease-out, transform 160ms ease-out;
+}
+
+.brand-editor__preset:hover,
+.brand-editor__preset:focus-visible {
+  border-color: var(--sys-color-accent, #4a7a4a);
+  transform: translateY(-1px);
+}
+
+.brand-editor__preset-swatches {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.brand-editor__preset-swatches > span {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: inline-block;
+}
+
+.brand-editor__preset-label {
+  font-weight: 600;
+}
+
+/* --- Color input row ---------------------------------------------------- */
+
+.brand-editor__color-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+}
+
+.brand-editor__color-input {
+  inline-size: 3rem;
+  block-size: 2.5rem;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.brand-editor__color-code {
+  font-size: var(--sys-type-sm);
+  color: var(--sys-color-muted);
+  font-family: var(--sys-font-mono, ui-monospace, monospace);
+}
+
+/* --- Preview panel ------------------------------------------------------ */
+
+.brand-editor__preview {
+  position: sticky;
+  inset-block-start: var(--sys-space-4);
+  align-self: start;
+  padding: var(--sys-space-4);
+  border-radius: var(--sys-radius-md, 0.75rem);
+  background: var(--sys-color-surface);
+  border: 1px solid var(--sys-color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  min-inline-size: 0;
+  max-block-size: calc(100vh - var(--sys-space-6));
+  overflow-y: auto;
+}
+
+.brand-editor__preview-title {
+  margin: 0;
+  font-weight: 700;
+  color: var(--sys-color-muted);
+  font-size: var(--sys-type-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* --- Contrast pills ----------------------------------------------------- */
+
+.brand-editor__contrast {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-1);
+}
+
+.brand-editor__contrast-pill {
+  display: inline-flex;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border-radius: 0.5rem;
+  font-size: var(--sys-type-sm);
+}
+
+.brand-editor__contrast-pill[data-state='ok'] {
+  background: color-mix(in oklab, #4caf50 15%, var(--sys-color-surface));
+  color: var(--sys-color-text);
+}
+
+.brand-editor__contrast-pill[data-state='warn'] {
+  background: color-mix(in oklab, #ff9800 20%, var(--sys-color-surface));
+  color: var(--sys-color-text);
+}
+
+.brand-editor__contrast-pill[data-state='fail'] {
+  background: color-mix(in oklab, #e53935 20%, var(--sys-color-surface));
+  color: var(--sys-color-text);
+}
+
+.brand-editor__contrast-label {
+  font-weight: 500;
+}
+
+.brand-editor__contrast-ratio {
+  font-weight: 700;
+  font-family: var(--sys-font-mono, ui-monospace, monospace);
+}
+
+/* --- Mock preview stage ------------------------------------------------- */
+
+.brand-editor__preview-stage {
+  padding: var(--sys-space-3);
+  border-radius: var(--sys-radius-md, 0.75rem);
+  background: var(--preview-background);
+  color: var(--preview-text);
+  border: 1px solid var(--preview-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  overflow: hidden;
+}
+
+.brand-editor__preview-hero {
+  padding: var(--sys-space-3);
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, var(--preview-primary), var(--preview-secondary));
+  color: var(--preview-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sys-space-1);
+}
+
+.brand-editor__preview-eyebrow {
+  font-size: var(--sys-type-xs);
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.brand-editor__preview-headline {
+  font-weight: 800;
+  font-size: var(--sys-type-base);
+}
+
+.brand-editor__preview-cta {
+  margin-block-start: var(--sys-space-2);
+  padding: var(--sys-space-1) var(--sys-space-3);
+  border-radius: 999px;
+  background: var(--preview-accent);
+  color: var(--preview-text);
+  font-weight: 700;
+  font-size: var(--sys-type-xs);
+}
+
+.brand-editor__preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sys-space-2);
+}
+
+.brand-editor__preview-card {
+  border-radius: 0.75rem;
+  border: 1px solid var(--preview-border);
+  background: var(--preview-surface);
+  overflow: hidden;
+}
+
+.brand-editor__preview-image {
+  aspect-ratio: 1 / 1;
+  background: color-mix(in oklab, var(--preview-primary) 10%, var(--preview-surface));
+}
+
+.brand-editor__preview-card-body {
+  padding: var(--sys-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-editor__preview-card-name {
+  font-size: var(--sys-type-sm);
+  font-weight: 600;
+  color: var(--preview-text);
+}
+
+.brand-editor__preview-card-price {
+  font-size: var(--sys-type-sm);
+  font-weight: 800;
+  color: var(--preview-primary);
+}
