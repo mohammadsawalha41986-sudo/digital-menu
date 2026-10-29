@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SUPPORTED_CURRENCIES } from '@/lib/money';
 import { LOCALES } from '@/i18n/config';
+import { FONT_FACES } from '@/menu-studio/typography';
 
 /**
  * Input schemas for every admin write (master spec §127).
@@ -106,6 +107,8 @@ export const branchSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
 });
 
+const FONT_KEYS = FONT_FACES.map((face) => face.key) as [string, ...string[]];
+
 export const brandSchema = z.object({
   colorPrimary: hexColor,
   colorSecondary: hexColor,
@@ -115,8 +118,9 @@ export const brandSchema = z.object({
   colorText: hexColor,
   colorMuted: hexColor,
   colorBorder: hexColor,
-  fontHeading: z.enum(['system-sans', 'system-serif', 'system-mono']),
-  fontBody: z.enum(['system-sans', 'system-serif', 'system-mono']),
+  // Any face the typography catalogue ships; the editor offers exactly these.
+  fontHeading: z.enum(FONT_KEYS),
+  fontBody: z.enum(FONT_KEYS),
   radiusScale: z.enum(['none', 'sm', 'md', 'lg']),
 });
 

@@ -12,8 +12,14 @@
 [data-template='street-food'] {
   background-color: #0d120e;
   color: #f3f4f6;
-  font-family: var(--font-cairo), var(--font-tajawal), 'Cairo', 'Tajawal',
-    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* The restaurant's own fonts, chosen in the brand editor. `--font-sans`
+     is what Tailwind's `font-sans` utility reads. */
+  --font-sans: var(--brand-font-body);
+  font-family: var(--brand-font-body);
+}
+
+[data-template='street-food'] :is(h1, h2, h3, h4) {
+  font-family: var(--brand-font-heading);
 }
 
 /* Scrollbar utility used by the category rail. */

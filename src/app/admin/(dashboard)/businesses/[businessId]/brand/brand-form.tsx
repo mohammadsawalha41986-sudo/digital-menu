@@ -3,6 +3,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { ActionForm, Field, SelectField } from '../../../components';
 import type { ActionState } from '@/server/admin/actions';
+import { FONT_FACES } from '@/menu-studio/typography';
 
 /* Platform defaults — editors see these when no row exists. The three
  * "warm identity" presets below carry curated palettes operators can seed
@@ -21,11 +22,12 @@ const COLOR_FIELDS = [
 
 type ColorKey = (typeof COLOR_FIELDS)[number]['key'];
 
-const FONTS = [
-  { value: 'system-serif', label: 'Serif' },
-  { value: 'system-sans', label: 'Sans' },
-  { value: 'system-mono', label: 'Mono' },
-];
+// Every self-hosted face, labelled by its real family name so an owner
+// recognises it. The tabular mono face is for prices only, not a brand font.
+const FONTS = FONT_FACES.filter((face) => face.family !== null).map((face) => ({
+  value: face.key,
+  label: face.family ?? face.label,
+}));
 
 const RADIUS = [
   { value: 'none', label: 'Square' },

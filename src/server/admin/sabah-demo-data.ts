@@ -77,7 +77,7 @@ export const SABAH_BRAND = {
   colorText: '#1A0F08',
   colorMuted: '#7A6050',
   colorBorder: '#E8DCC8',
-  fontHeading: 'system-serif',
+  fontHeading: 'system-sans',
   fontBody: 'system-sans',
   radiusScale: 'lg',
 } as const;
