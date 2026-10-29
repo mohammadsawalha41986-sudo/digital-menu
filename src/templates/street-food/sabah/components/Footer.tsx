@@ -78,7 +78,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
               <p className="text-stone-400 text-[11px] pr-6">
                 {isAr ? RESTAURANT_INFO.landmarkAr : RESTAURANT_INFO.landmarkEn}
               </p>
-              <a
+              <a data-event="contact_maps"
                 href={RESTAURANT_INFO.googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -96,15 +96,18 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
               {isAr ? 'الطلب والتواصل المباشر' : 'Order & Contact'}
             </h4>
             <div className="space-y-2.5">
-              <a
+              {RESTAURANT_INFO.phone ? (
+              <a data-event="contact_phone"
                 href={`tel:${RESTAURANT_INFO.phone}`}
                 className="flex items-center gap-2 text-white hover:text-amber-400 transition-colors font-black text-sm tabular-nums"
               >
                 <Phone className="w-4 h-4 text-emerald-400" />
                 <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
               </a>
+              ) : null}
 
-              <a
+              {RESTAURANT_INFO.whatsappNumber ? (
+              <a data-event="contact_whatsapp"
                 href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}`}
                 target="_blank"
                 rel="noreferrer"
@@ -113,6 +116,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
                 <MessageCircle className="w-4 h-4" />
                 <span>{isAr ? 'محادثة واتساب للطلبات' : 'Chat on WhatsApp'}</span>
               </a>
+              ) : null}
 
               <div className="flex items-center gap-3 pt-1">
                 <button

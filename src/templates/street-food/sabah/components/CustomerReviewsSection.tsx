@@ -103,7 +103,7 @@ export const CustomerReviewsSection: React.FC<CustomerReviewsSectionProps> = ({ 
             </p>
           </div>
 
-          <a
+          <a data-event="contact_maps"
             href={RESTAURANT_INFO.googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"

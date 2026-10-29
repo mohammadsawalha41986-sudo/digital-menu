@@ -2237,11 +2237,11 @@
 }
 
 .business-stats__tile[data-tone='ok'] .business-stats__value {
-  color: #2e7d32;
+  color: var(--admin-ok);
 }
 
 .business-stats__tile[data-tone='warn'] .business-stats__value {
-  color: #c77c00;
+  color: var(--admin-warning);
 }
 
 /* --- Card grid ---------------------------------------------------------- */

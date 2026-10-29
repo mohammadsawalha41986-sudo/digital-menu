@@ -110,75 +110,26 @@ test.describe('the studio', () => {
     const design = page.locator('form[aria-label="Design"]');
     const saveState = design.locator('[data-save-state]');
 
-    // --- The Theme Library ------------------------------------------------
-    // Every theme is a card with its own live preview of *this* menu, not a
-    // screenshot and not a dropdown.
-    const cards = design.locator('.theme-card');
-    await expect(cards).toHaveCount(10);
-
-    const luxury = design.locator('.theme-card[data-theme="dark-luxury"]');
-    await expect(luxury.locator('iframe')).toHaveAttribute(
-      'src',
-      /theme=dark-luxury/,
-    );
-    // Name, positioning, who it suits, and how many variants it carries.
-    await expect(luxury).toContainText('variants');
-    await expect(luxury.locator('.theme-card__description')).not.toBeEmpty();
-    await expect(luxury.locator('.theme-card__meta')).toContainText(/Best for|Flexible style/);
-
-    // Previewing is free of consequence: it writes nothing.
-    // The card itself is the control; its radio is visually hidden for styling.
-    await luxury.click();
-    await expect(luxury.locator('input[type="radio"]')).toBeChecked();
-    await expect(luxury.locator('.theme-card__action')).toHaveText('Previewing');
-    await expect(design.getByText('Nothing has been saved.')).toBeVisible();
-    await expect(page.locator('iframe[title="Live menu preview"]')).toHaveAttribute(
-      'src',
-      /theme=dark-luxury/,
+    // --- One place for the look -------------------------------------------
+    // Colours, fonts and photo layout live on the Design page; the studio
+    // only chooses what this menu shows, and says where the look is set.
+    await expect(design.locator('.theme-card')).toHaveCount(0);
+    await expect(design.getByRole('link', { name: 'Design page' })).toHaveAttribute(
+      'href',
+      `/admin/businesses/${businessId}/design`,
     );
 
-    // Look at a second theme, still without applying either.
-    const cafe = design.locator('.theme-card[data-theme="premium-cafe"]');
-    await cafe.click();
-    await expect(page.locator('iframe[title="Live menu preview"]')).toHaveAttribute(
-      'src',
-      /theme=premium-cafe/,
-    );
-
-    // The live menu is untouched by all that browsing.
-    await expect(saveState).toHaveAttribute('data-save-state', 'idle');
-    const stillOriginal = page.context();
-    const probe = await stillOriginal.newPage();
-    await probe.goto(`/m/${publicId}?lang=ar`);
-    await expect(probe.locator('[data-profile-root]')).toBeVisible();
-    await expect(probe.locator('[data-menu-theme="dark-luxury"]')).toHaveCount(0);
-    await probe.close();
-
-    // --- Applying, and autosave -------------------------------------------
-    await luxury.click();
-    await design.getByRole('button', { name: 'Apply Dark Luxury' }).click();
-    await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
-    await expect(luxury.locator('.theme-card__action')).toHaveText('Applied');
-
-    // A typography and a density change ride the same autosave — no click.
-    await design.getByLabel('Heading', { exact: true }).selectOption('arabic-kufi');
-    await expect(saveState).toHaveText('Unsaved changes');
-    await design.getByLabel('Density', { exact: true }).selectOption('airy');
+    // --- What the menu shows, with autosave -------------------------------
+    await design.getByLabel('Photographs', { exact: true }).uncheck();
     await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
 
     // It survives a reload, which is the only proof that it was written.
     await page.reload();
-    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('airy');
-    await expect(design.getByLabel('Heading', { exact: true })).toHaveValue('arabic-kufi');
-    await expect(
-      design.locator('.theme-card[data-theme="dark-luxury"] .theme-card__action'),
-    ).toHaveText('Applied');
+    await expect(design.getByLabel('Photographs', { exact: true })).not.toBeChecked();
 
-    // The public page now carries the theme…
+    // The public page drops the photographs…
     await page.goto(`/m/${publicId}?lang=ar`);
-    const menuSection = page.locator('[data-menu-theme]').first();
-    await expect(menuSection).toHaveAttribute('data-menu-theme', 'dark-luxury');
-    await expect(menuSection).toHaveAttribute('data-density', 'airy');
+    await expect(page.locator('[data-item] img')).toHaveCount(0);
 
     // …and says exactly what it said before.
     expect(await menuContent(page, publicId)).toEqual(before);
@@ -197,10 +148,10 @@ test.describe('the studio', () => {
     const saveState = design.locator('[data-save-state]');
     const history = design.getByRole('group', { name: 'Design edit history' });
 
-    // Every design control, one after another, so history covers all of them.
-    await design.getByLabel('Density', { exact: true }).selectOption('compact');
-    await design.getByLabel('Photography', { exact: true }).selectOption('circle');
-    await design.getByLabel('Body', { exact: true }).selectOption('arabic-naskh');
+    // Photographs were left off by the previous test; turn them back on, then
+    // walk the other two switches so history covers all three.
+    await design.getByLabel('Photographs', { exact: true }).check();
+    await design.getByLabel('Calories where entered', { exact: true }).uncheck();
     await design.getByLabel('Prices', { exact: true }).uncheck();
     await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
 
@@ -208,25 +159,27 @@ test.describe('the studio', () => {
     await history.getByRole('button', { name: 'Undo' }).click();
     await expect(design.getByLabel('Prices', { exact: true })).toBeChecked();
     await history.getByRole('button', { name: 'Undo' }).click();
-    await expect(design.getByLabel('Body', { exact: true })).toHaveValue('');
+    await expect(design.getByLabel('Calories where entered', { exact: true })).toBeChecked();
     await history.getByRole('button', { name: 'Undo' }).click();
-    await expect(design.getByLabel('Photography', { exact: true })).toHaveValue('');
-    await history.getByRole('button', { name: 'Undo' }).click();
-    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('airy');
+    await expect(design.getByLabel('Photographs', { exact: true })).not.toBeChecked();
 
     // Redo puts one back.
     await history.getByRole('button', { name: 'Redo' }).click();
-    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('compact');
+    await expect(design.getByLabel('Photographs', { exact: true })).toBeChecked();
 
     // A new edit after undo abandons the redo branch.
-    await history.getByRole('button', { name: 'Undo' }).click();
-    await design.getByLabel('Density', { exact: true }).selectOption('regular');
+    await design.getByLabel('Calories where entered', { exact: true }).uncheck();
     await expect(history.getByRole('button', { name: 'Redo' })).toBeDisabled();
 
     // Travelled state goes through the same autosave queue and survives.
     await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
     await page.reload();
-    await expect(design.getByLabel('Density', { exact: true })).toHaveValue('regular');
+    await expect(design.getByLabel('Calories where entered', { exact: true })).not.toBeChecked();
+    await expect(design.getByLabel('Photographs', { exact: true })).toBeChecked();
+
+    // Restore, so the menu reads as it did.
+    await design.getByLabel('Calories where entered', { exact: true }).check();
+    await expect(saveState).toHaveAttribute('data-save-state', 'saved', { timeout: 15_000 });
 
     // None of it changed a single word or price on the menu.
     expect(await menuContent(page, publicId)).toEqual(before);

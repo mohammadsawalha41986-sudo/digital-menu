@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { currencyUnit, formatAmount } from '../money';
 import { X, Search, Activity, Flame, Info, Check, Filter } from 'lucide-react';
 import { useSabah } from '../context';
 import type { Language } from '../types';
@@ -17,6 +18,7 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
   lang,
 }) => {
   const { items: MENU_ITEMS, categories: MENU_CATEGORIES } = useSabah();
+  const { currency } = useSabah().info;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [calorieFilter, setCalorieFilter] = useState<'all' | 'low' | 'moderate' | 'high'>('all');
@@ -253,7 +255,7 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
 
                     {/* Price */}
                     <td className="py-3 px-3 text-left rtl:text-left ltr:text-right font-black text-amber-400 tabular-nums">
-                      {dish.price.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                      {dish.noPrice ? '—' : `${formatAmount(dish.price, currency)} ${currencyUnit(currency, isAr)}`}
                     </td>
                   </tr>
                 );

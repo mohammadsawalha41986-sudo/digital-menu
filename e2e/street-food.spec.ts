@@ -39,11 +39,14 @@ test('photo cards sit two-up on a phone', async ({ page }) => {
 
   const cards = page.locator('#menu-items-container [data-item]');
   await cards.nth(1).scrollIntoViewIfNeeded();
-  const [first, second] = await Promise.all([cards.nth(0).boundingBox(), cards.nth(1).boundingBox()]);
-  if (!first || !second) throw new Error('expected two cards');
-
-  expect(Math.abs(first.y - second.y)).toBeLessThan(2);
-  expect(first.x).not.toEqual(second.x);
+  // Cards slide up as they enter; measure once both have settled.
+  await expect
+    .poll(async () => {
+      const [first, second] = await Promise.all([cards.nth(0).boundingBox(), cards.nth(1).boundingBox()]);
+      if (!first || !second) return 'missing';
+      return Math.abs(first.y - second.y) < 2 && first.x !== second.x ? 'two-up' : 'not yet';
+    })
+    .toBe('two-up');
 });
 
 test('an order goes to the restaurant’s own WhatsApp number', async ({ page }) => {

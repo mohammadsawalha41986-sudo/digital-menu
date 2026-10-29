@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { currencyUnit, formatAmount } from '../money';
+import { useSabah } from '../context';
 import { X, Plus, Minus, Flame, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
@@ -19,14 +21,11 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
   onClose,
   onAddToCart,
 }) => {
+  const { currency } = useSabah().info;
   const [selectedOption, setSelectedOption] = useState(
     item && item.options && item.options.length > 0 ? item.options[0] : undefined,
   );
   const [spiceLevel, setSpiceLevel] = useState<'normal' | 'spicy'>('normal');
-  const [extraCheese, setExtraCheese] = useState(false);
-  const [extraGarlic, setExtraGarlic] = useState(false);
-  const [extraSpicyGarlic, setExtraSpicyGarlic] = useState(false);
-  const [extraHummus, setExtraHummus] = useState(false);
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
 
@@ -36,26 +35,19 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
 
   // Compute base unit price
   const basePrice = selectedOption ? selectedOption.price : item.price;
-  const cheesePrice = extraCheese ? 1.00 : 0;
-  const garlicPrice = extraGarlic ? 2.00 : 0;
-  const spicyGarlicPrice = extraSpicyGarlic ? 2.00 : 0;
-  const hummusPrice = extraHummus ? 2.00 : 0;
-
-  const unitPrice = basePrice + cheesePrice + garlicPrice + spicyGarlicPrice + hummusPrice;
+  // Paid extras are not modelled by the platform, so none are offered; a
+  // customer can still ask for one in the notes.
+  const unitPrice = basePrice;
   const totalPrice = unitPrice * quantity;
 
   const handleAdd = () => {
-    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${spiceLevel}-${extraCheese ? 'ch' : ''}-${extraGarlic ? 'g' : ''}-${extraSpicyGarlic ? 'sg' : ''}-${extraHummus ? 'h' : ''}-${Date.now()}`;
+    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${spiceLevel}-${Date.now()}`;
     
     onAddToCart({
       cartItemId,
       item,
       selectedOption,
       spiceLevel: item.isSpicyOption ? spiceLevel : undefined,
-      extraCheese,
-      extraGarlic,
-      extraSpicyGarlic,
-      extraHummus,
       notes: notes.trim() || undefined,
       quantity,
       unitPrice,
@@ -149,7 +141,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                           {isAr ? opt.nameAr : opt.nameEn}
                         </span>
                         <span className="block text-xs font-black text-amber-400 mt-1 tabular-nums">
-                          {opt.price.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                          {formatAmount(opt.price, currency)} {currencyUnit(currency, isAr)}
                         </span>
                       </button>
                     );
@@ -191,76 +183,6 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Extra Add-ons */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-black text-emerald-300 block uppercase tracking-wider">
-                {isAr ? 'إضافات وصوصات لذيذة' : 'Extra Add-ons & Sauces'}
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraCheese ? 'bg-amber-500/15 border-amber-400 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraCheese}
-                      onChange={(e) => setExtraCheese(e.target.checked)}
-                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'إضافة جبن شيدر' : 'Extra Cheddar'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+1.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraGarlic ? 'bg-emerald-500/15 border-emerald-400 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraGarlic}
-                      onChange={(e) => setExtraGarlic(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'ثومية إضافية' : 'Extra Garlic Dip'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+2.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraSpicyGarlic ? 'bg-red-500/15 border-red-500 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraSpicyGarlic}
-                      onChange={(e) => setExtraSpicyGarlic(e.target.checked)}
-                      className="w-4 h-4 rounded text-red-500 focus:ring-red-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'ثومية سبايسي حارة' : 'Spicy Garlic Dip'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+2.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraHummus ? 'bg-emerald-500/15 border-emerald-400 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraHummus}
-                      onChange={(e) => setExtraHummus(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'حمص صغير إضافي' : 'Extra Small Hummus'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+2.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-              </div>
-            </div>
 
             {/* Special Instructions */}
             <div className="space-y-1.5">
@@ -312,7 +234,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
             >
               <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
               <span className="tabular-nums">
-                {totalPrice.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                {formatAmount(totalPrice, currency)} {currencyUnit(currency, isAr)}
               </span>
             </motion.button>
 

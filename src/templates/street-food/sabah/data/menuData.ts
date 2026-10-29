@@ -1,3 +1,4 @@
+import type { WorkingHours } from '@/server/business/hours';
 export interface MenuItem {
   id: string;
   nameAr: string;
@@ -11,6 +12,10 @@ export interface MenuItem {
   isPopular?: boolean;
   isOffer?: boolean;
   isSpicyOption?: boolean;
+  /** Served, but out right now: shown and marked, never orderable. */
+  isUnavailable?: boolean;
+  /** No price was entered; the dish is listed but cannot be added to an order. */
+  noPrice?: boolean;
   options?: {
     nameAr: string;
     nameEn: string;
@@ -54,6 +59,10 @@ export interface RestaurantInfo {
   openingHoursEn: string;
   serviceOptionsAr: string[];
   serviceOptionsEn: string[];
+  /** ISO currency code; prices and the order message use it. */
+  currency: string;
+  /** Weekly hours, when the restaurant published them. */
+  workingHours?: WorkingHours | null;
 }
 
 export const RESTAURANT_INFO: RestaurantInfo = {
@@ -76,6 +85,7 @@ export const RESTAURANT_INFO: RestaurantInfo = {
   openingHoursEn: 'Daily: 12:00 PM - 03:00 AM',
   serviceOptionsAr: ['طعام سفري', 'توصيل عبر واتساب', 'جلسات أفراد وعائلات', 'دفع مدى وApple Pay'],
   serviceOptionsEn: ['Takeaway', 'WhatsApp Delivery', 'Dine-in Seating', 'Mada & Apple Pay Accepted'],
+  currency: 'SAR',
 };
 
 export const MENU_CATEGORIES: MenuCategory[] = [

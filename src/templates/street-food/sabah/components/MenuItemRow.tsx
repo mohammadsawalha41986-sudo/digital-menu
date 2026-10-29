@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { currencyUnit, formatAmount } from '../money';
+import { useSabah } from '../context';
 import { Plus, Flame, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
@@ -17,6 +19,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
   lang,
   onSelect,
 }) => {
+  const { currency } = useSabah().info;
   const isAr = lang === 'ar';
 
   return (
@@ -24,6 +27,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
       // Stable hooks for tests and analytics: the item code, price and
       // calories as rendered.
       data-item={item.id}
+      data-unavailable={item.isUnavailable ? '' : undefined}
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -36,7 +40,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
           <img
             src={item.image}
             alt=""
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
             referrerPolicy="no-referrer"
           />
         </div>
@@ -66,38 +70,46 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
           </p>
         )}
 
+        {item.calories || (item.options && item.options.length > 0) ? (
         <div className="flex items-center gap-2 text-[11px] text-stone-400">
-          {item.calories && (
-            <>
-              <span className="font-mono text-emerald-400 font-medium" data-calories>{item.calories} {isAr ? 'سعرة' : 'cal'}</span>
-              <span>·</span>
-            </>
-          )}
+          {item.calories ? (
+            <span className="font-mono text-emerald-400 font-medium" data-calories>{item.calories} {isAr ? 'سعرة' : 'kcal'}</span>
+          ) : null}
+          {item.calories && item.options && item.options.length > 0 ? <span aria-hidden="true">·</span> : null}
           {item.options && item.options.length > 0 ? (
             <span className="text-amber-300 font-medium">
               {dishOptionsSummary(item, isAr)}
             </span>
-          ) : (
-            <span className="text-stone-400">{isAr ? 'تحضير طازج' : 'Freshly made'}</span>
-          )}
+          ) : null}
         </div>
+        ) : null}
       </div>
 
       {/* Price & Add */}
       <div className="flex items-center gap-3 shrink-0">
+{item.noPrice ? (
+  <span />
+) : (
         <div className="text-right rtl:text-right ltr:text-left">
           <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums" data-price>
-            {item.price.toFixed(2)}
+            {formatAmount(item.price, currency)}
           </span>
           <span className="text-xs font-bold text-emerald-400 mr-1 ml-1">
-            {isAr ? 'ر.س' : 'SAR'}
+            {currencyUnit(currency, isAr)}
           </span>
         </div>
+)}
 
+        {item.noPrice && !item.isUnavailable ? null : item.isUnavailable ? (
+          <span className="shrink-0 px-2.5 py-1.5 rounded-xl bg-stone-800 border border-stone-700 text-stone-300 text-[11px] sm:text-xs font-bold whitespace-nowrap">
+            {isAr ? 'غير متوفر حالياً' : 'Currently unavailable'}
+          </span>
+        ) : (
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => onSelect(item)}
+          aria-label={item.options ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
           className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-emerald-950 cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -105,6 +117,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
             {item.options ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
           </span>
         </motion.button>
+        )}
       </div>
     </motion.div>
   );

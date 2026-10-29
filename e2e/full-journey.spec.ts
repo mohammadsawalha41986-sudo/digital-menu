@@ -133,7 +133,7 @@ test('the full §138 journey, end to end', async ({ page }) => {
   const root = page.locator('[data-profile-root]');
   await expect(root).toHaveCSS('direction', 'rtl');
 
-  await page.getByRole('link', { name: 'English' }).click();
+  await page.getByRole('button', { name: 'EN' }).click();
   await expect(root).toHaveCSS('direction', 'ltr');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Journey Restaurant');
   // The permanent path is unchanged by switching language.

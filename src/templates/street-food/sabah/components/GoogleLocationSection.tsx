@@ -67,7 +67,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            <motion.a
+            <motion.a data-event="contact_maps"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.95 }}
               href={RESTAURANT_INFO.googleMapsUrl}
@@ -189,10 +189,12 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                 ) : null}
 
                 {/* Direct Phone */}
+
+                {RESTAURANT_INFO.phone ? (
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div className="flex items-center gap-2.5">
-                    <a
+                    <a data-event="contact_phone"
                       href={`tel:${RESTAURANT_INFO.phone}`}
                       className="font-extrabold text-amber-400 hover:underline tabular-nums text-sm"
                     >
@@ -202,6 +204,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                     <span className="text-stone-400 text-xs">{isAr ? 'اتصال مباشر' : 'Direct Call'}</span>
                   </div>
                 </div>
+                ) : null}
               </div>
 
             </div>
@@ -209,7 +212,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
             {/* Bottom Actions inside Place Card */}
             <div className="space-y-2.5 pt-3 border-t border-emerald-950">
               <div className="grid grid-cols-2 gap-2">
-                <motion.a
+                <motion.a data-event="contact_maps"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   href={RESTAURANT_INFO.googleMapsUrl}
@@ -269,7 +272,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                 <span className="text-stone-600 hidden sm:inline">|</span>
                 <span className="text-emerald-400 font-semibold hidden sm:inline">{isAr ? 'موقع الفرع المعتمد' : 'Verified Location'}</span>
               </div>
-              <a
+              <a data-event="contact_maps"
                 href={RESTAURANT_INFO.googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -305,7 +308,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                   {isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}
                 </p>
                 <div className="pt-2 flex items-center gap-2">
-                  <a
+                  <a data-event="contact_maps"
                     href={RESTAURANT_INFO.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"

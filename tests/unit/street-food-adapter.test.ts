@@ -134,13 +134,79 @@ describe('profileToSabah', () => {
     expect(slides[0]?.price).toBe(0);
   });
 
-  it('drops unavailable items and empty categories', () => {
-    const { menuItems, menuCategories } = profileToSabah(
-      profile([item({ code: 'GONE', isUnavailable: true })]),
+  it('keeps an unavailable dish on the menu, marked, and out of the hero (§83)', () => {
+    const { menuItems, menuCategories, slides } = profileToSabah(
+      profile([item({ code: 'GONE', isUnavailable: true, isFeatured: true, image: image('/u/g.png') })]),
     );
 
-    expect(menuItems).toHaveLength(0);
-    expect(menuCategories).toHaveLength(0);
+    expect(menuItems.map((dish) => [dish.id, dish.isUnavailable])).toEqual([['GONE', true]]);
+    expect(menuCategories).toHaveLength(1);
+    expect(slides.map((slide) => slide.id)).not.toContain('GONE');
+  });
+
+  it('converts prices with the currency’s own decimals', () => {
+    const kuwaiti = profile([item({ priceMinor: 1250, currency: 'KWD' })]);
+    kuwaiti.currency = 'KWD';
+
+    const { menuItems, restaurantInfo } = profileToSabah(kuwaiti);
+
+    expect(restaurantInfo.currency).toBe('KWD');
+    expect(menuItems[0]?.price).toBe(1.25);
+    expect(profileToSabah(profile([item({ priceMinor: 1250 })])).menuItems[0]?.price).toBe(12.5);
+  });
+
+  it('falls back to a map search for the restaurant when no map link is stored', () => {
+    const withoutMap = profile([item({})]);
+    withoutMap.contact = { ...withoutMap.contact, googleMapsUrl: null };
+
+    const { restaurantInfo } = profileToSabah(withoutMap);
+
+    expect(restaurantInfo.googleMapsUrl).toMatch(/^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/);
+    expect(decodeURIComponent(restaurantInfo.googleMapsUrl)).toContain('مطعم آخر');
+  });
+
+  it('leads the hero with current photographed offers, never expired ones', () => {
+    const offer = (key: string, overrides: Partial<PublicProfile['offers'][number]>) =>
+      ({
+        key,
+        titleAr: `عرض ${key}`,
+        titleEn: null,
+        descriptionAr: null,
+        descriptionEn: null,
+        image: image(`/u/${key}.png`),
+        originalPriceMinor: 3000,
+        offerPriceMinor: 2000,
+        discountPercent: 33,
+        currency: 'SAR',
+        ctaLabelAr: null,
+        ctaLabelEn: null,
+        ctaUrl: null,
+        placement: 'HERO',
+        isFeatured: false,
+        endsAt: null,
+        ...overrides,
+      }) as PublicProfile['offers'][number];
+
+    const withOffers = profile([item({ code: 'A', image: image('/u/a.png') })]);
+    withOffers.offers = [
+      offer('LIVE', {}),
+      offer('OLD', { endsAt: new Date('2000-01-01T00:00:00Z') }),
+      offer('NOPIC', { image: null }),
+    ];
+
+    const { slides } = profileToSabah(withOffers);
+
+    expect(slides.map((slide) => slide.id)).toEqual(['offer:LIVE', 'A']);
+    expect(slides[0]?.price).toBe(20);
+    expect(slides[0]?.tagAr).toContain('33');
+  });
+
+  it('passes the published hours through for the browser to evaluate', () => {
+    const hours = { timezone: 'Asia/Riyadh', days: { sunday: { closed: false, intervals: [{ opens: '10:00', closes: '23:00' }] } } };
+    const withHours = profile([item({})]);
+    withHours.contact = { ...withHours.contact, workingHours: hours } as PublicProfile['contact'];
+
+    expect(profileToSabah(withHours).restaurantInfo.workingHours).toEqual(hours);
   });
 });
 

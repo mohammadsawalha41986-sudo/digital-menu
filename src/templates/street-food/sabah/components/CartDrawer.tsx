@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { currencyUnit, formatAmount } from '../money';
 import { X, Trash2, Plus, Minus, MessageCircle, Phone, ShoppingBag, MapPin, Store, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem, Language, OrderType } from '../types';
@@ -51,15 +52,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     const itemsText = cart.map((ci, index) => {
       const optionStr = ci.selectedOption ? ` (${ci.selectedOption.nameAr})` : '';
       const spiceStr = ci.spiceLevel === 'spicy' ? ' [حار]' : ci.spiceLevel === 'normal' ? ' [عادي]' : '';
-      const extras: string[] = [];
-      if (ci.extraCheese) extras.push('جبن إضافي');
-      if (ci.extraGarlic) extras.push('ثومية إضافية');
-      if (ci.extraSpicyGarlic) extras.push('ثومية سبايسي');
-      if (ci.extraHummus) extras.push('حمص صغير');
-      const extrasStr = extras.length > 0 ? ` + ${extras.join(' + ')}` : '';
       const noteStr = ci.notes ? ` (ملاحظة: ${ci.notes})` : '';
 
-      return `${index + 1}. ${ci.item.nameAr}${optionStr}${spiceStr}${extrasStr} x ${ci.quantity} = ${ci.totalPrice.toFixed(2)} ر.س${noteStr}`;
+      return `${index + 1}. ${ci.item.nameAr}${optionStr}${spiceStr} x ${ci.quantity} = ${formatAmount(ci.totalPrice, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}${noteStr}`;
     }).join('\n');
 
     const customerInfo = customerName.trim() ? `\n👤 الاسم: ${customerName}` : '';
@@ -73,7 +68,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 📋 *تفاصيل الطلب:*
 ${itemsText}
 
-💰 *الإجمالي النهائي:* ${subtotal.toFixed(2)} ريال سعودي (شامل الضريبة 15%)
+💰 *الإجمالي النهائي:* ${formatAmount(subtotal, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}
 ${noteInfo}
 شكراً لكم وفي انتظار تأكيدكم!`;
 
@@ -255,15 +250,6 @@ ${noteInfo}
                             </span>
                           )}
 
-                          {(ci.extraCheese || ci.extraGarlic || ci.extraSpicyGarlic || ci.extraHummus) && (
-                            <div className="text-[10px] text-emerald-400 flex flex-wrap gap-1 font-semibold">
-                              {ci.extraCheese && <span>+ جبن</span>}
-                              {ci.extraGarlic && <span>+ ثومية</span>}
-                              {ci.extraSpicyGarlic && <span>+ ثومية سبايسي</span>}
-                              {ci.extraHummus && <span>+ حمص</span>}
-                            </div>
-                          )}
-
                           {ci.notes && (
                             <p className="text-[10px] text-stone-400 italic">
                               &quot;{ci.notes}&quot;
@@ -271,7 +257,7 @@ ${noteInfo}
                           )}
 
                           <div className="text-xs font-black text-amber-400 pt-1 tabular-nums">
-                            {ci.totalPrice.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                            {formatAmount(ci.totalPrice, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}
                           </div>
                         </div>
 
@@ -326,22 +312,21 @@ ${noteInfo}
                 <div className="space-y-1.5 text-xs text-stone-300">
                   <div className="flex justify-between">
                     <span>{isAr ? 'مجموع الأصناف' : 'Subtotal'}</span>
-                    <span className="tabular-nums font-semibold">{subtotal.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}</span>
-                  </div>
-                  <div className="flex justify-between text-stone-400 text-[11px]">
-                    <span>{isAr ? 'ضريبة القيمة المضافة (15% مدمجة)' : 'VAT 15% Included'}</span>
-                    <span className="text-emerald-400 font-semibold">{isAr ? 'مشمولة بالسعر' : 'Included'}</span>
+                    <span className="tabular-nums font-semibold">{formatAmount(subtotal, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}</span>
                   </div>
                   <div className="flex justify-between text-base font-black text-white pt-1.5 border-t border-emerald-950">
                     <span>{isAr ? 'الإجمالي النهائي' : 'Total Amount'}</span>
                     <span className="text-amber-400 tabular-nums font-black text-lg">
-                      {subtotal.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                      {formatAmount(subtotal, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}
                     </span>
                   </div>
                 </div>
 
                 {/* Send WhatsApp Order Button with Motion */}
+
+                {RESTAURANT_INFO.whatsappNumber ? (
                 <motion.button
+                  data-event="contact_whatsapp"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   type="button"
@@ -351,11 +336,14 @@ ${noteInfo}
                   <MessageCircle className="w-5 h-5 fill-white" />
                   <span>{isAr ? 'إرسال الطلب عبر واتساب الآن' : 'Send Order via WhatsApp'}</span>
                 </motion.button>
+                ) : null}
 
                 {/* Call Cashier Option */}
+
+                {RESTAURANT_INFO.phone ? (
                 <div className="flex items-center justify-center gap-2 text-xs text-stone-400 pt-1">
                   <span>{isAr ? 'أو للطلب المباشر بالهاتف:' : 'Or order by phone directly:'}</span>
-                  <a
+                  <a data-event="contact_phone"
                     href={`tel:${RESTAURANT_INFO.phone}`}
                     className="text-amber-400 font-extrabold hover:underline flex items-center gap-1 tabular-nums"
                   >
@@ -363,6 +351,7 @@ ${noteInfo}
                     <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
                   </a>
                 </div>
+                ) : null}
 
               </div>
             )}

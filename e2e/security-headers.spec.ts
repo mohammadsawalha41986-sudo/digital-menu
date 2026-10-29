@@ -28,7 +28,7 @@ test('framing is restricted to this origin, not forbidden outright', async ({ re
   expect(headers['content-security-policy']).not.toContain("frame-ancestors 'none'");
 });
 
-test('the CSP permits no external origin', async ({ request }) => {
+test('the CSP permits no external origin beyond the map embed', async ({ request }) => {
   const csp = (await request.get('/m/DEM001')).headers()['content-security-policy'] ?? '';
 
   // Fonts, scripts, styles and images are all first-party. If one of these
@@ -36,7 +36,15 @@ test('the CSP permits no external origin', async ({ request }) => {
   expect(csp).toContain("default-src 'self'");
   expect(csp).toContain("object-src 'none'");
   expect(csp).toContain("base-uri 'self'");
-  expect(csp).not.toMatch(/https?:\/\//);
+
+  // The one deliberate exception: the location card frames Google Maps, and
+  // only as a frame — never as a script, style, image or connection source.
+  expect(csp).toContain("frame-src 'self' https://maps.google.com https://www.google.com");
+  const otherDirectives = csp
+    .split(';')
+    .map((directive) => directive.trim())
+    .filter((directive) => !directive.startsWith('frame-src'));
+  expect(otherDirectives.join('; ')).not.toMatch(/https?:\/\//);
 });
 
 test('a public profile actually renders inside a same-origin frame', async ({ page }) => {

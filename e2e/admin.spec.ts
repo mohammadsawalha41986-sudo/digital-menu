@@ -39,16 +39,16 @@ test('signing in reaches a dashboard with live counts', async ({ page }) => {
 
   const cards = page.locator('.admin__card');
   await expect(cards.first()).toBeVisible();
-  // Metric labels live inside the cards; the sidebar also says "Businesses".
-  await expect(cards.filter({ hasText: 'Businesses' })).toHaveCount(1);
+  // Metric labels live inside the cards; the sidebar also says "Restaurants".
+  await expect(cards.filter({ hasText: 'Restaurants' })).toHaveCount(1);
   await expect(cards.first().locator('.admin__metric')).toHaveText(/^\d+$/);
 });
 
 test('the business list links to the permanent public profile', async ({ page }) => {
   await signIn(page);
-  await page.getByRole('link', { name: 'Businesses' }).first().click();
+  await page.getByRole('link', { name: 'Restaurants' }).first().click();
 
-  await expect(page.getByRole('heading', { name: 'Businesses' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Restaurants' })).toBeVisible();
   await expect(page.getByRole('link', { name: '/m/DEM001' })).toBeVisible();
 });
 
@@ -72,6 +72,7 @@ test('a price edit reaches the public profile behind the same URL', async ({ pag
   await signIn(page);
   await page.goto('/admin/businesses');
   await page.getByRole('link', { name: 'Demo Restaurant' }).click();
+  await page.getByText('More tools').click();
   await page.getByRole('link', { name: /^Menus/ }).click();
 
   // Scope to the item panel: the category form on the same page also has a
@@ -92,6 +93,7 @@ test('a price edit reaches the public profile behind the same URL', async ({ pag
   // Restore, so the suite is re-runnable.
   await page.goto('/admin/businesses');
   await page.getByRole('link', { name: 'Demo Restaurant' }).click();
+  await page.getByText('More tools').click();
   await page.getByRole('link', { name: /^Menus/ }).click();
   const restoreForm = page.locator('.admin__panel').filter({ hasText: 'Add or update an item' });
   await restoreForm.getByLabel('Item code').fill('MN-002');

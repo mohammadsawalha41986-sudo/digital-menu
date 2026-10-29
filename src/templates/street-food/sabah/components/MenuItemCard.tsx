@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { currencyUnit, formatAmount } from '../money';
+import { useSabah } from '../context';
 import { Plus, Flame, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
@@ -20,6 +22,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   onSelect,
   size = 'regular',
 }) => {
+  const { currency } = useSabah().info;
   const isAr = lang === 'ar';
   // Regular cards sit two-up on a phone, so below `sm` they drop the
   // secondary line and the button label to keep name and price readable.
@@ -30,6 +33,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       // Stable hooks for tests and analytics: the item code, price and
       // calories as rendered.
       data-item={item.id}
+      data-unavailable={item.isUnavailable ? '' : undefined}
       initial={{ opacity: 0, y: 15 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
@@ -44,7 +48,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
           <img
             src={item.image}
             alt={isAr ? item.nameAr : item.nameEn}
-            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 filter brightness-[1.02] contrast-[1.04]"
+            className={`w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 filter brightness-[1.02] contrast-[1.04] ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
             referrerPolicy="no-referrer"
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none';
@@ -99,42 +103,53 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             </p>
           )}
 
-          {/* Metadata: Calories & Options with Clean Separators */}
-          <div className={`${compact ? 'hidden sm:flex' : 'flex'} items-center gap-2 text-xs text-stone-400 pt-1`}>
-            {item.calories && (
-              <>
-                <span className="tabular-nums font-mono text-emerald-300/90 font-medium" data-calories>
-                  {item.calories} {isAr ? 'سعرة' : 'cal'}
-                </span>
-                <span aria-hidden="true" className="text-stone-600">·</span>
-              </>
-            )}
+          {/* Calories stay visible at every size — menus are expected to show
+              them wherever a dish is listed. Nothing is said about a dish the
+              restaurant did not say itself. */}
+          {item.calories || (item.options && item.options.length > 0) ? (
+          <div className="flex items-center gap-2 text-xs text-stone-400 pt-1">
+            {item.calories ? (
+              <span className="tabular-nums font-mono text-emerald-300/90 font-medium" data-calories>
+                {item.calories} {isAr ? 'سعرة' : 'kcal'}
+              </span>
+            ) : null}
+            {item.calories && item.options && item.options.length > 0 ? (
+              <span aria-hidden="true" className="hidden sm:inline text-stone-600">·</span>
+            ) : null}
             {item.options && item.options.length > 0 ? (
-              <span className="text-amber-300/90 font-semibold">
+              <span className={`${compact ? 'hidden sm:inline' : ''} text-amber-300/90 font-semibold`}>
                 {isAr ? `${item.options.length} أحجام` : `${item.options.length} sizes`}
               </span>
-            ) : (
-              <span className="text-stone-400">{isAr ? 'تحضير طازج' : 'Freshly made'}</span>
-            )}
+            ) : null}
           </div>
+          ) : null}
         </div>
 
         {/* Price & Action Row */}
         <div className={`pt-3 border-t border-emerald-950/80 flex items-center justify-between ${compact ? 'gap-1.5 sm:gap-3' : 'gap-3'}`}>
+{item.noPrice ? (
+  <span />
+) : (
           <div className="flex flex-col">
             <span className="text-[11px] text-stone-400">
               {item.options && item.options.length > 0 ? (isAr ? 'يبدأ من' : 'From') : (isAr ? 'السعر' : 'Price')}
             </span>
             <div className="flex items-baseline gap-1">
               <span className={`${compact ? 'text-base' : 'text-lg'} sm:text-xl font-black text-amber-400 tabular-nums tracking-tight`} data-price>
-                {item.price.toFixed(2)}
+                {formatAmount(item.price, currency)}
               </span>
               <span className="text-xs font-bold text-emerald-400">
-                {isAr ? 'ر.س' : 'SAR'}
+                {currencyUnit(currency, isAr)}
               </span>
             </div>
           </div>
+)}
 
+          {item.noPrice && !item.isUnavailable ? null : item.isUnavailable ? (
+            <span className="shrink-0 px-2.5 py-1.5 rounded-xl bg-stone-800 border border-stone-700 text-stone-300 text-[11px] sm:text-xs font-bold whitespace-nowrap">
+            {isAr ? 'غير متوفر حالياً' : 'Currently unavailable'}
+          </span>
+          ) : (
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.93 }}
@@ -149,6 +164,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
                 : (isAr ? 'إضافة' : 'Add')}
             </span>
           </motion.button>
+          )}
         </div>
 
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { currencyUnit, formatAmount } from '../money';
 import { 
   Star, 
   Clock, 
@@ -56,11 +57,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     });
   };
 
+  // Offer slides and the name-only fallback slide are not dishes; they get no
+  // "order this meal" button rather than one that does nothing.
+  const slideItem = MENU_ITEMS.find((i) => i.id === slide.id && !i.isUnavailable);
+
   const handleOrderCurrent = () => {
-    const item = MENU_ITEMS.find((i) => i.id === slide.id);
-    if (item) {
-      onSelectFeaturedItem(item);
-    }
+    if (slideItem) onSelectFeaturedItem(slideItem);
   };
 
   // Variants for full-width slide motion
@@ -212,10 +214,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   {slide.price > 0 ? (
                   <div className="flex items-baseline gap-1.5 bg-black/80 backdrop-blur-md border border-amber-400/50 rounded-2xl px-4 py-2 shadow-2xl">
                     <span className="text-2xl sm:text-3xl font-black text-amber-400 tabular-nums">
-                      {slide.price.toFixed(2)}
+                      {formatAmount(slide.price, RESTAURANT_INFO.currency)}
                     </span>
                     <span className="text-sm font-bold text-emerald-400">
-                      {isAr ? 'ريال' : 'SAR'}
+                      {currencyUnit(RESTAURANT_INFO.currency, isAr)}
                     </span>
                   </div>
                   ) : null}
@@ -240,6 +242,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
+              {slideItem ? (
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.96 }}
@@ -249,8 +252,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
                 <span>{isAr ? 'طلب وتخصيص هذه الوجبة' : 'Order This Meal'}</span>
               </motion.button>
+              ) : null}
 
+              {RESTAURANT_INFO.whatsappNumber ? (
               <motion.a
+                data-event="contact_whatsapp"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.96 }}
                 href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}?text=${encodeURIComponent(
@@ -263,6 +269,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <MessageCircle className="w-4 h-4 fill-white" />
                 <span>{isAr ? 'طلب سريع واتساب' : 'WhatsApp Order'}</span>
               </motion.a>
+              ) : null}
 
               <a
                 href="#menu-section"
@@ -334,9 +341,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <span>{isAr ? 'موقعنا على الخارطة بالأسفل ↓' : 'Google Map Below ↓'}</span>
             </a>
             <span className="text-stone-600">|</span>
-            <a href={`tel:${RESTAURANT_INFO.phone}`} className="text-amber-400 font-black hover:underline tabular-nums">
+            {RESTAURANT_INFO.phone ? (
+            <a data-event="contact_phone" href={`tel:${RESTAURANT_INFO.phone}`} className="text-amber-400 font-black hover:underline tabular-nums">
               <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
             </a>
+            ) : null}
           </div>
         </div>
       </div>

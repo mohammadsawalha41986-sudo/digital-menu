@@ -15,6 +15,8 @@ interface MenuSearchAndFilterProps {
   viewMode: 'grid' | 'list';
   onToggleViewMode: (mode: 'grid' | 'list') => void;
   onOpenCaloriesModal: () => void;
+  /** Short menus are faster to scroll than to search. */
+  showSearch: boolean;
 }
 
 export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
@@ -27,6 +29,7 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
   viewMode,
   onToggleViewMode,
   onOpenCaloriesModal,
+  showSearch,
 }) => {
   const isAr = lang === 'ar';
 
@@ -36,11 +39,13 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
         
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           
-          {/* Search Input Box */}
-          <div className="relative flex-1 max-w-lg">
+          {/* Search Input Box — offered only when the menu is long enough to need it */}
+          {showSearch ? (
+          <div className="relative flex-1 max-w-lg" data-menu-search>
             <Search className="w-4 h-4 text-emerald-400 absolute right-3.5 rtl:right-3.5 ltr:left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
-              type="text"
+              type="search"
+              aria-label={isAr ? 'ابحث في المنيو' : 'Search the menu'}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={isAr ? 'ابحث عن صنف...' : 'Search the menu...'}
@@ -48,6 +53,8 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
             />
             {searchQuery && (
               <button
+                type="button"
+                aria-label={isAr ? 'مسح' : 'Clear'}
                 onClick={() => onSearchChange('')}
                 className="absolute left-3 rtl:left-3 ltr:right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-white p-1 rounded-md"
               >
@@ -55,6 +62,9 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
               </button>
             )}
           </div>
+          ) : (
+            <div className="flex-1" />
+          )}
 
           {/* Quick Filter Buttons & View Mode Controls */}
           <div className="flex flex-wrap items-center gap-2 justify-between lg:justify-end">
@@ -165,11 +175,8 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
 
         {/* Results Count Line */}
         <div className="flex items-center justify-between text-xs text-stone-400 pt-1">
-          <span className="text-emerald-300/80 font-medium">
-            {isAr ? `يعرض ${resultCount} صنفاً` : `Showing ${resultCount} items`}
-          </span>
-          <span className="text-stone-400">
-            {isAr ? 'الأسعار شاملة ضريبة القيمة المضافة 15%' : 'All prices include 15% VAT'}
+          <span className="text-emerald-300/80 font-medium" role="status">
+            {isAr ? `${resultCount} نتيجة` : `${resultCount} ${resultCount === 1 ? 'result' : 'results'}`}
           </span>
         </div>
 

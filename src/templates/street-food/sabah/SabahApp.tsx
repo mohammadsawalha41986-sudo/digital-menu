@@ -9,7 +9,10 @@
  */
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useSyncExternalStore } from 'react';
+import { useRouter } from 'next/navigation';
+import { currencyUnit, formatAmount } from './money';
+import { hoursLine } from './hours';
 import {
   MENU_CATEGORIES as DEFAULT_CATEGORIES,
   MENU_ITEMS as DEFAULT_ITEMS,
@@ -56,7 +59,20 @@ export default function App({
   qrDataUri = null,
   imageLayout = 'grid',
 }: SabahAppProps = {}) {
-  const RESTAURANT_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
+  const BASE_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
+
+  // Opening hours depend on the visitor's "now", so they are worked out in
+  // the browser (and refreshed each minute); the server render carries no
+  // time-sensitive claim.
+  const minute = useSyncExternalStore(subscribeToMinutes, currentMinute, noMinuteOnServer);
+  const hours = useMemo(
+    () => (minute === null || !BASE_INFO.workingHours ? null : hoursLine(BASE_INFO.workingHours, new Date(minute * 60_000))),
+    [minute, BASE_INFO.workingHours],
+  );
+
+  const RESTAURANT_INFO: RestaurantInfo = hours
+    ? { ...BASE_INFO, openingHoursAr: hours.ar, openingHoursEn: hours.en }
+    : BASE_INFO;
   const MENU_CATEGORIES: MenuCategory[] = menuCategories ?? DEFAULT_CATEGORIES;
   const MENU_ITEMS: MenuItem[] = menuItems ?? DEFAULT_ITEMS;
 
@@ -106,8 +122,17 @@ export default function App({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Switching language re-renders the page in that language on the server
+  // (`?lang=`), so the page root's lang/dir, the metadata and analytics all
+  // agree with what is on screen. The permanent path — what the QR encodes —
+  // never changes; only the query does.
+  const router = useRouter();
   const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
+    const next: Language = lang === 'ar' ? 'en' : 'ar';
+    setLang(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', next);
+    router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false });
   };
 
   // Cart Operations
@@ -211,6 +236,11 @@ export default function App({
       value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri }}
     >
     <div className="min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
+      {/* Entrance animations start hidden and are revealed by script. With
+          scripting off, reveal everything at once so the menu is still read. */}
+      <noscript>
+        <style>{'[data-profile-root] [style*="opacity:0"]{opacity:1!important;transform:none!important}'}</style>
+      </noscript>
       
       {/* 1. Navbar */}
       <Navbar
@@ -256,6 +286,7 @@ export default function App({
             viewMode={viewMode === 'list' ? 'list' : 'grid'}
             onToggleViewMode={(mode) => setViewMode(mode === 'grid' && imageLayout === 'large' ? 'large' : mode)}
             onOpenCaloriesModal={() => setIsCaloriesOpen(true)}
+            showSearch={MENU_ITEMS.length >= MENU_SEARCH_THRESHOLD}
           />
 
           {/* 5. Menu Items Display with framer-motion Scroll Reveal Entrance */}
@@ -268,6 +299,7 @@ export default function App({
                 <motion.section 
                   key={cat.id} 
                   id={cat.id}
+                  data-category={cat.id}
                   initial={{ opacity: 0, y: 35 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
@@ -398,11 +430,11 @@ export default function App({
               </span>
             </div>
             <span className="tabular-nums">
-              {totalCartPrice.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+              {formatAmount(totalCartPrice, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}
             </span>
           </motion.button>
-        ) : (
-          <motion.a
+        ) : RESTAURANT_INFO.whatsappNumber ? (
+          <motion.a data-event="contact_whatsapp"
             whileTap={{ scale: 0.95 }}
             href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}?text=${encodeURIComponent(
               `السلام عليكم، أود الطلب من ${RESTAURANT_INFO.nameAr}`
@@ -414,15 +446,19 @@ export default function App({
             <MessageCircle className="w-4 h-4 fill-white" />
             <span>{isAr ? 'اطلب سريعاً عبر واتساب' : 'Order via WhatsApp'}</span>
           </motion.a>
+        ) : (
+          <span className="flex-1" />
         )}
 
-        <a
+        {RESTAURANT_INFO.phone ? (
+        <a data-event="contact_phone"
           href={`tel:${RESTAURANT_INFO.phone}`}
           className="w-12 h-12 rounded-2xl bg-stone-900 border border-emerald-500/40 text-amber-400 flex items-center justify-center shadow-lg shrink-0"
           title="اتصال هاتفي"
         >
           <Phone className="w-5 h-5" />
         </a>
+        ) : null}
       </div>
 
       {/* Scroll to Top floating button on desktop */}
@@ -476,4 +512,20 @@ export default function App({
     </div>
     </SabahDataProvider>
   );
+}
+
+/** The same threshold the platform used before: below it, scrolling wins. */
+const MENU_SEARCH_THRESHOLD = 6;
+
+function subscribeToMinutes(onChange: () => void) {
+  const id = setInterval(onChange, 60_000);
+  return () => clearInterval(id);
+}
+
+function currentMinute(): number | null {
+  return Math.floor(Date.now() / 60_000);
+}
+
+function noMinuteOnServer(): number | null {
+  return null;
 }

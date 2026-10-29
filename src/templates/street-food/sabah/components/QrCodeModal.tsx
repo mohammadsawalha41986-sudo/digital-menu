@@ -78,7 +78,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose, lang 
             )}
           </button>
 
-          <a
+          <a data-event="contact_maps"
             href={RESTAURANT_INFO.googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
