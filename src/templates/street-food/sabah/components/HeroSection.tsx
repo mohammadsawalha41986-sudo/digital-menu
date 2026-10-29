@@ -21,8 +21,12 @@ import { useSabah } from '../context';
 import type { MenuItem } from '../data/menuData';
 import type { Language } from '../types';
 
+/** How hero slides move, chosen on the Design page. */
+export type HeroEffect = 'slide' | 'fade' | 'zoom' | 'pan' | 'flip' | 'story';
+
 interface HeroSectionProps {
   lang: Language;
+  effect?: string;
   onOpenCalories: () => void;
   onSelectFeaturedItem: (item: MenuItem) => void;
 }
@@ -30,11 +34,17 @@ interface HeroSectionProps {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ 
   lang, 
+  effect: requestedEffect = 'slide',
   onOpenCalories,
   onSelectFeaturedItem 
 }) => {
   const { info: RESTAURANT_INFO, items: MENU_ITEMS, slides: FULL_WIDTH_SLIDES } = useSabah();
   const isAr = lang === 'ar';
+  const effect: HeroEffect = (['slide', 'fade', 'zoom', 'pan', 'flip', 'story'] as const).find(
+    (name) => name === requestedEffect,
+  ) ?? 'slide';
+  // Stories move faster, like the apps they borrow from.
+  const interval = effect === 'story' ? 5000 : 6500;
   const [[currentSlide, direction], setSlideState] = useState<[number, number]>([0, 0]);
 
   // Auto-play slide motion every 6 seconds
@@ -43,9 +53,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     if (slideCount < 2) return;
     const timer = setInterval(() => {
       setSlideState(([prev]) => [(prev + 1) % slideCount, 1]);
-    }, 6500);
+    }, interval);
     return () => clearInterval(timer);
-  }, [slideCount]);
+  }, [slideCount, interval, currentSlide]);
 
   const slideIndex = currentSlide;
   const slide = FULL_WIDTH_SLIDES[slideIndex] ?? FULL_WIDTH_SLIDES[0]!;
@@ -65,39 +75,76 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     if (slideItem) onSelectFeaturedItem(slideItem);
   };
 
-  // Variants for full-width slide motion
+  // Variants per effect. Each keeps the slide covering the banner, so the
+  // text over it stays readable at every frame.
+  const towards = (dir: number) => (dir > 0 ? (isAr ? '-100%' : '100%') : isAr ? '100%' : '-100%');
   const slideVariants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? (isAr ? '-100%' : '100%') : (isAr ? '100%' : '-100%'),
-      opacity: 0,
-      scale: 1.05,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        x: { type: 'spring' as const, stiffness: 260, damping: 30 },
-        opacity: { duration: 0.5 },
-        scale: { duration: 0.8 },
+    slide: {
+      enter: (dir: number) => ({ x: towards(dir), opacity: 0, scale: 1.05 }),
+      center: {
+        x: 0,
+        opacity: 1,
+        scale: 1,
+        transition: { x: { type: 'spring' as const, stiffness: 260, damping: 30 }, opacity: { duration: 0.5 }, scale: { duration: 0.8 } },
       },
+      exit: (dir: number) => ({
+        x: towards(-dir),
+        opacity: 0,
+        scale: 0.98,
+        transition: { x: { type: 'spring' as const, stiffness: 260, damping: 30 }, opacity: { duration: 0.4 } },
+      }),
     },
-    exit: (dir: number) => ({
-      x: dir < 0 ? (isAr ? '-100%' : '100%') : (isAr ? '100%' : '-100%'),
-      opacity: 0,
-      scale: 0.98,
-      transition: {
-        x: { type: 'spring' as const, stiffness: 260, damping: 30 },
-        opacity: { duration: 0.4 },
-      },
-    }),
-  };
+    fade: {
+      enter: { opacity: 0 },
+      center: { opacity: 1, transition: { duration: 1.1 } },
+      exit: { opacity: 0, transition: { duration: 1.1 } },
+    },
+    zoom: {
+      enter: { opacity: 0, scale: 1.3 },
+      center: { opacity: 1, scale: 1, transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] as const } },
+      exit: { opacity: 0, scale: 0.92, transition: { duration: 0.8 } },
+    },
+    pan: {
+      enter: { opacity: 0 },
+      center: { opacity: 1, transition: { duration: 1 } },
+      exit: { opacity: 0, transition: { duration: 1 } },
+    },
+    flip: {
+      enter: (dir: number) => ({ rotateY: (dir > 0 ? 1 : -1) * (isAr ? -90 : 90), opacity: 0 }),
+      center: { rotateY: 0, opacity: 1, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] as const } },
+      exit: (dir: number) => ({ rotateY: (dir > 0 ? -1 : 1) * (isAr ? -90 : 90), opacity: 0, transition: { duration: 0.7 } }),
+    },
+    story: {
+      enter: { opacity: 0, scale: 1.18 },
+      center: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } },
+      exit: { opacity: 0, transition: { duration: 0.4 } },
+    },
+  }[effect];
 
   return (
     <section id="hero" className="relative w-full overflow-hidden bg-black select-none border-b border-emerald-950">
       
       {/* 1. Full-Width Panoramic Motion Banner (Edge-to-Edge 100vw) */}
-      <div className="relative w-full h-[580px] sm:h-[620px] lg:h-[700px] overflow-hidden">
+      <div
+        className="relative w-full h-[580px] sm:h-[620px] lg:h-[700px] overflow-hidden"
+        data-hero-effect={effect}
+        style={effect === 'flip' ? { perspective: '1400px' } : undefined}
+      >
+        {/* Story bars: one per slide, the current one filling as it plays. */}
+        {effect === 'story' && slideCount > 1 ? (
+          <div className="absolute top-3 inset-x-4 z-30 flex gap-1.5" aria-hidden="true">
+            {FULL_WIDTH_SLIDES.map((entry, index) => (
+              <span key={entry.id || index} className="h-1 flex-1 rounded-full bg-white/30 overflow-hidden">
+                <span
+                  key={index === slideIndex ? `active-${slideIndex}` : `idle-${index}`}
+                  className={`block h-full bg-white ${index < slideIndex ? 'w-full' : index === slideIndex ? 'sf-story-fill' : 'w-0'}`}
+                  style={index === slideIndex ? { animationDuration: `${interval}ms` } : undefined}
+                />
+              </span>
+            ))}
+          </div>
+        ) : null}
+
         
         <AnimatePresence initial={false} custom={direction}>
           <motion.div
@@ -116,7 +163,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               sizes="100vw"
               style={{ objectPosition: slide.imagePosition }}
               alt={isAr ? slide.headlineAr : slide.headlineEn}
-              className="w-full h-full object-cover object-center filter brightness-[0.95] contrast-[1.08]"
+              className={`w-full h-full object-cover object-center filter brightness-[0.95] contrast-[1.08] ${
+                effect === 'zoom' || effect === 'story' ? 'sf-kb-zoom' : effect === 'pan' ? 'sf-kb-pan' : ''
+              }`}
               referrerPolicy="no-referrer"
             /> : <div className="w-full h-full bg-gradient-to-br from-emerald-950 via-stone-950 to-black" />}
 

@@ -48,6 +48,11 @@ async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; l
       initialLang={locale}
       publicId={profile.publicId}
       offers={offers}
+      sectionOrder={profile.brand.sectionOrder}
+      offersInsideMenu={profile.brand.offersInsideMenu ?? true}
+      heroEffect={profile.brand.heroEffect}
+      dishEffect={profile.brand.dishEffect}
+      backgroundStyle={profile.brand.backgroundStyle}
       tone={menuTone(profile.brand)}
       imageShape={(['landscape', 'square', 'portrait'] as const).find((shape) => shape === profile.brand.imageShape) ?? 'landscape'}
       customColors={{

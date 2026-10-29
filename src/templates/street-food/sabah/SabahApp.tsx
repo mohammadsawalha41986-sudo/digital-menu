@@ -59,6 +59,13 @@ export interface SabahAppProps {
   publicId?: string;
   /** Current offers, for the strip in the middle of the menu. */
   offers?: MenuOffer[];
+  /** Order of the page's sections. */
+  sectionOrder?: string[];
+  /** Offers inside the menu (after the second category) or in their own place. */
+  offersInsideMenu?: boolean;
+  heroEffect?: string;
+  dishEffect?: string;
+  backgroundStyle?: string;
 }
 
 export default function App({
@@ -72,6 +79,11 @@ export default function App({
   imageLayout = 'grid',
   publicId = 'reference',
   offers = [],
+  sectionOrder = ['hero', 'menu', 'offers', 'reviews', 'location'],
+  offersInsideMenu = true,
+  heroEffect = 'slide',
+  dishEffect = 'zoom',
+  backgroundStyle = 'solid',
   tone = 'dark',
   imageShape = 'landscape',
   customColors = { page: false, card: false, price: false },
@@ -273,43 +285,24 @@ export default function App({
 
   const isAr = lang === 'ar';
 
-  return (
-    <SabahDataProvider
-      value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri, offers }}
-    >
-    <div
-      className="sf-root min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950"
-      data-menu-tone={tone}
-      data-image-shape={imageShape}
-      data-custom-page={customColors.page ? '' : undefined}
-      data-custom-card={customColors.card ? '' : undefined}
-      data-custom-price={customColors.price ? '' : undefined}
-    >
-      {/* Entrance animations start hidden and are revealed by script. With
-          scripting off, reveal everything at once so the menu is still read. */}
-      <noscript>
-        <style>{'[data-profile-root] [style*="opacity:0"]{opacity:1!important;transform:none!important}'}</style>
-      </noscript>
-      
-      {/* 1. Navbar */}
-      <Navbar
-        lang={lang}
-        onToggleLang={toggleLanguage}
-        cartCount={totalCartCount}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenQr={() => setIsQrOpen(true)}
-        onOpenCalories={() => setIsCaloriesOpen(true)}
-      />
 
-      <main className="flex-1">
-        
+  // The page's sections, in the order the restaurant chose on the Design page.
+  // Reordered in the DOM, not with CSS, so reading and focus order follow the
+  // order on screen.
+  const sections: Record<string, React.ReactNode> = {
+    hero: (
+      <>
         {/* 2. Full-Width Panoramic Hero Section with Gourmet Platter Presentation */}
         <HeroSection 
           lang={lang} 
+          effect={heroEffect}
           onOpenCalories={() => setIsCaloriesOpen(true)}
           onSelectFeaturedItem={(item) => setActiveItemForCustomization(item)}
         />
-
+      </>
+    ),
+    menu: (
+      <>
         {/* 3. Menu Category Sticky Bar */}
         <div id="menu-section" className="scroll-mt-18">
           <CategoryNav
@@ -346,6 +339,7 @@ export default function App({
               // The offers strip sits after the second category of the full
               // menu, where a visitor scrolling the dishes meets it.
               const showOffersAfter =
+                offersInsideMenu &&
                 catIndex === Math.min(1, categoriesToDisplay.length - 1) &&
                 selectedCategory === 'all' &&
                 activeFilter === 'all' &&
@@ -457,13 +451,61 @@ export default function App({
             )}
           </div>
         </div>
-
+      </>
+    ),
+    offers: offersInsideMenu ? null : (
+      <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+        <OffersStrip lang={lang} />
+      </div>
+    ),
+    reviews: (
+      <>
         {/* 6. Customer Reviews Section with Scroll Reveal */}
         <CustomerReviewsSection lang={lang} />
-
+      </>
+    ),
+    location: (
+      <>
         {/* 7. Google Maps & Location Section (Positioned at bottom before footer) */}
         <GoogleLocationSection lang={lang} />
+      </>
+    ),
+  };
 
+  return (
+    <SabahDataProvider
+      value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri, offers }}
+    >
+    <div
+      className="sf-root min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950"
+      data-menu-tone={tone}
+      data-image-shape={imageShape}
+      data-dish-effect={dishEffect}
+      data-background={backgroundStyle}
+      data-custom-page={customColors.page ? '' : undefined}
+      data-custom-card={customColors.card ? '' : undefined}
+      data-custom-price={customColors.price ? '' : undefined}
+    >
+      {/* Entrance animations start hidden and are revealed by script. With
+          scripting off, reveal everything at once so the menu is still read. */}
+      <noscript>
+        <style>{'[data-profile-root] [style*="opacity:0"]{opacity:1!important;transform:none!important}'}</style>
+      </noscript>
+      
+      {/* 1. Navbar */}
+      <Navbar
+        lang={lang}
+        onToggleLang={toggleLanguage}
+        cartCount={totalCartCount}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenQr={() => setIsQrOpen(true)}
+        onOpenCalories={() => setIsCaloriesOpen(true)}
+      />
+
+      <main className="flex-1">
+        {sectionOrder.map((key) => (
+          <React.Fragment key={key}>{sections[key] ?? null}</React.Fragment>
+        ))}
       </main>
 
       {/* 8. Footer */}

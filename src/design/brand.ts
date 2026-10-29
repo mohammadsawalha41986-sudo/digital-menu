@@ -34,6 +34,11 @@ export interface BrandTokens {
   textScale?: string;
   spacing?: string;
   imageShape?: string;
+  sectionOrder?: string[];
+  offersInsideMenu?: boolean;
+  heroEffect?: string;
+  dishEffect?: string;
+  backgroundStyle?: string;
 }
 
 /**

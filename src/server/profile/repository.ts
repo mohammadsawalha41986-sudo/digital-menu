@@ -478,6 +478,11 @@ const BRAND_SELECT = {
   textScale: true,
   spacing: true,
   imageShape: true,
+  sectionOrder: true,
+  offersInsideMenu: true,
+  heroEffect: true,
+  dishEffect: true,
+  backgroundStyle: true,
 } as const;
 
 interface MediaRow {
@@ -716,4 +721,9 @@ const DEFAULT_BRAND: PublicProfile['brand'] = {
   textScale: 'md',
   spacing: 'regular',
   imageShape: 'landscape',
+  sectionOrder: ['hero', 'menu', 'offers', 'reviews', 'location'],
+  offersInsideMenu: true,
+  heroEffect: 'slide',
+  dishEffect: 'zoom',
+  backgroundStyle: 'solid',
 };

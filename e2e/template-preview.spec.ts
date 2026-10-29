@@ -29,22 +29,12 @@ import { listTemplates } from '../src/templates/registry';
 async function businessIdFor(page: Page, publicId: string): Promise<string> {
   await page.goto('/admin/businesses');
 
-  const ids = await page.locator('a[href^="/admin/businesses/"]').evaluateAll((links) =>
-    links
-      .map((link) => (link as HTMLAnchorElement).getAttribute('href') ?? '')
-      .map((href) => href.match(/^\/admin\/businesses\/([^/?#]+)/)?.[1] ?? '')
-      .filter((id) => id !== '' && id !== 'new'),
-  );
-
-  // Navigated rather than fetched with `page.request`: under `next start` the
-  // session cookie is Secure, which the browser sends to 127.0.0.1 but the
-  // API request client does not.
-  for (const id of [...new Set(ids)]) {
-    const response = await page.goto(`/admin/businesses/${id}`);
-    if (response?.ok() && (await page.content()).includes(`/m/${publicId}`)) return id;
-  }
-
-  return '';
+  // Read straight off the restaurant's card: opening every business in turn
+  // grows with the list and outran the test timeout once it held dozens.
+  const card = page.locator('article').filter({ has: page.locator(`a[href="/m/${publicId}"]`) }).first();
+  if ((await card.count()) === 0) return '';
+  const href = (await card.locator('a[href^="/admin/businesses/"]').first().getAttribute('href')) ?? '';
+  return href.match(/^\/admin\/businesses\/([^/?#]+)/)?.[1] ?? '';
 }
 
 test.describe('the template preview', () => {
@@ -65,16 +55,29 @@ test.describe('the template preview', () => {
     // And it must carry actual menu content, not just a shell.
     await expect(frame.locator('[data-item]').first()).toBeAttached({ timeout: 20_000 });
 
-    // Each photo layout card frames the same menu in that layout.
+    // Each photo layout card frames the same menu in that layout. The cards
+    // load lazily, as a visitor scrolls to them, so the test scrolls too.
     for (const key of ['a', 'b', 'c']) {
+      await page.locator(`.build__style-frame iframe[src*="variant=${key}"]`).scrollIntoViewIfNeeded();
       const card = page.frameLocator(`.build__style-frame iframe[src*="variant=${key}"]`);
       await expect(card.locator(`[data-profile-root][data-variant="${key}"]`)).toBeAttached({
         timeout: 20_000,
       });
     }
 
-    // The cards open their menu at the dishes without dragging this page down.
-    await page.waitForTimeout(1500);
+    // A #fragment in a framed page also scrolls the page around it, which is
+    // how this page once opened 1800px down. The cards must not use one.
+    for (const src of await page.locator('.build__style-frame iframe').evaluateAll((frames) =>
+      frames.map((frame) => frame.getAttribute('src') ?? ''),
+    )) {
+      expect(src).not.toContain('#');
+    }
+
+    // The cards open their menu at the dishes without dragging this page
+    // down: back at the top, nothing pulls the page away again.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.reload();
+    await page.waitForTimeout(2500);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 

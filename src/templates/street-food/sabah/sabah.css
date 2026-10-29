@@ -284,3 +284,152 @@
 .sf-root[data-menu-tone='light'] .text-amber-400 {
   color: oklch(from var(--brand-color-accent) 0.52 min(c, 0.16) h);
 }
+
+/* ---------------------------------------------------------------------------
+ * Motion chosen on the Design page: hero effects, dish photo effects,
+ * background styles. All of it stops for visitors who ask for less motion.
+ * ------------------------------------------------------------------------- */
+
+/* Hero: slow cinematic zoom / pan on the photograph while it is shown. */
+.sf-kb-zoom {
+  animation: sf-kb-zoom 7s ease-out both;
+}
+
+.sf-kb-pan {
+  animation: sf-kb-pan 7s ease-in-out both;
+}
+
+@keyframes sf-kb-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.16); }
+}
+
+@keyframes sf-kb-pan {
+  from { transform: scale(1.18) translateX(4%); }
+  to { transform: scale(1.18) translateX(-4%); }
+}
+
+/* Story bars (hero effect "story"). */
+.sf-story-fill {
+  width: 0;
+  animation-name: sf-story-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes sf-story-fill {
+  to { width: 100%; }
+}
+
+/* Dish photos. "zoom" is the design's own hover zoom and needs nothing here. */
+.sf-root[data-dish-effect='none'] .sf-card-media > img {
+  transform: none !important;
+  transition: none;
+}
+
+.sf-root[data-dish-effect='kenburns'] .sf-card-media > img {
+  animation: sf-dish-breathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes sf-dish-breathe {
+  from { transform: scale(1); }
+  to { transform: scale(1.12) translateY(-2%); }
+}
+
+/* A light sweep across the photo every few seconds. */
+.sf-root[data-dish-effect='shine'] .sf-card-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: sf-dish-shine 4.5s ease-in-out infinite;
+}
+
+@keyframes sf-dish-shine {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+/* The whole card gently floats, each one a little out of step. */
+.sf-root[data-dish-effect='float'] .sf-card {
+  animation: sf-dish-float 5s ease-in-out infinite;
+}
+
+.sf-root[data-dish-effect='float'] .sf-card:nth-child(2n) {
+  animation-delay: -2.5s;
+}
+
+@keyframes sf-dish-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
+
+/* A slow 3D tilt, as if the card turns towards the light. */
+.sf-root[data-dish-effect='tilt'] .sf-card {
+  transform-style: preserve-3d;
+  animation: sf-dish-tilt 7s ease-in-out infinite;
+}
+
+.sf-root[data-dish-effect='tilt'] .sf-card:nth-child(2n) {
+  animation-delay: -3.5s;
+}
+
+@keyframes sf-dish-tilt {
+  0%, 100% { transform: perspective(900px) rotateY(-5deg) rotateX(2deg); }
+  50% { transform: perspective(900px) rotateY(5deg) rotateX(-2deg); }
+}
+
+/* Backgrounds. Drawn on a fixed layer behind the page, from the brand. */
+.sf-root[data-background]:not([data-background='solid']) {
+  position: relative;
+  isolation: isolate;
+}
+
+.sf-root[data-background]:not([data-background='solid'])::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.sf-root[data-background='gradient']::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in oklab, var(--brand-color-primary) 30%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in oklab, var(--brand-color-accent) 18%, transparent), transparent 70%);
+}
+
+.sf-root[data-background='aurora']::before {
+  background:
+    radial-gradient(40% 35% at 20% 25%, color-mix(in oklab, var(--brand-color-primary) 40%, transparent), transparent 70%),
+    radial-gradient(35% 30% at 80% 35%, color-mix(in oklab, var(--brand-color-accent) 28%, transparent), transparent 70%),
+    radial-gradient(45% 40% at 50% 85%, color-mix(in oklab, var(--brand-color-primary) 30%, transparent), transparent 70%);
+  background-size: 180% 180%;
+  animation: sf-aurora 18s ease-in-out infinite alternate;
+}
+
+@keyframes sf-aurora {
+  0% { background-position: 0% 0%, 100% 0%, 50% 100%; }
+  100% { background-position: 100% 60%, 0% 80%, 30% 0%; }
+}
+
+.sf-root[data-background='pattern']::before {
+  background-image: radial-gradient(color-mix(in oklab, var(--brand-color-primary) 35%, transparent) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-kb-zoom,
+  .sf-kb-pan,
+  .sf-story-fill,
+  .sf-root[data-dish-effect] .sf-card,
+  .sf-root[data-dish-effect] .sf-card-media > img,
+  .sf-root[data-dish-effect] .sf-card-media::after,
+  .sf-root[data-background]::before {
+    animation: none !important;
+  }
+}

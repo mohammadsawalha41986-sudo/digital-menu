@@ -54,7 +54,18 @@ export class ValidationError extends Error {
 type BusinessInput = z.infer<typeof businessSchema>;
 type BranchInput = z.infer<typeof branchSchema>;
 type BrandOutput = z.infer<typeof brandSchema>;
-type MenuDesignKey = 'menuPage' | 'menuCard' | 'menuPrice' | 'textScale' | 'spacing' | 'imageShape';
+type MenuDesignKey =
+  | 'menuPage'
+  | 'menuCard'
+  | 'menuPrice'
+  | 'textScale'
+  | 'spacing'
+  | 'imageShape'
+  | 'sectionOrder'
+  | 'offersInsideMenu'
+  | 'heroEffect'
+  | 'dishEffect'
+  | 'backgroundStyle';
 /** Callers that only set the palette leave the menu design settings as they are. */
 type BrandInput = Omit<BrandOutput, MenuDesignKey> & Partial<Pick<BrandOutput, MenuDesignKey>>;
 type MenuInput = z.infer<typeof menuSchema>;

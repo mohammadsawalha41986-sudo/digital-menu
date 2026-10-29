@@ -39,3 +39,64 @@ test('photo shape, text size and a light page reach the public menu', async ({ p
   await page.goto('/m/DEM006?lang=ar');
   await expect(page.locator('.sf-root')).toHaveAttribute('data-menu-tone', 'dark');
 });
+
+test('sections follow the chosen order, and motion settings reach the menu', async ({ page }) => {
+  await signIn(page);
+  await designPage(page);
+
+  // Offers out of the menu, then moved to the top.
+  const offersInside = page.getByLabel(/Show offers inside the menu/);
+  await offersInside.uncheck();
+  for (let i = 0; i < 2; i += 1) {
+    await page.getByRole('button', { name: /العروض · Offers — للأعلى/ }).click();
+  }
+  await page.getByLabel('Hero motion').selectOption('story');
+  await page.getByLabel('Dish photo effect').selectOption('float');
+  await page.getByLabel('Background style').selectOption('gradient');
+  await page.getByRole('button', { name: 'Save design' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
+
+  await page.goto('/m/DEM006?lang=ar');
+  const root = page.locator('.sf-root');
+  await expect(root).toHaveAttribute('data-dish-effect', 'float');
+  await expect(root).toHaveAttribute('data-background', 'gradient');
+  await expect(page.locator('[data-hero-effect]')).toHaveAttribute('data-hero-effect', 'story');
+
+  // Restore, so the suite is re-runnable.
+  await designPage(page);
+  for (let i = 0; i < 2; i += 1) {
+    await page.getByRole('button', { name: /العروض · Offers — للأسفل/ }).click();
+  }
+  await page.getByLabel(/Show offers inside the menu/).check();
+  await page.getByLabel('Hero motion').selectOption('slide');
+  await page.getByLabel('Dish photo effect').selectOption('zoom');
+  await page.getByLabel('Background style').selectOption('solid');
+  await page.getByRole('button', { name: 'Save design' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
+});
+
+test('a restaurant with offers can put them above the menu', async ({ page }) => {
+  await signIn(page);
+  await page.goto('/admin/businesses');
+  const href = await page.locator('a[href="/m/DEM001"]').first().evaluate((link) =>
+    link.closest('article')?.querySelector('a[href^="/admin/businesses/"]')?.getAttribute('href') ?? '',
+  );
+  await page.goto(`${href}/design`);
+  await page.getByLabel(/Show offers inside the menu/).uncheck();
+  // menu, offers → offers, menu
+  await page.getByRole('button', { name: /العروض · Offers — للأعلى/ }).click();
+  await page.getByRole('button', { name: 'Save design' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
+
+  await page.goto('/m/DEM001?lang=ar');
+  const order = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('#hero, [data-offers-strip], #menu-section')).map((el) => el.id || 'offers'),
+  );
+  expect(order).toEqual(['hero', 'offers', 'menu-section']);
+
+  await page.goto(`${href}/design`);
+  await page.getByRole('button', { name: /العروض · Offers — للأسفل/ }).click();
+  await page.getByLabel(/Show offers inside the menu/).check();
+  await page.getByRole('button', { name: 'Save design' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
+});

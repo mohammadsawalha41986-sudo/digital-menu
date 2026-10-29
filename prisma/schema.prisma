@@ -240,6 +240,17 @@ model BrandTheme {
   spacing    String  @default("regular")
   /// landscape | square | portrait
   imageShape String  @default("landscape")
+  /// Order of the menu page's sections: hero, menu, offers, reviews, location.
+  sectionOrder     String[] @default(["hero", "menu", "offers", "reviews", "location"])
+  /// Offers shown inside the menu (after the second category) rather than
+  /// in their own place in sectionOrder.
+  offersInsideMenu Boolean  @default(true)
+  /// slide | fade | zoom | pan | flip | story
+  heroEffect       String   @default("slide")
+  /// none | zoom | kenburns | shine | float | tilt
+  dishEffect       String   @default("zoom")
+  /// solid | gradient | aurora | pattern
+  backgroundStyle  String   @default("solid")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

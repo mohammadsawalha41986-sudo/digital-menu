@@ -2897,3 +2897,36 @@
   grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
   gap: var(--sys-space-2);
 }
+
+.design__order-field {
+  grid-column: 1 / -1;
+}
+
+.design__order {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.design__order-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-bg);
+}
+
+.design__order-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.design__order-name small {
+  font-weight: 400;
+  color: var(--admin-muted);
+}

@@ -55,3 +55,27 @@ describe('menu design controls', () => {
     expect(brandSchema.safeParse({ ...BASE, menuPrice: 'red' }).success).toBe(false);
   });
 });
+
+describe('layout and motion settings', () => {
+  it('accepts a full, reordered section list and refuses a partial or repeated one', () => {
+    const order = ['offers', 'hero', 'menu', 'location', 'reviews'];
+    expect(brandSchema.parse({ ...BASE, sectionOrder: order }).sectionOrder).toEqual(order);
+    expect(brandSchema.safeParse({ ...BASE, sectionOrder: ['hero', 'menu'] }).success).toBe(false);
+    expect(brandSchema.safeParse({ ...BASE, sectionOrder: ['hero', 'hero', 'menu', 'offers', 'reviews'] }).success).toBe(false);
+  });
+
+  it('keeps offers inside the menu unless the form says otherwise', () => {
+    expect(brandSchema.parse(BASE).offersInsideMenu).toBe(true);
+    expect(brandSchema.parse({ ...BASE, offersInsideMenu: 'false' }).offersInsideMenu).toBe(false);
+  });
+
+  it('accepts only the effects and backgrounds the design draws', () => {
+    expect(brandSchema.parse({ ...BASE, heroEffect: 'story', dishEffect: 'shine', backgroundStyle: 'aurora' })).toMatchObject({
+      heroEffect: 'story',
+      dishEffect: 'shine',
+      backgroundStyle: 'aurora',
+    });
+    expect(brandSchema.safeParse({ ...BASE, heroEffect: 'explode' }).success).toBe(false);
+    expect(brandSchema.safeParse({ ...BASE, backgroundStyle: 'video' }).success).toBe(false);
+  });
+});

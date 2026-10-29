@@ -67,6 +67,39 @@ const SHAPES = [
   { value: 'portrait', label: 'طولية · Portrait', ratio: '4 / 5' },
 ];
 
+const SECTION_LABELS: Record<string, string> = {
+  hero: 'الواجهة (السلايدر) · Hero',
+  menu: 'المنيو · Menu',
+  offers: 'العروض · Offers',
+  reviews: 'التقييمات · Reviews',
+  location: 'الموقع والخريطة · Location',
+};
+
+const HERO_EFFECTS = [
+  { value: 'slide', label: 'انزلاق · Slide' },
+  { value: 'fade', label: 'تلاشي ناعم · Fade' },
+  { value: 'zoom', label: 'تكبير سينمائي · Cinematic zoom' },
+  { value: 'pan', label: 'تحريك أفقي · Pan' },
+  { value: 'flip', label: 'قلب ثلاثي الأبعاد · 3D flip' },
+  { value: 'story', label: 'ستوري مثل تيك توك · Stories' },
+];
+
+const DISH_EFFECTS = [
+  { value: 'none', label: 'بدون · None' },
+  { value: 'zoom', label: 'تكبير عند اللمس · Zoom on touch' },
+  { value: 'kenburns', label: 'تكبير بطيء مستمر · Slow zoom' },
+  { value: 'shine', label: 'لمعة · Shine' },
+  { value: 'float', label: 'طفو · Float' },
+  { value: 'tilt', label: 'ميلان ثلاثي الأبعاد · 3D tilt' },
+];
+
+const BACKGROUNDS = [
+  { value: 'solid', label: 'لون واحد · Solid' },
+  { value: 'gradient', label: 'تدرج من ألوان الشعار · Gradient' },
+  { value: 'aurora', label: 'تدرج متحرك · Animated glow' },
+  { value: 'pattern', label: 'نقاط ناعمة · Dot pattern' },
+];
+
 export interface BrandValues {
   colorPrimary: string;
   colorSecondary: string;
@@ -85,6 +118,11 @@ export interface BrandValues {
   textScale: string;
   spacing: string;
   imageShape: string;
+  sectionOrder: string[];
+  offersInsideMenu: boolean;
+  heroEffect: string;
+  dishEffect: string;
+  backgroundStyle: string;
 }
 
 function stackOf(key: string): string | undefined {
@@ -118,6 +156,22 @@ export function BrandForm({
   const [textScale, setTextScale] = useState(brand?.textScale ?? 'md');
   const [spacing, setSpacing] = useState(brand?.spacing ?? 'regular');
   const [imageShape, setImageShape] = useState(brand?.imageShape ?? 'landscape');
+  const [order, setOrder] = useState<string[]>(
+    brand?.sectionOrder?.length ? brand.sectionOrder : ['hero', 'menu', 'offers', 'reviews', 'location'],
+  );
+  const [offersInside, setOffersInside] = useState(brand?.offersInsideMenu ?? true);
+  const [heroEffect, setHeroEffect] = useState(brand?.heroEffect ?? 'slide');
+  const [dishEffect, setDishEffect] = useState(brand?.dishEffect ?? 'zoom');
+  const [backgroundStyle, setBackgroundStyle] = useState(brand?.backgroundStyle ?? 'solid');
+
+  const move = (index: number, by: -1 | 1) =>
+    setOrder((current) => {
+      const next = [...current];
+      const target = index + by;
+      if (target < 0 || target >= next.length) return current;
+      [next[index], next[target]] = [next[target]!, next[index]!];
+      return next;
+    });
 
   // What the sample shows: the owner's colours where set, the design's
   // automatic ones otherwise.
@@ -204,6 +258,52 @@ export function BrandForm({
             <Select id="textScale" label="حجم الخط · Text size" value={textScale} onChange={setTextScale} options={TEXT_SCALES} />
             <Select id="spacing" label="المسافات · Spacing" value={spacing} onChange={setSpacing} options={SPACINGS} />
             <Select id="imageShape" label="شكل الصور · Photo shape" value={imageShape} onChange={setImageShape} options={SHAPES} />
+          </fieldset>
+
+          <fieldset className="admin__fieldset design__group">
+            <legend className="admin__label">الترتيب والحركة · Layout & motion</legend>
+
+            <div className="admin__field design__order-field">
+              <span className="admin__label">ترتيب أقسام الصفحة · Section order</span>
+              <ol className="design__order">
+                {order.map((key, index) => (
+                  <li key={key} className="design__order-item" data-section={key}>
+                    <input type="hidden" name="sectionOrder" value={key} />
+                    <span className="design__order-name">
+                      {SECTION_LABELS[key] ?? key}
+                      {key === 'offers' && offersInside ? <small> — داخل المنيو · inside the menu</small> : null}
+                    </span>
+                    <button
+                      type="button"
+                      className="admin__button admin__button--secondary admin__button--small"
+                      onClick={() => move(index, -1)}
+                      disabled={index === 0}
+                      aria-label={`${SECTION_LABELS[key] ?? key} — للأعلى · move up`}
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      className="admin__button admin__button--secondary admin__button--small"
+                      onClick={() => move(index, 1)}
+                      disabled={index === order.length - 1}
+                      aria-label={`${SECTION_LABELS[key] ?? key} — للأسفل · move down`}
+                    >
+                      ▼
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              <label className="design__auto">
+                <input type="checkbox" checked={offersInside} onChange={(event) => setOffersInside(event.target.checked)} />
+                اعرض العروض داخل المنيو بعد القسم الثاني · Show offers inside the menu
+              </label>
+              <input type="hidden" name="offersInsideMenu" value={offersInside ? 'true' : 'false'} />
+            </div>
+
+            <Select id="heroEffect" label="حركة صور الواجهة · Hero motion" value={heroEffect} onChange={setHeroEffect} options={HERO_EFFECTS} />
+            <Select id="dishEffect" label="مؤثر صور الأطباق · Dish photo effect" value={dishEffect} onChange={setDishEffect} options={DISH_EFFECTS} />
+            <Select id="backgroundStyle" label="نمط الخلفية · Background style" value={backgroundStyle} onChange={setBackgroundStyle} options={BACKGROUNDS} />
           </fieldset>
         </div>
 
