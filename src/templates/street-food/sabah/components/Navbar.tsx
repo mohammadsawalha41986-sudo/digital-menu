@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-600/25 via-amber-500/20 to-emerald-950/60 border border-emerald-500/50 flex items-center justify-center overflow-hidden p-1 shadow-md shadow-emerald-950/40 group-hover:border-amber-400/90 transition-colors relative"
           >
             <img
-              src="/assets/menu/logo_crop.png"
+              src="/sabah/assets/menu/logo_crop.png"
               alt="شعار مطعم صباح الليل"
               className="w-full h-full object-contain filter drop-shadow"
               referrerPolicy="no-referrer"

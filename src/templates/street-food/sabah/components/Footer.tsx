@@ -24,7 +24,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600/30 to-amber-500/20 border border-emerald-500/40 flex items-center justify-center p-1 shadow">
                 <img
-                  src="/assets/menu/logo_crop.png"
+                  src="/sabah/assets/menu/logo_crop.png"
                   alt="صباح الليل"
                   className="w-full h-full object-contain"
                 />

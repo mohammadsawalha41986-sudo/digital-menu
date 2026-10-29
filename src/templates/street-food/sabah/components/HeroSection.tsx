@@ -38,7 +38,7 @@ const FULL_WIDTH_SLIDES = [
     price: 20.00,
     calories: 250,
     prepTimeAr: '10 - 12 دقيقة',
-    image: '/assets/menu/feature_broasted.png',
+    image: '/sabah/assets/menu/feature_broasted.png',
   },
   {
     id: 'shawarma-arabic',
@@ -51,7 +51,7 @@ const FULL_WIDTH_SLIDES = [
     price: 19.00,
     calories: 800,
     prepTimeAr: '8 - 10 دقائق',
-    image: '/assets/menu/dish_shawarma.png',
+    image: '/sabah/assets/menu/dish_shawarma.png',
   },
   {
     id: 'combo-qarmsha',
@@ -64,7 +64,7 @@ const FULL_WIDTH_SLIDES = [
     price: 21.00,
     calories: 890,
     prepTimeAr: '10 - 15 دقيقة',
-    image: '/assets/menu/combo_qarmsha.png',
+    image: '/sabah/assets/menu/combo_qarmsha.png',
   },
   {
     id: 'single-mix-bbq',
@@ -77,7 +77,7 @@ const FULL_WIDTH_SLIDES = [
     price: 38.00,
     calories: 650,
     prepTimeAr: '12 - 15 دقيقة',
-    image: '/assets/menu/dish_sandwiches.png',
+    image: '/sabah/assets/menu/dish_sandwiches.png',
   },
 ];
 
