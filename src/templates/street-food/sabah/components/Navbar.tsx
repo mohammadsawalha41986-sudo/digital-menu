@@ -3,7 +3,7 @@
 import React from 'react';
 import { ShoppingBag, MapPin, Phone, Globe, QrCode, Activity, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RESTAURANT_INFO } from '../data/menuData';
+import { useSabah } from '../context';
 import type { Language } from '../types';
 
 interface NavbarProps {
@@ -23,6 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenQr,
   onOpenCalories,
 }) => {
+  const { info: RESTAURANT_INFO, logoUrl } = useSabah();
   const isAr = lang === 'ar';
 
   return (
@@ -36,15 +37,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             whileTap={{ scale: 0.95 }}
             className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-600/25 via-amber-500/20 to-emerald-950/60 border border-emerald-500/50 flex items-center justify-center overflow-hidden p-1 shadow-md shadow-emerald-950/40 group-hover:border-amber-400/90 transition-colors relative"
           >
-            <img
-              src="/sabah/assets/menu/logo_crop.png"
-              alt="شعار مطعم صباح الليل"
+            {logoUrl ? <img
+              src={logoUrl}
+              alt={RESTAURANT_INFO.nameAr}
               className="w-full h-full object-contain filter drop-shadow"
               referrerPolicy="no-referrer"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
-            />
+            /> : null}
             <div className="absolute inset-0 bg-emerald-500/10 pointer-events-none rounded-xl" />
           </motion.div>
           
@@ -54,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
             </span>
             <span className="text-[11px] text-emerald-300/80 font-medium">
-              {isAr ? 'حي الصحافة • الرياض' : 'Al-Sahafa • Riyadh'}
+              {isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}
             </span>
           </div>
         </a>

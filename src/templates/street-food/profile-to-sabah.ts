@@ -4,6 +4,7 @@ import type {
   MenuItem,
   RestaurantInfo,
 } from './sabah/data/menuData';
+import type { HeroSlide } from './sabah/context';
 
 /**
  * Map the platform's `PublicProfile` shape into the shape the Sabah El Lail
@@ -25,6 +26,8 @@ export function profileToSabah(profile: PublicProfile): {
   restaurantInfo: RestaurantInfo;
   menuCategories: MenuCategory[];
   menuItems: MenuItem[];
+  logoUrl: string | null;
+  slides: HeroSlide[];
 } {
   const categoriesAll = profile.menus.flatMap((menu) =>
     menu.categories.map((category) => ({
@@ -97,5 +100,54 @@ export function profileToSabah(profile: PublicProfile): {
     serviceOptionsEn: [],
   };
 
-  return { restaurantInfo, menuCategories, menuItems: itemsAll };
+  return {
+    restaurantInfo,
+    menuCategories,
+    menuItems: itemsAll,
+    logoUrl: profile.logo?.url ?? null,
+    slides: buildSlides(restaurantInfo, itemsAll),
+  };
+}
+
+/**
+ * Hero slides come from the restaurant's own dishes: featured ones with a
+ * photo first, then any other photographed dish, four at most. A restaurant
+ * with no photographs gets one slide carrying its own name and description
+ * over a plain background — never another restaurant's food.
+ */
+function buildSlides(info: RestaurantInfo, items: MenuItem[]): HeroSlide[] {
+  const photographed = items.filter((item) => item.image);
+  const ordered = [
+    ...photographed.filter((item) => item.isPopular),
+    ...photographed.filter((item) => !item.isPopular),
+  ].slice(0, 4);
+
+  if (ordered.length === 0) {
+    return [
+      {
+        id: '',
+        tagAr: '',
+        tagEn: '',
+        headlineAr: info.nameAr,
+        headlineEn: info.nameEn,
+        subtitleAr: info.sloganAr,
+        subtitleEn: info.sloganEn,
+        price: 0,
+        image: '',
+      },
+    ];
+  }
+
+  return ordered.map((item) => ({
+    id: item.id,
+    tagAr: item.isPopular ? 'طبق مميز' : '',
+    tagEn: item.isPopular ? 'Featured' : '',
+    headlineAr: item.nameAr,
+    headlineEn: item.nameEn,
+    subtitleAr: item.descriptionAr ?? '',
+    subtitleEn: item.descriptionEn ?? '',
+    price: item.price,
+    calories: item.calories,
+    image: item.image ?? '',
+  }));
 }

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { MapPin, Navigation, ExternalLink, Copy, Check, Star, Clock, Phone, Share2, Compass, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { RESTAURANT_INFO } from '../data/menuData';
+import { useSabah } from '../context';
 import type { Language } from '../types';
 
 interface GoogleLocationSectionProps {
@@ -11,6 +11,7 @@ interface GoogleLocationSectionProps {
 }
 
 export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ lang }) => {
+  const { info: RESTAURANT_INFO } = useSabah();
   const isAr = lang === 'ar';
   const [copied, setCopied] = useState(false);
 
@@ -26,7 +27,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
     if (navigator.share) {
       navigator.share({
         title: RESTAURANT_INFO.nameAr,
-        text: `موقع ${RESTAURANT_INFO.nameAr} في حي الصحافة على خرائط جوجل:`,
+        text: `موقع ${RESTAURANT_INFO.nameAr} على خرائط جوجل:`,
         url: RESTAURANT_INFO.googleMapsUrl,
       }).catch(() => {});
     } else {
@@ -56,12 +57,12 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
               <span>{isAr ? 'موقع الفرع المعتمد والخرائط' : 'Official Branch Location & Map'}</span>
             </div>
             <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              {isAr ? 'موقع مطعم صباح الليل على خرائط Google' : 'Sabah El Lail on Google Maps'}
+              {isAr ? `موقع ${RESTAURANT_INFO.nameAr} على خرائط Google` : `${RESTAURANT_INFO.nameEn} on Google Maps`}
             </h2>
             <p className="text-stone-300 text-sm mt-1.5 max-w-2xl leading-relaxed">
               {isAr
-                ? 'يسعدنا استقبالكم في فرعنا بحي الصحافة شمال الرياض لتناول أشهى الوجبات الساخنة أو طلب الاستلام السفري مع إمكانية الملاحة المباشرة عبر خرائط جوجل.'
-                : 'Visit our branch in Al-Sahafa District, North Riyadh, or navigate directly using turn-by-turn Google Maps.'}
+                ? 'يسعدنا استقبالكم في فرعنا، أو اطلب سفري واستخدم الملاحة المباشرة عبر خرائط جوجل.'
+                : 'Visit us, order takeaway, or navigate directly with Google Maps.'}
             </p>
           </div>
 
@@ -117,7 +118,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                     {isAr ? RESTAURANT_INFO.nameAr : RESTAURANT_INFO.nameEn}
                   </h3>
                   <p className="text-xs text-emerald-300/80 mt-1 font-medium">
-                    {isAr ? 'شاورما • بروستد • مشويات • بيتزا • عصائر طازجة' : 'Shawarma • Broasted • Charcoal BBQ • Pizza • Juices'}
+                    {isAr ? RESTAURANT_INFO.sloganAr : RESTAURANT_INFO.sloganEn}
                   </p>
                 </div>
 
@@ -144,7 +145,8 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                 </div>
               </div>
 
-              {/* Star Rating Card */}
+              {/* Star Rating Card — only when there is a real rating */}
+              {RESTAURANT_INFO.rating > 0 ? (
               <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-stone-900/90 border border-emerald-950">
                 <div className="flex items-center text-amber-400">
                   <Star className="w-5 h-5 fill-amber-400" />
@@ -154,12 +156,13 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                   <Star className="w-5 h-5 fill-amber-400" />
                 </div>
                 <div className="text-sm">
-                  <span className="font-black text-amber-400 text-lg mr-1 ml-1 tabular-nums">4.8</span>
+                  <span className="font-black text-amber-400 text-lg mr-1 ml-1 tabular-nums">{RESTAURANT_INFO.rating.toFixed(1)}</span>
                   <span className="text-stone-300 text-xs font-semibold">
-                    ({isAr ? '1,348 تقييم ومراجعة موثقة' : '1,348 verified Google reviews'})
+                    ({RESTAURANT_INFO.reviewCount.toLocaleString('en-US')} {isAr ? 'تقييم على Google' : 'Google reviews'})
                   </span>
                 </div>
               </div>
+              ) : null}
 
               {/* Details List */}
               <div className="space-y-3.5 text-xs sm:text-sm text-stone-200">
@@ -269,7 +272,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
             <div className="bg-[#0e1510]/95 backdrop-blur-md px-5 py-3.5 border-b border-emerald-950 flex items-center justify-between z-10">
               <div className="flex items-center gap-2 text-xs text-stone-300">
                 <MapPin className="w-4 h-4 text-red-500" />
-                <span className="font-extrabold text-white">{isAr ? 'خريطة حي الصحافة - الرياض' : 'Al-Sahafa Riyadh Map'}</span>
+                <span className="font-extrabold text-white">{isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}</span>
                 <span className="text-stone-600 hidden sm:inline">|</span>
                 <span className="text-emerald-400 font-semibold hidden sm:inline">{isAr ? 'موقع الفرع المعتمد' : 'Verified Location'}</span>
               </div>
@@ -287,8 +290,8 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
             {/* Interactive Embedded Google Map */}
             <div className="relative flex-1 w-full h-full min-h-[350px]">
               <iframe
-                title="موقع مطعم صباح الليل حي الصحافة الرياض على خرائط جوجل"
-                src="https://maps.google.com/maps?q=Al+Sahafah+Riyadh+Saudi+Arabia&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                title={RESTAURANT_INFO.nameAr}
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${RESTAURANT_INFO.nameAr} ${RESTAURANT_INFO.addressAr}`.trim())}&z=15&output=embed`}
                 className="w-full h-full border-0 absolute inset-0 filter contrast-105"
                 loading="lazy"
                 allowFullScreen
@@ -299,12 +302,14 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
               <div className="absolute bottom-4 right-4 left-4 sm:left-auto sm:max-w-xs bg-stone-950/95 backdrop-blur-md border border-emerald-500/40 rounded-2xl p-4 shadow-2xl text-xs space-y-1.5 z-10">
                 <div className="flex items-center justify-between">
                   <span className="font-black text-white text-sm">{RESTAURANT_INFO.nameAr}</span>
+                  {RESTAURANT_INFO.rating > 0 ? (
                   <span className="text-amber-400 font-bold flex items-center gap-1 bg-stone-900 px-2 py-0.5 rounded-lg border border-amber-500/30">
-                    <Star className="w-3 h-3 fill-amber-400" /> 4.8
+                    <Star className="w-3 h-3 fill-amber-400" /> {RESTAURANT_INFO.rating.toFixed(1)}
                   </span>
+                  ) : null}
                 </div>
                 <p className="text-stone-300 text-[11px] leading-relaxed">
-                  {isAr ? 'حي الصحافة • بالقرب من طريق أنس بن مالك وطريق الملك فهد' : 'Al-Sahafa • Near Anas Ibn Malik Rd & King Fahd Rd'}
+                  {isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}
                 </p>
                 <div className="pt-2 flex items-center gap-2">
                   <a
@@ -316,51 +321,6 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                     {isAr ? 'الاتجاهات في خرائط Google' : 'Directions in Google Maps'}
                   </a>
                 </div>
-              </div>
-            </div>
-
-            {/* Bottom Google Customer Reviews highlight */}
-            <div className="bg-[#0b100c] p-4 border-t border-emerald-950 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-stone-900/80 border border-emerald-950">
-                <div className="flex items-center gap-1 text-amber-400 mb-1">
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                </div>
-                <p className="text-stone-300 italic text-[11px] leading-relaxed">
-                  {isAr ? '"أفضل شاورما عربي بالصحافة وثوميتهم ممتازة جداً ونظافة عالية."' : '"Best Arabic shawarma in Al-Sahafa, amazing garlic dip."'}
-                </p>
-                <span className="text-emerald-400 text-[10px] font-semibold block mt-1.5">سعد الشمري · عميل محلي</span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-stone-900/80 border border-emerald-950">
-                <div className="flex items-center gap-1 text-amber-400 mb-1">
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                </div>
-                <p className="text-stone-300 italic text-[11px] leading-relaxed">
-                  {isAr ? '"البروستد مقرمش وخالي من الزيت الزائد وسعر وجبة الكومبو بطل."' : '"Crispy broasted chicken and the combo deals are super value."'}
-                </p>
-                <span className="text-emerald-400 text-[10px] font-semibold block mt-1.5">عبدالعزيز التميمي · مراجع معتمد</span>
-              </div>
-
-              <div className="p-3 rounded-xl bg-stone-900/80 border border-emerald-950">
-                <div className="flex items-center gap-1 text-amber-400 mb-1">
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                  <Star className="w-3 h-3 fill-amber-400" />
-                </div>
-                <p className="text-stone-300 italic text-[11px] leading-relaxed">
-                  {isAr ? '"المشويات على الفحم طازجة وساخنة وسريعين جداً في تسليم الطلبات."' : '"Fresh charcoal BBQ and fast service. Highly recommended."'}
-                </p>
-                <span className="text-emerald-400 text-[10px] font-semibold block mt-1.5">فهد القحطاني · دليل محلي</span>
               </div>
             </div>
 

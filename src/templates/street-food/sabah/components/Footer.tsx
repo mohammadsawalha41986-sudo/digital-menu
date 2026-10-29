@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { MapPin, Phone, MessageCircle, Clock, ExternalLink } from 'lucide-react';
-import { RESTAURANT_INFO } from '../data/menuData';
+import { useSabah } from '../context';
 import type { Language } from '../types';
 
 interface FooterProps {
@@ -11,6 +11,7 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
+  const { info: RESTAURANT_INFO, logoUrl, categories: MENU_CATEGORIES } = useSabah();
   const isAr = lang === 'ar';
 
   return (
@@ -23,11 +24,13 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600/30 to-amber-500/20 border border-emerald-500/40 flex items-center justify-center p-1 shadow">
-                <img
-                  src="/sabah/assets/menu/logo_crop.png"
-                  alt="صباح الليل"
-                  className="w-full h-full object-contain"
-                />
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt={RESTAURANT_INFO.nameAr}
+                    className="w-full h-full object-contain"
+                  />
+                ) : null}
               </div>
               <span className="text-base font-black text-white">
                 {isAr ? RESTAURANT_INFO.nameAr : RESTAURANT_INFO.nameEn}
@@ -35,8 +38,8 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
             </div>
             <p className="text-stone-300 text-xs leading-relaxed">
               {isAr
-                ? 'مطعم متخصص في الشاورما العربية والتركية، البروستد الذهبي، المشويات على الفحم، والبيتزا والعصائر الطازجة في حي الصحافة بالرياض.'
-                : 'Specializing in Arabic & Turkish shawarma, golden broasted chicken, charcoal BBQ, pizzas, and fresh juices in Al-Sahafa Riyadh.'}
+                ? RESTAURANT_INFO.sloganAr
+                : RESTAURANT_INFO.sloganEn}
             </p>
             <div className="flex items-center gap-1.5 text-emerald-400 font-bold pt-1">
               <Clock className="w-3.5 h-3.5" />
@@ -50,31 +53,13 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
               {isAr ? 'أقسام القائمة' : 'Menu Sections'}
             </h4>
             <ul className="space-y-2 font-medium">
-              <li>
-                <a href="#combos" className="hover:text-amber-400 transition-colors">
-                  {isAr ? 'عروض التوفير والكومبو' : 'Value Combos'}
-                </a>
-              </li>
-              <li>
-                <a href="#shawarma" className="hover:text-amber-400 transition-colors">
-                  {isAr ? 'الشاورما والصاروخ والعربي' : 'Shawarma & Sarookh'}
-                </a>
-              </li>
-              <li>
-                <a href="#broasted" className="hover:text-amber-400 transition-colors">
-                  {isAr ? 'البروستد والتندر المقرمش' : 'Crispy Broasted & Tenders'}
-                </a>
-              </li>
-              <li>
-                <a href="#grills" className="hover:text-amber-400 transition-colors">
-                  {isAr ? 'المشويات على الفحم' : 'Charcoal BBQ Grills'}
-                </a>
-              </li>
-              <li>
-                <a href="#pizza" className="hover:text-amber-400 transition-colors">
-                  {isAr ? 'البيتزا والعصائر الطازجة' : 'Pizza & Fresh Juices'}
-                </a>
-              </li>
+              {MENU_CATEGORIES.slice(0, 5).map((cat) => (
+                <li key={cat.id}>
+                  <a href={`#${cat.id}`} className="hover:text-amber-400 transition-colors">
+                    {isAr ? cat.nameAr : cat.nameEn}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 

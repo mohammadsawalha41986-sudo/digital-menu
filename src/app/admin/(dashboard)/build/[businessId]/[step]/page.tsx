@@ -47,6 +47,7 @@ export const dynamic = 'force-dynamic';
  * the scenes.
  */
 const STYLES: StyleOption[] = [
+  { key: 'street-food', label: 'Street Food', description: 'Dark, photo-led delivery-app menu with a cart and WhatsApp ordering.', themeKey: 'bold-street' },
   { key: 'modern', label: 'Modern', description: 'Photos, clear sections, easy to scan on a phone.', themeKey: 'modern-minimal' },
   { key: 'editorial', label: 'Editorial', description: 'Large type, generous space, magazine feel.', themeKey: 'ember-editorial' },
   { key: 'luxury', label: 'Luxury', description: 'Dark, quiet and ceremonial.', themeKey: 'dark-luxury' },

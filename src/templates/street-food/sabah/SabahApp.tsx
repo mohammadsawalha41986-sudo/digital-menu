@@ -16,6 +16,7 @@ import {
   RESTAURANT_INFO as DEFAULT_INFO,
 } from './data/menuData';
 import type { MenuItem, MenuCategory, RestaurantInfo } from './data/menuData';
+import { SabahDataProvider, type HeroSlide } from './context';
 import type { CartItem, Language } from './types';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
@@ -38,6 +39,9 @@ export interface SabahAppProps {
   menuCategories?: MenuCategory[];
   menuItems?: MenuItem[];
   initialLang?: Language;
+  logoUrl?: string | null;
+  slides?: HeroSlide[];
+  qrDataUri?: string | null;
 }
 
 export default function App({
@@ -45,6 +49,9 @@ export default function App({
   menuCategories,
   menuItems,
   initialLang,
+  logoUrl = null,
+  slides = [],
+  qrDataUri = null,
 }: SabahAppProps = {}) {
   const RESTAURANT_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
   const MENU_CATEGORIES: MenuCategory[] = menuCategories ?? DEFAULT_CATEGORIES;
@@ -197,6 +204,9 @@ export default function App({
   const isAr = lang === 'ar';
 
   return (
+    <SabahDataProvider
+      value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri }}
+    >
     <div className="min-h-screen bg-[#070b08] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
       
       {/* 1. Navbar */}
@@ -391,7 +401,7 @@ export default function App({
           <motion.a
             whileTap={{ scale: 0.95 }}
             href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}?text=${encodeURIComponent(
-              'السلام عليكم، أود الطلب من مطعم صباح الليل'
+              `السلام عليكم، أود الطلب من ${RESTAURANT_INFO.nameAr}`
             )}`}
             target="_blank"
             rel="noreferrer"
@@ -460,5 +470,6 @@ export default function App({
       />
 
     </div>
+    </SabahDataProvider>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
-import { RESTAURANT_INFO } from '../data/menuData';
+import { useSabah } from '../context';
 import type { Language } from '../types';
 
 interface QrCodeModalProps {
@@ -13,11 +13,12 @@ interface QrCodeModalProps {
 
 export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose, lang }) => {
   const [copied, setCopied] = useState(false);
+  const { info: RESTAURANT_INFO, qrDataUri } = useSabah();
   if (!isOpen) return null;
 
   const isAr = lang === 'ar';
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://sabah-el-lail.menu';
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(currentUrl).then(() => {
@@ -26,8 +27,9 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose, lang 
     });
   };
 
-  // Standard high-res QR code
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}&margin=8`;
+  // Generated on the server by the platform's QR service: it encodes the
+  // permanent menu link, the same one printed on the restaurant's tables.
+  const qrCodeUrl = qrDataUri;
 
   return (
     <div 
@@ -48,14 +50,11 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose, lang 
         {/* Pure QR Code with clean restaurant badge - NO extraneous words above */}
         <div className="pt-2">
           <div className="p-4 bg-white rounded-2xl mx-auto inline-block shadow-2xl border border-stone-200">
-            <img
-              src={qrCodeUrl}
-              alt="QR Code"
-              className="w-52 h-52 mx-auto"
-              referrerPolicy="no-referrer"
-            />
+            {qrCodeUrl ? (
+              <img src={qrCodeUrl} alt="QR Code" className="w-52 h-52 mx-auto" />
+            ) : null}
             <span className="block text-xs font-black text-stone-900 mt-2">
-              مطعم صباح الليل • حي الصحافة
+              {RESTAURANT_INFO.nameAr}
             </span>
           </div>
         </div>

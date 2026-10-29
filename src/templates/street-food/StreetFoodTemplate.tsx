@@ -1,35 +1,45 @@
 import SabahApp from './sabah/SabahApp';
 import { profileToSabah } from './profile-to-sabah';
+import { renderQr } from '@/server/qr/service';
+import type { PublicProfile } from '@/server/profile/types';
+import type { Locale } from '@/i18n/config';
 import type { TemplateRenderProps } from '../types';
 
 /**
  * STREET FOOD — the Sabah El Lail reference app, hoisted into the templates
  * registry so it serves any restaurant whose `templateKey` is set to it.
  *
- * Composition identity (the thing a staff member sees in the template
- * picker): a photo-led panoramic hero, a horizontally snap-scrolling
- * category chip rail with icons, 2/3/4-column vertical photo-card grid,
- * search + filter row with view-mode toggle, item customize sheet (options,
- * add-ons, spice level, notes), an in-page cart drawer with WhatsApp
- * handover, a customer reviews block, a Google Maps block with the
- * restaurant's address and a tall decorated footer. Every panel is the one
- * authored in the reference ZIP; this template is not a reinterpretation of
- * it.
+ * Composition: photo-led hero slides, a category chip rail with icons, a
+ * photo-card grid with search and filters, an item customize sheet, a cart
+ * drawer with WhatsApp handover, location with an embedded map, QR and
+ * calories modals, and a decorated footer.
  *
- * Why the whole app runs as a client component: the reference uses Framer
- * Motion scroll-reveals, a hydrated cart in `localStorage`, modal state,
- * search debounce, filter toggles and view-mode state — none of which a
- * server component owns. The template renders content into one `SabahApp`
- * mount and the app owns everything below it.
+ * Every restaurant-specific value (name, phone, WhatsApp number, logo,
+ * address, dishes, hero slides, QR code) comes from the profile through
+ * `profileToSabah`; none is read from the reference fixture.
  */
 export function StreetFoodTemplate({ profile, locale }: TemplateRenderProps) {
-  const { restaurantInfo, menuCategories, menuItems } = profileToSabah(profile);
+  return <StreetFoodWithQr profile={profile} locale={locale} />;
+}
+
+async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; locale: Locale }) {
+  const { restaurantInfo, menuCategories, menuItems, logoUrl, slides } = profileToSabah(profile);
+
+  // The QR encodes the permanent `/m/{publicId}` destination — the same one
+  // printed on the restaurant's tables. A failure here must not take the menu
+  // down, so the modal simply shows no code.
+  const qrDataUri = await renderQr({ publicId: profile.publicId, sizePx: 300 })
+    .then((qr) => `data:image/svg+xml;utf8,${encodeURIComponent(qr.svg)}`)
+    .catch(() => null);
 
   return (
     <SabahApp
       restaurantInfo={restaurantInfo}
       menuCategories={menuCategories}
       menuItems={menuItems}
+      logoUrl={logoUrl}
+      slides={slides}
+      qrDataUri={qrDataUri}
       initialLang={locale}
     />
   );

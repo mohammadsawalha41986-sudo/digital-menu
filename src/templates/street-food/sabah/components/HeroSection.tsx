@@ -16,7 +16,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RESTAURANT_INFO, MENU_ITEMS } from '../data/menuData';
+import { useSabah } from '../context';
 import type { MenuItem } from '../data/menuData';
 import type { Language } from '../types';
 
@@ -26,76 +26,25 @@ interface HeroSectionProps {
   onSelectFeaturedItem: (item: MenuItem) => void;
 }
 
-const FULL_WIDTH_SLIDES = [
-  {
-    id: 'broasted-regular-spicy',
-    tagAr: 'الأكثر طلباً ومبيعاً',
-    tagEn: 'Bestseller Favorite',
-    headlineAr: 'بروستد صباح الليل الذهبي المقرمش',
-    headlineEn: 'Golden Crispy Broasted Chicken',
-    subtitleAr: 'دجاج طازج محضر يومياً بخلطة تتبيل صباح الليل السرية، يقدم ساخناً ومقرمشاً مع صوص الثوم والبطاطس',
-    subtitleEn: 'Fresh daily chicken prepared with signature secret spices, served hot and crispy with garlic toum and fries',
-    price: 20.00,
-    calories: 250,
-    prepTimeAr: '10 - 12 دقيقة',
-    image: '/sabah/assets/menu/feature_broasted.png',
-  },
-  {
-    id: 'shawarma-arabic',
-    tagAr: 'نكهة الصاج الشامية الأصلية',
-    tagEn: 'Authentic Saj Shawarma',
-    headlineAr: 'شاورما عربي رولات بالثومية والبطاطا',
-    headlineEn: 'Arabic Shawarma Saj Rolls Platter',
-    subtitleAr: 'شاورما دجاج متبلة ومحشوة في خبز الصاج المحمص، مقطعة رولات في صحن مع صوص الثوم والبطاطس المقرمشة والمخلل',
-    subtitleEn: 'Tender chicken shawarma rolled in toasted saj bread, served with house garlic dip and crispy fries',
-    price: 19.00,
-    calories: 800,
-    prepTimeAr: '8 - 10 دقائق',
-    image: '/sabah/assets/menu/dish_shawarma.png',
-  },
-  {
-    id: 'combo-qarmsha',
-    tagAr: 'عرض التوفير الأقوى',
-    tagEn: 'Super Value Combo',
-    headlineAr: 'وجبة القرمشة كومبو مع كينزا وبطاطا',
-    headlineEn: 'Alqarmsha Crispy Combo Meal',
-    subtitleAr: 'قطع بروستد مقرمشة + بطاطا مقلية ذهبية + مشروب كينزا المنعش + صوص ثوم صباح الليل الخاص',
-    subtitleEn: 'Golden crispy broasted chicken + hot fries + chilled Kinza drink + house garlic sauce',
-    price: 21.00,
-    calories: 890,
-    prepTimeAr: '10 - 15 دقيقة',
-    image: '/sabah/assets/menu/combo_qarmsha.png',
-  },
-  {
-    id: 'single-mix-bbq',
-    tagAr: 'شواء الفحم الطبيعي',
-    tagEn: 'Charcoal BBQ Feast',
-    headlineAr: 'مشاوي مشكلة طازجة على الفحم',
-    headlineEn: 'Fresh Charcoal Mixed Grill Platter',
-    subtitleAr: 'كباب لحم غنم وكباب دجاج وشيش طاووق متبل على الجمر مع الخبز الساخن والبصل والسماق',
-    subtitleEn: 'Succulent lamb kebab, chicken kebab, and marinated shish tawooq grilled on hot natural coals',
-    price: 38.00,
-    calories: 650,
-    prepTimeAr: '12 - 15 دقيقة',
-    image: '/sabah/assets/menu/dish_sandwiches.png',
-  },
-];
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ 
   lang, 
   onOpenCalories,
   onSelectFeaturedItem 
 }) => {
+  const { info: RESTAURANT_INFO, items: MENU_ITEMS, slides: FULL_WIDTH_SLIDES } = useSabah();
   const isAr = lang === 'ar';
   const [[currentSlide, direction], setSlideState] = useState<[number, number]>([0, 0]);
 
   // Auto-play slide motion every 6 seconds
+  const slideCount = FULL_WIDTH_SLIDES.length;
   useEffect(() => {
+    if (slideCount < 2) return;
     const timer = setInterval(() => {
-      setSlideState(([prev]) => [(prev + 1) % FULL_WIDTH_SLIDES.length, 1]);
+      setSlideState(([prev]) => [(prev + 1) % slideCount, 1]);
     }, 6500);
     return () => clearInterval(timer);
-  }, []);
+  }, [slideCount]);
 
   const slideIndex = currentSlide;
   const slide = FULL_WIDTH_SLIDES[slideIndex] ?? FULL_WIDTH_SLIDES[0]!;
@@ -159,12 +108,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             className="absolute inset-0 w-full h-full"
           >
             {/* Full-Width Image */}
-            <img
+            {slide.image ? <img
               src={slide.image}
               alt={isAr ? slide.headlineAr : slide.headlineEn}
               className="w-full h-full object-cover object-center filter brightness-[0.95] contrast-[1.08]"
               referrerPolicy="no-referrer"
-            />
+            /> : <div className="w-full h-full bg-gradient-to-br from-emerald-950 via-stone-950 to-black" />}
 
             {/* Cinematic Gradient Scrim: Dark on text side, transparent over food image */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/30 lg:bg-gradient-to-r lg:from-black/95 lg:via-black/70 lg:to-black/20 rtl:lg:from-black/95 rtl:lg:via-black/70 rtl:lg:to-black/20" />
@@ -190,22 +139,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Top Live Trust Strip */}
           <div className="flex flex-wrap items-center justify-between gap-3 pointer-events-auto">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/90 backdrop-blur-md border border-emerald-500/50 text-emerald-300 text-xs font-black shadow-lg">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>{isAr ? 'حي الصحافة • شمال الرياض' : 'Al-Sahafa • Riyadh'}</span>
+              {(isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn) ? (
+              <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/90 backdrop-blur-md border border-emerald-500/50 text-emerald-300 text-xs font-black shadow-lg max-w-[18rem]">
+                <span className="w-2 h-2 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="truncate">{isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}</span>
               </span>
+              ) : null}
 
+              {RESTAURANT_INFO.rating > 0 ? (
               <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-amber-500/40 text-amber-300 text-xs font-bold shadow-lg">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                <span className="tabular-nums">4.8</span>
+                <span className="tabular-nums">{RESTAURANT_INFO.rating.toFixed(1)}</span>
+                {RESTAURANT_INFO.reviewCount > 0 ? (
                 <span className="text-stone-400 text-[11px] font-normal">
-                  ({isAr ? '1,340+ تقييم Google' : '1,340+ Google reviews'})
+                  ({RESTAURANT_INFO.reviewCount.toLocaleString('en-US')}+ {isAr ? 'تقييم Google' : 'Google reviews'})
                 </span>
+                ) : null}
               </span>
+              ) : null}
 
               <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-stone-800 text-emerald-400 text-xs font-semibold shadow-lg">
                 <Clock className="w-3.5 h-3.5" />
-                <span>{isAr ? 'مفتوح يومياً حتى 3:00 فجراً' : 'Open till 3:00 AM'}</span>
+                <span>{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
               </span>
             </div>
 
@@ -233,10 +188,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 className="space-y-3"
               >
                 {/* Tag */}
+                {(isAr ? slide.tagAr : slide.tagEn) ? (
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/20 backdrop-blur-md border border-amber-400/50 text-amber-300 text-xs font-black uppercase tracking-wider shadow-lg">
                   <Flame className="w-4 h-4 text-amber-400" />
                   <span>{isAr ? slide.tagAr : slide.tagEn}</span>
                 </div>
+                ) : null}
 
                 {/* Headline */}
                 <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] drop-shadow-lg [text-wrap:balance]">
@@ -250,6 +207,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                 {/* Live Price Tag & Metrics */}
                 <div className="flex flex-wrap items-center gap-3 pt-1">
+                  {slide.price > 0 ? (
                   <div className="flex items-baseline gap-1.5 bg-black/80 backdrop-blur-md border border-amber-400/50 rounded-2xl px-4 py-2 shadow-2xl">
                     <span className="text-2xl sm:text-3xl font-black text-amber-400 tabular-nums">
                       {slide.price.toFixed(2)}
@@ -258,16 +216,21 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       {isAr ? 'ريال' : 'SAR'}
                     </span>
                   </div>
+                  ) : null}
 
+                  {slide.calories ? (
                   <div className="flex items-center gap-2 text-xs bg-black/75 backdrop-blur-md border border-emerald-950 rounded-xl px-3 py-2 text-stone-200 shadow">
                     <Activity className="w-3.5 h-3.5 text-emerald-400" />
                     <span>{slide.calories} {isAr ? 'سعرة' : 'kcal'}</span>
                   </div>
+                  ) : null}
 
+                  {slide.prepTimeAr ? (
                   <div className="flex items-center gap-2 text-xs bg-black/75 backdrop-blur-md border border-emerald-950 rounded-xl px-3 py-2 text-stone-200 shadow">
                     <Timer className="w-3.5 h-3.5 text-amber-400" />
                     <span>{slide.prepTimeAr}</span>
                   </div>
+                  ) : null}
                 </div>
 
               </motion.div>
@@ -289,7 +252,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.96 }}
                 href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}?text=${encodeURIComponent(
-                  `السلام عليكم، أود طلب: ${slide.headlineAr} من مطعم صباح الليل`
+                  `السلام عليكم، أود طلب: ${slide.headlineAr} من ${RESTAURANT_INFO.nameAr}`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
@@ -358,9 +321,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-stone-300">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold text-white">{isAr ? 'مطعم صباح الليل حي الصحافة' : 'Sabah El Lail Al-Sahafa'}</span>
+            <span className="font-bold text-white">{isAr ? RESTAURANT_INFO.nameAr : RESTAURANT_INFO.nameEn}</span>
             <span className="text-stone-500">·</span>
-            <span className="text-stone-300">{isAr ? 'شاورما على الصاج • بروستد مقرمش • مشويات على الفحم • بيتزا • عصائر' : 'Shawarma • Broasted • BBQ • Pizza • Juices'}</span>
+            <span className="text-stone-300">{isAr ? RESTAURANT_INFO.sloganAr : RESTAURANT_INFO.sloganEn}</span>
           </div>
 
           <div className="flex items-center gap-4 text-stone-400">

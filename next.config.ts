@@ -34,6 +34,9 @@ const CSP = [
   // clickjacking threat, stays blocked.
   "frame-ancestors 'self'",
   "object-src 'none'",
+  // The only third-party frame a profile may show is a restaurant's location
+  // on Google Maps; everything else stays same-origin.
+  "frame-src 'self' https://maps.google.com https://www.google.com",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",

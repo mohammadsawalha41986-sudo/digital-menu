@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { X, Trash2, Plus, Minus, MessageCircle, Phone, ShoppingBag, MapPin, Store, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem, Language, OrderType } from '../types';
-import { RESTAURANT_INFO } from '../data/menuData';
+import { useSabah } from '../context';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -25,6 +25,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onRemoveItem,
   onClearCart,
 }) => {
+  const { info: RESTAURANT_INFO } = useSabah();
   const [orderType, setOrderType] = useState<OrderType>('takeaway');
   const [tableNumber, setTableNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -65,7 +66,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     const noteInfo = generalNotes.trim() ? `\n📝 ملاحظات عامة: ${generalNotes}` : '';
 
     const message = `السلام عليكم ورحمة الله وبركاته 🌙
-أود تأكيد طلب جديد من منيو *مطعم صباح الليل* (حي الصحافة):
+أود تأكيد طلب جديد من منيو *${RESTAURANT_INFO.nameAr}*:
 
 🛵 *نوع الطلب:* ${orderTypeLabel}${customerInfo}
 
@@ -142,7 +143,7 @@ ${noteInfo}
                   </h3>
                   <p className="text-xs text-stone-400 max-w-xs leading-relaxed">
                     {isAr
-                      ? 'تصفح قائمة الطعام الشهية وأضف الشاورما والبروستد والمشويات وسنجهزها لك على الفور!'
+                      ? 'تصفح القائمة وأضف أطباقك المفضلة وسنجهزها لك على الفور!'
                       : 'Explore the menu and add your favorite dishes.'}
                   </p>
                   <button
