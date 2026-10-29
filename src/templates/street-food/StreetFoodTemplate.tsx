@@ -1,6 +1,7 @@
 import SabahApp from './sabah/SabahApp';
 import { profileToSabah } from './profile-to-sabah';
 import { renderQr } from '@/server/qr/service';
+import { menuTone } from '@/design/brand';
 import type { PublicProfile } from '@/server/profile/types';
 import type { Locale } from '@/i18n/config';
 import type { TemplateRenderProps } from '../types';
@@ -46,6 +47,13 @@ async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; l
       imageLayout={IMAGE_LAYOUTS[profile.variantKey] ?? 'grid'}
       initialLang={locale}
       publicId={profile.publicId}
+      tone={menuTone(profile.brand)}
+      imageShape={(['landscape', 'square', 'portrait'] as const).find((shape) => shape === profile.brand.imageShape) ?? 'landscape'}
+      customColors={{
+        page: Boolean(profile.brand.menuPage),
+        card: Boolean(profile.brand.menuCard),
+        price: Boolean(profile.brand.menuPrice),
+      }}
     />
   );
 }

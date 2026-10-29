@@ -471,6 +471,12 @@ const BRAND_SELECT = {
   fontHeading: true,
   fontBody: true,
   radiusScale: true,
+  menuPage: true,
+  menuCard: true,
+  menuPrice: true,
+  textScale: true,
+  spacing: true,
+  imageShape: true,
 } as const;
 
 interface MediaRow {
@@ -701,4 +707,10 @@ const DEFAULT_BRAND: PublicProfile['brand'] = {
   fontHeading: 'system-serif',
   fontBody: 'system-sans',
   radiusScale: 'md',
+  menuPage: null,
+  menuCard: null,
+  menuPrice: null,
+  textScale: 'md',
+  spacing: 'regular',
+  imageShape: 'landscape',
 };

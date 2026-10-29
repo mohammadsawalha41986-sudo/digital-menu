@@ -36,6 +36,10 @@ function emittedTokens(): Set<string> {
     fontHeading: 'system-sans',
     fontBody: 'system-sans',
     radiusScale: 'md',
+    // Emitted only when the owner sets them; set here so they count as known.
+    menuPage: '#101010',
+    menuCard: '#202020',
+    menuPrice: '#303030',
   });
 
   return new Set(Object.keys(style).filter((key) => key.startsWith('--brand-')));

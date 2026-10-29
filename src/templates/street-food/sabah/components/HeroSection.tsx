@@ -216,7 +216,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   {slide.price > 0 ? (
                   <div className="flex items-baseline gap-1.5 bg-black/80 backdrop-blur-md border border-amber-400/50 rounded-2xl px-4 py-2 shadow-2xl">
-                    <span className="text-2xl sm:text-3xl font-black text-amber-400 tabular-nums">
+                    <span className="text-2xl sm:text-3xl font-black text-amber-400 tabular-nums sf-price">
                       {formatAmount(slide.price, RESTAURANT_INFO.currency)}
                     </span>
                     <span className="text-sm font-bold text-emerald-400">

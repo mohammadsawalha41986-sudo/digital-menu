@@ -228,6 +228,19 @@ model BrandTheme {
   radiusScale String  @default("md")
   logoMediaId String?
 
+  /// Menu design overrides. Null colours mean "derived from the brand"
+  /// (the logo palette); a set colour wins. A light page switches the design
+  /// to dark text automatically.
+  menuPage   String?
+  menuCard   String?
+  menuPrice  String?
+  /// sm | md | lg
+  textScale  String  @default("md")
+  /// compact | regular | airy
+  spacing    String  @default("regular")
+  /// landscape | square | portrait
+  imageShape String  @default("landscape")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

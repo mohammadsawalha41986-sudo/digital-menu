@@ -43,6 +43,14 @@ const hexColor = z
   .trim()
   .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Expected a hex colour such as #1F2421');
 
+/** A colour the owner may leave on "automatic": empty becomes null. */
+const optionalHexColor = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : null))
+  .pipe(hexColor.nullable());
+
 /**
  * Phone numbers are rendered into `tel:` and `wa.me` links, so anything that
  * is not digits and formatting characters is rejected rather than escaped.
@@ -133,6 +141,13 @@ export const brandSchema = z.object({
   fontHeading: z.enum(FONT_KEYS),
   fontBody: z.enum(FONT_KEYS),
   radiusScale: z.enum(['none', 'sm', 'md', 'lg']),
+  // Empty means "automatic": derived from the brand palette.
+  menuPage: optionalHexColor,
+  menuCard: optionalHexColor,
+  menuPrice: optionalHexColor,
+  textScale: z.enum(['sm', 'md', 'lg']).default('md'),
+  spacing: z.enum(['compact', 'regular', 'airy']).default('regular'),
+  imageShape: z.enum(['landscape', 'square', 'portrait']).default('landscape'),
 });
 
 export const menuSchema = z.object({

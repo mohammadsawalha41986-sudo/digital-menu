@@ -56,7 +56,7 @@ test('the full §138 journey, end to end', async ({ page }) => {
   await page.goto(`/admin/businesses/${businessId}/design`);
   await page.getByLabel('Main colour').fill('#123456');
   await page.getByLabel('Highlight colour').fill('#AA7722');
-  await page.getByRole('button', { name: 'Save colours & fonts' }).click();
+  await page.getByRole('button', { name: 'Save design' }).click();
   await expect(page.getByRole('status').first()).toContainText('Brand saved');
 
   // ---- 4. Photo layout ---------------------------------------------------

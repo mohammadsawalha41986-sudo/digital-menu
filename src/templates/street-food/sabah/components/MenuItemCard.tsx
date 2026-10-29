@@ -39,12 +39,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
       whileHover={{ y: -4 }}
-      className="group flex flex-col justify-between bg-stone-950/95 rounded-2xl border border-emerald-950/90 hover:border-emerald-500/60 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-emerald-950/50"
+      className="sf-card group flex flex-col justify-between bg-stone-950/95 rounded-2xl border border-emerald-950/90 hover:border-emerald-500/60 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-emerald-950/50"
     >
       
       {/* Top Media & Banner with Image Motion & Warm Appetizing Glow */}
       {item.image ? (
-        <div className={`relative w-full overflow-hidden bg-stone-950 ${size === 'large' ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
+        <div className={`sf-card-media relative w-full overflow-hidden bg-stone-950 ${size === 'large' ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
           <img
             src={item.image}
             // WebP widths from the upload; the browser picks the one the card needs.
@@ -141,7 +141,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
               {item.options && item.options.length > 0 ? (isAr ? 'يبدأ من' : 'From') : (isAr ? 'السعر' : 'Price')}
             </span>
             <div className="flex items-baseline gap-1">
-              <span className={`${compact ? 'text-base' : 'text-lg'} sm:text-xl font-black text-amber-400 tabular-nums tracking-tight`} data-price>
+              <span className={`${compact ? 'text-base' : 'text-lg'} sm:text-xl font-black text-amber-400 tabular-nums tracking-tight sf-price`} data-price>
                 {formatAmount(item.price, currency)}
               </span>
               <span className="text-xs font-bold text-emerald-400">

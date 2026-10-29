@@ -10,7 +10,7 @@
 /* Dark background and Arabic-first type for everything the Sabah app
  * renders. Scoped so no other template is dragged into the dark theme. */
 [data-template='street-food'] {
-  background-color: #0d120e;
+  background-color: var(--sf-ink-0d120e);
   color: #f3f4f6;
   /* The restaurant's own fonts, chosen in the brand editor. `--font-sans`
      is what Tailwind's `font-sans` utility reads. */
@@ -151,4 +151,136 @@
     --sf-ink-111a13: oklch(from var(--brand-color-primary) 0.206 min(c, 0.02) h);
     --sf-ink-111c14: oklch(from var(--brand-color-primary) 0.213 min(c, 0.02) h);
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Menu design controls (Design page): text size, spacing, page / card /
+ * price colours, light pages and photo shape.
+ *
+ * Tailwind v4 sizes text from --text-* and every padding, gap and margin
+ * from --spacing, so scaling those two families here resizes the whole
+ * design in proportion without touching a component.
+ * ------------------------------------------------------------------------- */
+[data-template='street-food'] {
+  --spacing: calc(0.25rem * var(--brand-spacing-scale, 1));
+  --text-xs: calc(0.75rem * var(--brand-text-scale, 1));
+  --text-sm: calc(0.875rem * var(--brand-text-scale, 1));
+  --text-base: calc(1rem * var(--brand-text-scale, 1));
+  --text-lg: calc(1.125rem * var(--brand-text-scale, 1));
+  --text-xl: calc(1.25rem * var(--brand-text-scale, 1));
+  --text-2xl: calc(1.5rem * var(--brand-text-scale, 1));
+  --text-3xl: calc(1.875rem * var(--brand-text-scale, 1));
+  --text-4xl: calc(2.25rem * var(--brand-text-scale, 1));
+  --text-5xl: calc(3rem * var(--brand-text-scale, 1));
+  --text-6xl: calc(3.75rem * var(--brand-text-scale, 1));
+}
+
+/* Cards and prices: the owner's colour when set, the design's otherwise. */
+.sf-root[data-custom-card] .sf-card {
+  background-color: var(--brand-menu-card);
+}
+
+/* Doubled class: the owner's price colour must beat the light-page accent
+   rule below, which has the same shape otherwise. */
+.sf-root[data-custom-price] .sf-price.sf-price {
+  color: var(--brand-menu-price);
+}
+
+/* The photo always fills its frame, whatever shape the frame is. A
+   percentage height does not resolve inside the flex card, so the image is
+   positioned to the frame instead. */
+.sf-card-media > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Photo shape on regular cards (large photos keep their wider frame). */
+.sf-root[data-image-shape='square'] .sf-card-media {
+  aspect-ratio: 1 / 1;
+}
+
+.sf-root[data-image-shape='portrait'] .sf-card-media {
+  aspect-ratio: 4 / 5;
+}
+
+@supports (color: oklch(from red l c h)) {
+  /* A dark page colour: every near-black surface follows it, in the same
+     steps the design was drawn with. */
+  [data-template='street-food']:has(.sf-root[data-custom-page][data-menu-tone='dark']),
+  .sf-root[data-custom-page][data-menu-tone='dark'] {
+    --sf-ink-060a07: oklch(from var(--brand-menu-page) calc(l + -0.005) c h);
+    --sf-ink-070b08: oklch(from var(--brand-menu-page) calc(l + 0.0) c h);
+    --sf-ink-070c08: oklch(from var(--brand-menu-page) calc(l + 0.004) c h);
+    --sf-ink-080d09: oklch(from var(--brand-menu-page) calc(l + 0.009) c h);
+    --sf-ink-0a0f0b: oklch(from var(--brand-menu-page) calc(l + 0.018) c h);
+    --sf-ink-0d120e: oklch(from var(--brand-menu-page) calc(l + 0.032) c h);
+    --sf-ink-0e140f: oklch(from var(--brand-menu-page) calc(l + 0.04) c h);
+    --sf-ink-0e1510: oklch(from var(--brand-menu-page) calc(l + 0.044) c h);
+    --sf-ink-0f1711: oklch(from var(--brand-menu-page) calc(l + 0.051) c h);
+    --sf-ink-0f1712: oklch(from var(--brand-menu-page) calc(l + 0.052) c h);
+    --sf-ink-101712: oklch(from var(--brand-menu-page) calc(l + 0.052) c h);
+    --sf-ink-111913: oklch(from var(--brand-menu-page) calc(l + 0.06) c h);
+    --sf-ink-111a13: oklch(from var(--brand-menu-page) calc(l + 0.063) c h);
+    --sf-ink-111c14: oklch(from var(--brand-menu-page) calc(l + 0.07) c h);
+  }
+
+  /* A light page colour: surfaces step slightly darker than the page, and
+     the neutral and brand scales flip so text stays dark on light. */
+  [data-template='street-food']:has(.sf-root[data-menu-tone='light']),
+  .sf-root[data-menu-tone='light'] {
+    --sf-ink-060a07: oklch(from var(--brand-menu-page) calc(l - 0.0) min(c, 0.04) h);
+    --sf-ink-070b08: oklch(from var(--brand-menu-page) calc(l - 0.003) min(c, 0.04) h);
+    --sf-ink-070c08: oklch(from var(--brand-menu-page) calc(l - 0.005) min(c, 0.04) h);
+    --sf-ink-080d09: oklch(from var(--brand-menu-page) calc(l - 0.008) min(c, 0.04) h);
+    --sf-ink-0a0f0b: oklch(from var(--brand-menu-page) calc(l - 0.014) min(c, 0.04) h);
+    --sf-ink-0d120e: oklch(from var(--brand-menu-page) calc(l - 0.022) min(c, 0.04) h);
+    --sf-ink-0e140f: oklch(from var(--brand-menu-page) calc(l - 0.027) min(c, 0.04) h);
+    --sf-ink-0e1510: oklch(from var(--brand-menu-page) calc(l - 0.029) min(c, 0.04) h);
+    --sf-ink-0f1711: oklch(from var(--brand-menu-page) calc(l - 0.034) min(c, 0.04) h);
+    --sf-ink-0f1712: oklch(from var(--brand-menu-page) calc(l - 0.034) min(c, 0.04) h);
+    --sf-ink-101712: oklch(from var(--brand-menu-page) calc(l - 0.034) min(c, 0.04) h);
+    --sf-ink-111913: oklch(from var(--brand-menu-page) calc(l - 0.039) min(c, 0.04) h);
+    --sf-ink-111a13: oklch(from var(--brand-menu-page) calc(l - 0.041) min(c, 0.04) h);
+    --sf-ink-111c14: oklch(from var(--brand-menu-page) calc(l - 0.045) min(c, 0.04) h);
+    --color-white: oklch(0.21 0.006 60);
+    --color-black: oklch(0.99 0 0);
+    --color-stone-50: oklch(0.147 0.006 60);
+    --color-stone-100: oklch(0.216 0.006 60);
+    --color-stone-200: oklch(0.268 0.006 60);
+    --color-stone-300: oklch(0.374 0.006 60);
+    --color-stone-400: oklch(0.444 0.006 60);
+    --color-stone-500: oklch(0.553 0.006 60);
+    --color-stone-600: oklch(0.709 0.006 60);
+    --color-stone-700: oklch(0.869 0.006 60);
+    --color-stone-800: oklch(0.923 0.006 60);
+    --color-stone-900: oklch(0.97 0.006 60);
+    --color-stone-950: oklch(0.985 0.006 60);
+    --color-emerald-50: oklch(from var(--brand-color-primary) 0.262 min(c, 0.051) h);
+    --color-emerald-100: oklch(from var(--brand-color-primary) 0.378 min(c, 0.077) h);
+    --color-emerald-200: oklch(from var(--brand-color-primary) 0.432 min(c, 0.095) h);
+    --color-emerald-300: oklch(from var(--brand-color-primary) 0.508 min(c, 0.118) h);
+    --color-emerald-400: oklch(from var(--brand-color-primary) 0.596 min(c, 0.145) h);
+    --color-emerald-500: oklch(from var(--brand-color-primary) 0.696 min(c, 0.17) h);
+    --color-emerald-600: oklch(from var(--brand-color-primary) 0.765 min(c, 0.177) h);
+    --color-emerald-700: oklch(from var(--brand-color-primary) 0.845 min(c, 0.143) h);
+    --color-emerald-800: oklch(from var(--brand-color-primary) 0.905 min(c, 0.093) h);
+    --color-emerald-900: oklch(from var(--brand-color-primary) 0.95 min(c, 0.052) h);
+    --color-emerald-950: oklch(from var(--brand-color-primary) 0.979 min(c, 0.021) h);
+  }
+}
+
+/* Text drawn on bright fills (accent buttons, badges) stays dark in both
+   tones; the inverted neutral scale would otherwise make it pale. */
+.sf-root[data-menu-tone='light'] .text-stone-950,
+.sf-root[data-menu-tone='light'] .text-stone-900 {
+  color: oklch(0.21 0.006 60);
+}
+
+/* Accent-coloured text on a light page needs the darker end of the accent. */
+.sf-root[data-menu-tone='light']:not([data-custom-price]) .sf-price,
+.sf-root[data-menu-tone='light'] .text-amber-300,
+.sf-root[data-menu-tone='light'] .text-amber-400 {
+  color: oklch(from var(--brand-color-accent) 0.52 min(c, 0.16) h);
 }

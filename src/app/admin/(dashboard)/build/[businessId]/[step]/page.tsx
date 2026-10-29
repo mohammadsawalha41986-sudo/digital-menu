@@ -15,7 +15,7 @@ import {
   createCategoryAction,
   upsertItemAction,
 } from '@/server/admin/actions';
-import { uploadMediaAction, assignMediaAction } from '@/server/admin/media-actions';
+import { uploadMediaAction, assignMediaAction, deleteMediaFormAction } from '@/server/admin/media-actions';
 import { BUILD_STEPS, nextStep, previousStep, stepAt } from '../steps';
 import { PreviewPane } from '../preview-pane';
 import { BrandStep } from './steps/brand-step';
@@ -181,6 +181,10 @@ async function renderStep(context: StepContext) {
     id: image.id,
     url: image.url,
     alt: image.altEn ?? image.altAr ?? 'Uploaded image',
+    width: image.width,
+    height: image.height,
+    sizeBytes: image.sizeBytes,
+    contentType: image.contentType,
   }));
 
   // A media id means nothing to an owner; the steps show pictures, so ids are
@@ -255,6 +259,7 @@ async function renderStep(context: StepContext) {
           }))}
           uploadMedia={uploadMediaAction.bind(null, business.id, business.publicId)}
           assignMedia={assignMediaAction.bind(null, business.id, business.publicId)}
+          deleteMedia={deleteMediaFormAction.bind(null, business.id, business.publicId)}
         />
       );
 

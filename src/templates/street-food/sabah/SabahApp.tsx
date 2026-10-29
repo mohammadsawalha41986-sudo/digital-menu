@@ -48,6 +48,12 @@ export interface SabahAppProps {
   qrDataUri?: string | null;
   /** How dishes are laid out by default; the visitor can still switch. */
   imageLayout?: 'grid' | 'list' | 'large';
+  /** Light when the owner chose a light page colour; dark by default. */
+  tone?: 'light' | 'dark';
+  /** Photo frame shape on dish cards. */
+  imageShape?: 'landscape' | 'square' | 'portrait';
+  /** Which menu colours the owner set by hand (the rest follow the brand). */
+  customColors?: { page: boolean; card: boolean; price: boolean };
   /** The restaurant's permanent id; it scopes the visitor's cart. */
   publicId?: string;
 }
@@ -62,6 +68,9 @@ export default function App({
   qrDataUri = null,
   imageLayout = 'grid',
   publicId = 'reference',
+  tone = 'dark',
+  imageShape = 'landscape',
+  customColors = { page: false, card: false, price: false },
 }: SabahAppProps = {}) {
   const BASE_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
 
@@ -247,7 +256,14 @@ export default function App({
     <SabahDataProvider
       value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri }}
     >
-    <div className="min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
+    <div
+      className="sf-root min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950"
+      data-menu-tone={tone}
+      data-image-shape={imageShape}
+      data-custom-page={customColors.page ? '' : undefined}
+      data-custom-card={customColors.card ? '' : undefined}
+      data-custom-price={customColors.price ? '' : undefined}
+    >
       {/* Entrance animations start hidden and are revealed by script. With
           scripting off, reveal everything at once so the menu is still read. */}
       <noscript>

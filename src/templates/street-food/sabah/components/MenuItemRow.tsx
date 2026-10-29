@@ -32,7 +32,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ x: isAr ? -4 : 4 }}
-      className="p-3.5 sm:p-4 rounded-2xl bg-stone-950/80 border border-emerald-950/90 hover:border-emerald-500/50 flex items-center justify-between gap-3 sm:gap-4 transition-all shadow-sm group"
+      className="sf-card sf-card--row p-3.5 sm:p-4 rounded-2xl bg-stone-950/80 border border-emerald-950/90 hover:border-emerald-500/50 flex items-center justify-between gap-3 sm:gap-4 transition-all shadow-sm group"
     >
       {/* Thumbnail */}
       {item.image && (
@@ -96,7 +96,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
   <span />
 ) : (
         <div className="text-right rtl:text-right ltr:text-left">
-          <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums" data-price>
+          <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums sf-price" data-price>
             {formatAmount(item.price, currency)}
           </span>
           <span className="text-xs font-bold text-emerald-400 mr-1 ml-1">
