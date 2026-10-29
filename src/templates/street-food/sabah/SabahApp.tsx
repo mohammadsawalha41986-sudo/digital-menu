@@ -26,8 +26,8 @@ import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { CategoryNav } from './components/CategoryNav';
 import { MenuSearchAndFilter } from './components/MenuSearchAndFilter';
-import { MenuItemCard } from './components/MenuItemCard';
-import { MenuItemRow } from './components/MenuItemRow';
+import { SectionDishes } from './components/SectionDishes';
+import { resolveSectionLayout } from './section-layout';
 import { OffersStrip } from './components/OffersStrip';
 import { CustomerReviewsSection } from './components/CustomerReviewsSection';
 import { GoogleLocationSection } from './components/GoogleLocationSection';
@@ -117,7 +117,10 @@ export default function App({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'popular' | 'offers' | 'spicy'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'large'>(imageLayout);
+  // The visitor's own grid/list switch; until they touch it every section
+  // follows the layout the restaurant chose for it.
+  const [visitorView, setVisitorView] = useState<'grid' | 'list' | null>(null);
+  const viewMode = visitorView ?? (imageLayout === 'list' ? 'list' : 'grid');
   
   // Modals & Drawers
   const [activeItemForCustomization, setActiveItemForCustomization] = useState<MenuItem | null>(null);
@@ -325,8 +328,8 @@ export default function App({
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             resultCount={filteredItems.length}
-            viewMode={viewMode === 'list' ? 'list' : 'grid'}
-            onToggleViewMode={(mode) => setViewMode(mode === 'grid' && imageLayout === 'large' ? 'large' : mode)}
+            viewMode={viewMode}
+            onToggleViewMode={setVisitorView}
             onOpenCaloriesModal={() => setIsCaloriesOpen(true)}
             showSearch={MENU_ITEMS.length >= MENU_SEARCH_THRESHOLD}
           />
@@ -376,44 +379,20 @@ export default function App({
                     </div>
                   </div>
 
-                  {/* Items Display: Grid vs List Mode with Animated Stagger */}
-                  {viewMode !== 'list' ? (
-                    <motion.div 
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true }}
-                      variants={{
-                        hidden: {},
-                        visible: {
-                          transition: {
-                            staggerChildren: 0.06
-                          }
-                        }
-                      }}
-                      className={viewMode === 'large' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8' : 'grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6'}
-                    >
-                      {itemsInThisCat.map((dish) => (
-                        <MenuItemCard
-                          key={dish.id}
-                          item={dish}
-                          lang={lang}
-                          size={viewMode === 'large' ? 'large' : 'regular'}
-                          onSelect={(item) => setActiveItemForCustomization(item)}
-                        />
-                      ))}
-                    </motion.div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                      {itemsInThisCat.map((dish) => (
-                        <MenuItemRow
-                          key={dish.id}
-                          item={dish}
-                          lang={lang}
-                          onSelect={(item) => setActiveItemForCustomization(item)}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <SectionDishes
+                    layout={
+                      visitorView === 'list'
+                        ? { kind: 'list' }
+                        : resolveSectionLayout(
+                            cat.displayStyle ?? 'auto',
+                            visitorView === 'grid' && imageLayout === 'list' ? 'grid' : imageLayout,
+                            itemsInThisCat.length,
+                          )
+                    }
+                    dishes={itemsInThisCat}
+                    lang={lang}
+                    onSelect={(item) => setActiveItemForCustomization(item)}
+                  />
                 </motion.section>
                 {showOffersAfter ? <OffersStrip lang={lang} /> : null}
                 </React.Fragment>

@@ -26,6 +26,7 @@ import {
   updateWorkingHours,
   upsertItem,
   setItemUpsell,
+  setCategoryStyles,
 } from './business-service';
 import {
   branchSchema,
@@ -430,5 +431,25 @@ export async function setUpsellAction(
     revalidateBusiness(businessId, publicId);
     revalidatePath(`/admin/businesses/${businessId}/upsell`);
     return 'Saved';
+  });
+}
+
+/** Section layouts: every `style:<categoryId>` field on the form, saved at once. */
+export async function setSectionStylesAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const styles = Array.from(formData.entries())
+    .filter(([name]) => name.startsWith('style:'))
+    .map(([name, value]) => ({ categoryId: name.slice('style:'.length), style: String(value) }));
+
+  return run(async () => {
+    const changed = await setCategoryStyles(user, businessId, styles);
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/sections`);
+    return changed === 0 ? 'Nothing changed' : 'Saved';
   });
 }

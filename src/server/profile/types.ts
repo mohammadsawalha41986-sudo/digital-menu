@@ -71,6 +71,8 @@ export interface PublicCategory {
   descriptionEn: string | null;
   image: PublicImage | null;
   isFeatured: boolean;
+  /** The section's layout on the menu (`auto` and the rest, see section-layout). */
+  displayStyle: string;
   items: PublicItem[];
 }
 

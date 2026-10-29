@@ -205,6 +205,60 @@
   aspect-ratio: 4 / 5;
 }
 
+/* A wide card sets its photo beside the text: the photo takes the card's
+   height, whatever shape regular cards use. */
+@media (min-width: 640px) {
+  .sf-root .sf-card--wide .sf-card-media {
+    aspect-ratio: auto;
+  }
+}
+
+/* Two dishes across a wide screen: each card is half the page wide, so its
+   photo gets a wider, lower frame instead of filling the screen's height. */
+@media (min-width: 1024px) {
+  .sf-root .sf-pair .sf-card-media {
+    aspect-ratio: 21 / 9;
+  }
+}
+
+/* A section shown as a slider: cards side by side, swiped or scrolled, each
+   stopping at the start edge. */
+.sf-carousel {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.25rem;
+  padding-block-end: 0.5rem;
+  scrollbar-width: none;
+}
+
+.sf-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.sf-carousel > * {
+  flex: 0 0 72%;
+  scroll-snap-align: start;
+}
+
+@media (min-width: 640px) {
+  .sf-carousel {
+    gap: 1.5rem;
+  }
+
+  .sf-carousel > * {
+    flex-basis: 42%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .sf-carousel > * {
+    flex-basis: calc((100% - 3 * 1.5rem) / 3.4);
+  }
+}
+
 @supports (color: oklch(from red l c h)) {
   /* A dark page colour: every near-black surface follows it, in the same
      steps the design was drawn with. */

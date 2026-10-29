@@ -43,6 +43,7 @@ function profileFixture(): PublicProfile {
         descriptionEn: null,
         image: null,
         isFeatured: false,
+        displayStyle: 'auto',
         items: [],
       }],
       design: {

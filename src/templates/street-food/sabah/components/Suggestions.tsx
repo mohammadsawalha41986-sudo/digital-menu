@@ -35,7 +35,6 @@ export const Suggestions: React.FC<{
               className="flex items-center gap-3 p-2 rounded-2xl border border-emerald-950 bg-stone-900/90"
             >
               {dish.image ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={dish.image}
                   srcSet={dish.imageSrcSet}

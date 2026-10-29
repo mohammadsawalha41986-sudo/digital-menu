@@ -47,7 +47,6 @@ export const OffersStrip: React.FC<{ lang: Language }> = ({ lang }) => {
             >
               <div className="relative aspect-[16/9] bg-gradient-to-br from-emerald-700 to-amber-500">
                 {offer.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={offer.image}
                     srcSet={offer.imageSrcSet}

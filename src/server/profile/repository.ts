@@ -253,6 +253,7 @@ async function loadProfile(
               descriptionAr: true,
               descriptionEn: true,
               isFeatured: true,
+              displayStyle: true,
               image: { select: MEDIA_SELECT },
               items: {
                 // HIDDEN items never reach the public profile (§83).
@@ -569,6 +570,7 @@ interface CategoryRow {
   descriptionAr: string | null;
   descriptionEn: string | null;
   isFeatured: boolean;
+  displayStyle: string;
   image: MediaRow | null;
   items: ItemRow[];
 }
@@ -661,6 +663,7 @@ function toCategory(category: CategoryRow, overrides: OverrideMap | null): Publi
     descriptionEn: category.descriptionEn,
     image: toImage(category.image),
     isFeatured: category.isFeatured,
+    displayStyle: category.displayStyle,
     items: category.items
       .map((item) => toItem(item, overrides))
       .filter((item): item is PublicItem => item !== null),

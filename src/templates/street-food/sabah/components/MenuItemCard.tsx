@@ -12,8 +12,11 @@ interface MenuItemCardProps {
   item: MenuItem;
   lang: Language;
   onSelect: (item: MenuItem) => void;
-  /** `large` gives the photograph a taller frame for photo-led menus. */
-  size?: 'regular' | 'large';
+  /**
+   * `large` gives the photograph a taller frame for photo-led menus; `wide`
+   * spans a whole row, with the photograph beside the text from `sm` up.
+   */
+  size?: 'regular' | 'large' | 'wide';
 }
 
 export const MenuItemCard: React.FC<MenuItemCardProps> = ({
@@ -27,6 +30,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   // Regular cards sit two-up on a phone, so below `sm` they drop the
   // secondary line and the button label to keep name and price readable.
   const compact = size === 'regular';
+  // Without a photo there is nothing to set beside the text.
+  const wide = size === 'wide' && Boolean(item.image);
 
   return (
     <motion.div
@@ -34,22 +39,23 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       // calories as rendered.
       data-item={item.id}
       data-unavailable={item.isUnavailable ? '' : undefined}
+      data-card-size={size}
       initial={{ opacity: 0, y: 15 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
       whileHover={{ y: -4 }}
-      className="sf-card group flex flex-col justify-between bg-stone-950/95 rounded-2xl border border-emerald-950/90 hover:border-emerald-500/60 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-emerald-950/50"
+      className={`sf-card ${wide ? 'sf-card--wide sm:flex-row' : ''} group flex flex-col justify-between bg-stone-950/95 rounded-2xl border border-emerald-950/90 hover:border-emerald-500/60 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-emerald-950/50`}
     >
       
       {/* Top Media & Banner with Image Motion & Warm Appetizing Glow */}
       {item.image ? (
-        <div className={`sf-card-media relative w-full overflow-hidden bg-stone-950 ${size === 'large' ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
+        <div className={`sf-card-media relative w-full overflow-hidden bg-stone-950 ${wide ? 'aspect-[16/10] sm:aspect-auto sm:w-1/2 sm:min-h-72 lg:min-h-80 shrink-0' : size === 'large' ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
           <img
             src={item.image}
             // WebP widths from the upload; the browser picks the one the card needs.
             srcSet={item.imageSrcSet}
-            sizes={size === 'large' ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw'}
+            sizes={wide ? '(min-width: 640px) 50vw, 100vw' : size === 'large' ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw'}
             style={{ objectPosition: item.imagePosition }}
             loading="lazy"
             decoding="async"
@@ -95,19 +101,19 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       )}
 
       {/* Card Body */}
-      <div className={`${compact ? 'p-3 space-y-2' : 'p-4 space-y-3'} sm:p-5 sm:space-y-3 flex-1 flex flex-col justify-between`}>
+      <div className={`${compact ? 'p-3 space-y-2' : 'p-4 space-y-3'} ${wide ? 'sm:p-8 lg:p-10 sm:gap-6' : 'sm:p-5'} sm:space-y-3 flex-1 flex flex-col justify-between`}>
         <div className={compact ? 'space-y-1 sm:space-y-1.5' : 'space-y-1.5'}>
           
           {/* Title */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className={`${compact ? 'text-[15px] line-clamp-2 sm:line-clamp-none' : 'text-base'} sm:text-lg font-bold text-white group-hover:text-amber-300 transition-colors leading-snug`}>
+            <h3 className={`${compact ? 'text-[15px] line-clamp-2 sm:line-clamp-none' : wide ? 'text-xl sm:text-3xl' : 'text-base'} ${wide ? '' : 'sm:text-lg'} font-bold text-white group-hover:text-amber-300 transition-colors leading-snug`}>
               {isAr ? item.nameAr : item.nameEn}
             </h3>
           </div>
 
           {/* Description */}
           {(item.descriptionAr || item.descriptionEn) && (
-            <p className={`${compact ? 'hidden sm:block' : ''} text-xs sm:text-sm text-stone-300 line-clamp-2 leading-relaxed`}>
+            <p className={`${compact ? 'hidden sm:block' : ''} ${wide ? 'text-sm sm:text-base line-clamp-4' : 'text-xs sm:text-sm line-clamp-2'} text-stone-300 leading-relaxed`}>
               {isAr ? item.descriptionAr : item.descriptionEn}
             </p>
           )}

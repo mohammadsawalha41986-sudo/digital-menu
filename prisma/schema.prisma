@@ -510,6 +510,10 @@ model MenuCategory {
   /// menu, and no restaurant menu in the spec's examples needs it.
   parentId String?
 
+  /// How the public menu lays this section out: auto, grid, large, list,
+  /// carousel or featured. `auto` fills the row by how many dishes it has.
+  displayStyle String @default("auto")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

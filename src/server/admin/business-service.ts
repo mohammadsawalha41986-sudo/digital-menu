@@ -12,6 +12,7 @@ import {
 } from '@/server/tenancy/context';
 import { isValidTemplateSelection } from '@/templates/registry';
 import { isFoodBusinessType } from './validation';
+import { isSectionStyle } from '@/templates/street-food/sabah/section-layout';
 import { parseSnapshot, summarise } from '@/server/menus/snapshot';
 import {
   applySnapshot,
@@ -1011,4 +1012,54 @@ export async function setItemUpsell(
   });
 
   return updated;
+}
+
+/**
+ * Section layouts on the public menu, one style per category. Only the
+ * restaurant's own categories are touched; an unknown style is refused.
+ */
+export async function setCategoryStyles(
+  user: AuthenticatedUser,
+  businessId: string,
+  styles: { categoryId: string; style: string }[],
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const bad = styles.find((entry) => !isSectionStyle(entry.style));
+  if (bad) throw new ValidationError(`Unknown section style: ${bad.style}`);
+
+  const categories = await prisma.menuCategory.findMany({
+    where: { businessId: context.businessId, id: { in: styles.map((entry) => entry.categoryId) } },
+    select: { id: true, displayStyle: true },
+  });
+  if (categories.length !== new Set(styles.map((entry) => entry.categoryId)).size) {
+    throw new ValidationError('A section does not belong to this restaurant');
+  }
+
+  const changed = styles.filter(
+    (entry) => categories.find((category) => category.id === entry.categoryId)?.displayStyle !== entry.style,
+  );
+  if (changed.length === 0) return 0;
+
+  await prisma.$transaction(
+    changed.map((entry) =>
+      prisma.menuCategory.update({ where: { id: entry.categoryId }, data: { displayStyle: entry.style } }),
+    ),
+  );
+
+  await recordAudit({
+    action: 'category.display_style_updated',
+    entity: 'business',
+    entityId: context.businessId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: {
+      changes: changed.map((entry) => ({
+        categoryId: entry.categoryId,
+        before: categories.find((category) => category.id === entry.categoryId)?.displayStyle,
+        after: entry.style,
+      })),
+    },
+  });
+
+  return changed.length;
 }

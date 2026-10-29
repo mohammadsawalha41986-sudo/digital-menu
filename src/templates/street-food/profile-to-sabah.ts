@@ -6,6 +6,7 @@ import type {
   RestaurantInfo,
 } from './sabah/data/menuData';
 import type { HeroSlide, MenuOffer } from './sabah/context';
+import { isSectionStyle } from './sabah/section-layout';
 
 /**
  * Map the platform's `PublicProfile` shape into the shape the Sabah El Lail
@@ -40,6 +41,7 @@ export function profileToSabah(profile: PublicProfile): {
       image: category.image?.url ?? undefined,
       descriptionAr: category.descriptionAr ?? undefined,
       descriptionEn: category.descriptionEn ?? category.descriptionAr ?? undefined,
+      displayStyle: isSectionStyle(category.displayStyle) ? category.displayStyle : 'auto',
     })),
   );
 

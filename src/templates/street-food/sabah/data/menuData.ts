@@ -1,3 +1,4 @@
+import type { SectionStyle } from '../section-layout';
 import type { WorkingHours } from '@/server/business/hours';
 export interface MenuItem {
   id: string;
@@ -45,6 +46,8 @@ export interface MenuCategory {
   image?: string;
   descriptionAr?: string;
   descriptionEn?: string;
+  /** How the section lays out its dishes; `auto` when not set. */
+  displayStyle?: SectionStyle;
 }
 
 export interface RestaurantInfo {

@@ -53,6 +53,7 @@ export default async function BusinessPage({
       hint: 'Logo, colours, fonts and how photos are shown.',
       links: [
         { href: `${base}/design`, label: 'الشعار والألوان والخطوط', sub: `Design — ${variant.label}`, primary: true },
+        { href: `${base}/sections`, label: 'شكل الأقسام', sub: 'Section layouts: each section its own look' },
       ],
     },
     {
