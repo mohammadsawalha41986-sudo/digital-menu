@@ -235,7 +235,7 @@ describe.skipIf(!databaseReachable)('a staff user cannot reach another tenant', 
 
   it('cannot change the other business’s template', async () => {
     await expect(
-      updateTemplate(alphaUser, betaId, { templateKey: 'editorial', variantKey: 'a' }),
+      updateTemplate(alphaUser, betaId, { templateKey: 'street-food', variantKey: 'a' }),
     ).rejects.toBeInstanceOf(TenantAccessError);
   });
 

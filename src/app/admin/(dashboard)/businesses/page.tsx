@@ -147,10 +147,10 @@ export default async function BusinessesPage() {
                       Manage
                     </Link>
                     <Link
-                      href={`/admin/businesses/${business.id}/brand`}
+                      href={`/admin/businesses/${business.id}/design`}
                       className="admin__button admin__button--small admin__button--secondary"
                     >
-                      Brand
+                      Design
                     </Link>
                     <Link
                       href={`/m/${business.publicId}`}

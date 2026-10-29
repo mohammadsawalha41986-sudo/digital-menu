@@ -139,7 +139,14 @@ export async function renderProfile(
         <link key={href} rel="preload" as="font" type="font/woff2" href={href} crossOrigin="" />
       ))}
 
-      {definition.render({ profile, locale, direction, dictionary })}
+      {definition.render({
+        // The template reads the *resolved* layout, so a withdrawn family's
+        // variant letter never leaks into the current design.
+        profile: variant.key === profile.variantKey ? profile : { ...profile, variantKey: variant.key },
+        locale,
+        direction,
+        dictionary,
+      })}
       {options.preview ? null : (
         <AnalyticsScript publicId={profile.publicId} branchKey={profile.activeBranchKey} locale={locale} />
       )}

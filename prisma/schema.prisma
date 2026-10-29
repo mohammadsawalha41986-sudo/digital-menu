@@ -117,7 +117,7 @@ model Business {
 
   /// Structure. Validated against the in-code template registry
   /// (src/templates/registry.ts) — templates are code, not database rows.
-  templateKey String @default("editorial")
+  templateKey String @default("street-food")
   /// Layout variant within the template family.
   variantKey  String @default("a")
 

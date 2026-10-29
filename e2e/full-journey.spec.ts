@@ -53,17 +53,16 @@ test('the full §138 journey, end to end', async ({ page }) => {
   expect(publicId).not.toBe(businessId);
 
   // ---- 3. Brand ----------------------------------------------------------
-  await page.goto(`/admin/businesses/${businessId}/brand`);
-  await page.getByLabel('Primary').fill('#123456');
-  await page.getByLabel('Accent').fill('#AA7722');
-  await page.getByRole('button', { name: 'Save brand' }).click();
-  await expect(page.getByRole('status')).toContainText('Brand saved');
+  await page.goto(`/admin/businesses/${businessId}/design`);
+  await page.getByLabel('Main colour').fill('#123456');
+  await page.getByLabel('Highlight colour').fill('#AA7722');
+  await page.getByRole('button', { name: 'Save colours & fonts' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
 
-  // ---- 4. Template -------------------------------------------------------
-  await page.goto(`/admin/businesses/${businessId}/template`);
-  await page.getByLabel('Template family').selectOption('editorial');
-  await page.getByRole('button', { name: 'Apply template' }).click();
-  await expect(page.getByRole('status')).toContainText('Template applied');
+  // ---- 4. Photo layout ---------------------------------------------------
+  await page.locator('.build__style').filter({ hasText: 'List' }).click();
+  await page.getByRole('button', { name: 'Save layout' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Template applied' })).toBeVisible();
 
   // ---- 5. Menu, category, item ------------------------------------------
   await page.goto(`/admin/businesses/${businessId}/menus`);
@@ -151,10 +150,10 @@ test('the full §138 journey, end to end', async ({ page }) => {
   await editForm.getByRole('button', { name: 'Save item' }).click();
   await expect(editForm.getByRole('status')).toContainText('Item updated');
 
-  await page.goto(`/admin/businesses/${businessId}/template`);
-  await page.getByLabel('Template family').selectOption('bold');
-  await page.getByRole('button', { name: 'Apply template' }).click();
-  await expect(page.getByRole('status')).toContainText('Template applied');
+  await page.goto(`/admin/businesses/${businessId}/design`);
+  await page.locator('.build__style').filter({ hasText: 'Large photos' }).click();
+  await page.getByRole('button', { name: 'Save layout' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Template applied' })).toBeVisible();
 
   // ---- 11. The SAME QR still resolves, with the new content -------------
   await page.goto(`/admin/businesses/${businessId}/qr`);
@@ -167,7 +166,7 @@ test('the full §138 journey, end to end', async ({ page }) => {
 
   await page.goto(`/m/${publicId}?lang=en`);
   await expect(page.locator('[data-item="JR-001"] [data-price]')).toContainText('42');
-  await expect(page.locator('[data-profile-root]')).toHaveAttribute('data-template', 'bold');
+  await expect(page.locator('[data-profile-root]')).toHaveAttribute('data-variant', 'c');
 
   // ---- 12. Price history recorded both values ---------------------------
   await page.goto('/admin');

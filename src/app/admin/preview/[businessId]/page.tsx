@@ -54,6 +54,8 @@ export default async function BuilderPreviewPage({
   // only — nothing is written, and resolveTemplate falls back for a key that
   // does not exist, so a stale link cannot produce a blank page.
   const template = typeof resolved.template === 'string' ? resolved.template : null;
+  // `?variant=` does the same for the photo layout picker.
+  const variant = typeof resolved.variant === 'string' ? resolved.variant : null;
   const themeKey = typeof resolved.theme === 'string' ? resolved.theme : null;
   const layoutKey = typeof resolved.layout === 'string' ? resolved.layout : null;
 
@@ -64,7 +66,13 @@ export default async function BuilderPreviewPage({
   const previewProfile = withPreviewTheme(profile, themeKey, layoutKey);
 
   return renderProfile(
-    template ? { ...previewProfile, templateKey: template, variantKey: 'a' } : previewProfile,
+    template || variant
+      ? {
+          ...previewProfile,
+          templateKey: template ?? previewProfile.templateKey,
+          variantKey: variant ?? 'a',
+        }
+      : previewProfile,
     resolved,
     { preview: true },
   );

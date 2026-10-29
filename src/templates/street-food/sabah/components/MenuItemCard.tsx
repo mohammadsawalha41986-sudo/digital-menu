@@ -21,9 +21,15 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   size = 'regular',
 }) => {
   const isAr = lang === 'ar';
+  // Regular cards sit two-up on a phone, so below `sm` they drop the
+  // secondary line and the button label to keep name and price readable.
+  const compact = size === 'regular';
 
   return (
     <motion.div
+      // Stable hooks for tests and analytics: the item code, price and
+      // calories as rendered.
+      data-item={item.id}
       initial={{ opacity: 0, y: 15 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
@@ -66,7 +72,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             <div className="absolute top-2.5 left-2.5 rtl:left-2.5 ltr:right-2.5 z-10">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-red-950/90 text-red-200 border border-red-700/80 flex items-center gap-1 shadow">
                 <Flame className="w-3 h-3 text-red-400" />
-                <span>{isAr ? 'عادي أو حار' : 'Mild / Spicy'}</span>
+                <span className={compact ? 'hidden sm:inline' : undefined}>{isAr ? 'عادي أو حار' : 'Mild / Spicy'}</span>
               </span>
             </div>
           )}
@@ -76,28 +82,28 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       )}
 
       {/* Card Body */}
-      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+      <div className={`${compact ? 'p-3' : 'p-4'} sm:p-5 flex-1 flex flex-col justify-between space-y-3`}>
         <div className="space-y-1.5">
           
           {/* Title */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-amber-300 transition-colors leading-snug">
+            <h3 className={`${compact ? 'text-sm' : 'text-base'} sm:text-lg font-bold text-white group-hover:text-amber-300 transition-colors leading-snug`}>
               {isAr ? item.nameAr : item.nameEn}
             </h3>
           </div>
 
           {/* Description */}
           {(item.descriptionAr || item.descriptionEn) && (
-            <p className="text-xs sm:text-sm text-stone-300 line-clamp-2 leading-relaxed">
+            <p className={`${compact ? 'hidden sm:block' : ''} text-xs sm:text-sm text-stone-300 line-clamp-2 leading-relaxed`}>
               {isAr ? item.descriptionAr : item.descriptionEn}
             </p>
           )}
 
           {/* Metadata: Calories & Options with Clean Separators */}
-          <div className="flex items-center gap-2 text-xs text-stone-400 pt-1">
+          <div className={`${compact ? 'hidden sm:flex' : 'flex'} items-center gap-2 text-xs text-stone-400 pt-1`}>
             {item.calories && (
               <>
-                <span className="tabular-nums font-mono text-emerald-300/90 font-medium">
+                <span className="tabular-nums font-mono text-emerald-300/90 font-medium" data-calories>
                   {item.calories} {isAr ? 'سعرة' : 'cal'}
                 </span>
                 <span aria-hidden="true" className="text-stone-600">·</span>
@@ -114,13 +120,13 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
         </div>
 
         {/* Price & Action Row */}
-        <div className="pt-3 border-t border-emerald-950/80 flex items-center justify-between gap-3">
+        <div className={`pt-3 border-t border-emerald-950/80 flex items-center justify-between ${compact ? 'gap-1.5 sm:gap-3' : 'gap-3'}`}>
           <div className="flex flex-col">
             <span className="text-[11px] text-stone-400">
               {item.options && item.options.length > 0 ? (isAr ? 'يبدأ من' : 'From') : (isAr ? 'السعر' : 'Price')}
             </span>
             <div className="flex items-baseline gap-1">
-              <span className="text-lg sm:text-xl font-black text-amber-400 tabular-nums tracking-tight">
+              <span className={`${compact ? 'text-base' : 'text-lg'} sm:text-xl font-black text-amber-400 tabular-nums tracking-tight`} data-price>
                 {item.price.toFixed(2)}
               </span>
               <span className="text-xs font-bold text-emerald-400">
@@ -133,10 +139,11 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.93 }}
             onClick={() => onSelect(item)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 border border-emerald-400/30 transition-all cursor-pointer"
+            aria-label={item.options || item.isSpicyOption ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
+            className={`inline-flex shrink-0 items-center gap-1.5 ${compact ? 'p-2 sm:px-3.5' : 'px-3.5'} py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 border border-emerald-400/30 transition-all cursor-pointer`}
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>
+            <span className={compact ? 'hidden sm:inline' : undefined}>
               {item.options || item.isSpicyOption
                 ? (isAr ? 'اختيار' : 'Choose')
                 : (isAr ? 'إضافة' : 'Add')}

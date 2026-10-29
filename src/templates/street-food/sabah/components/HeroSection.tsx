@@ -158,10 +158,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </span>
               ) : null}
 
+              {RESTAURANT_INFO.openingHoursAr || RESTAURANT_INFO.openingHoursEn ? (
               <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-stone-800 text-emerald-400 text-xs font-semibold shadow-lg">
                 <Clock className="w-3.5 h-3.5" />
                 <span>{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
               </span>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-2">
@@ -196,9 +198,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 ) : null}
 
                 {/* Headline */}
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] drop-shadow-lg [text-wrap:balance]">
+                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] drop-shadow-lg [text-wrap:balance]">
                   {isAr ? slide.headlineAr : slide.headlineEn}
-                </h1>
+                </h2>
 
                 {/* Subtitle */}
                 <p className="text-sm sm:text-lg text-stone-200 leading-relaxed drop-shadow max-w-xl">

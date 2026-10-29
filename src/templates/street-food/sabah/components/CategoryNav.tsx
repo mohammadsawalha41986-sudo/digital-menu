@@ -63,7 +63,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   return (
     <div className="sticky top-18 z-30 bg-[var(--sf-ink-0d120e)]/95 backdrop-blur-md border-b border-emerald-950/80 py-3 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none hide-scrollbar">
+        <div data-category-rail className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none hide-scrollbar">
           
           {/* 'All Items' Tab with motion */}
           <motion.button

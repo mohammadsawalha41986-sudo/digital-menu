@@ -21,6 +21,9 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
 
   return (
     <motion.div
+      // Stable hooks for tests and analytics: the item code, price and
+      // calories as rendered.
+      data-item={item.id}
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -66,7 +69,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
         <div className="flex items-center gap-2 text-[11px] text-stone-400">
           {item.calories && (
             <>
-              <span className="font-mono text-emerald-400 font-medium">{item.calories} {isAr ? 'سعرة' : 'cal'}</span>
+              <span className="font-mono text-emerald-400 font-medium" data-calories>{item.calories} {isAr ? 'سعرة' : 'cal'}</span>
               <span>·</span>
             </>
           )}
@@ -83,7 +86,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
       {/* Price & Add */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="text-right rtl:text-right ltr:text-left">
-          <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums">
+          <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums" data-price>
             {item.price.toFixed(2)}
           </span>
           <span className="text-xs font-bold text-emerald-400 mr-1 ml-1">

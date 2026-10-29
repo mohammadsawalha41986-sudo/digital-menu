@@ -1,16 +1,6 @@
 @import 'tailwindcss';
 @import '../design/fonts.css';
 @import '../design/tokens.css';
-@import '../templates/editorial/editorial.css';
-@import '../templates/luxury/luxury.css';
-@import '../templates/minimal/minimal.css';
-@import '../templates/modern/modern.css';
-@import '../templates/bold/bold.css';
-@import '../templates/dark/dark.css';
-@import '../templates/hospitality/hospitality.css';
-@import '../templates/cafe/cafe.css';
-@import '../templates/casual/casual.css';
-@import '../templates/premium/premium.css';
 @import '../templates/street-food/sabah/sabah.css';
 @import '../menu-studio/menu-theme.css';
 @import './admin/admin.css';

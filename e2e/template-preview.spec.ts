@@ -36,56 +36,51 @@ async function businessIdFor(page: Page, publicId: string): Promise<string> {
       .filter((id) => id !== '' && id !== 'new'),
   );
 
+  // Navigated rather than fetched with `page.request`: under `next start` the
+  // session cookie is Secure, which the browser sends to 127.0.0.1 but the
+  // API request client does not.
   for (const id of [...new Set(ids)]) {
-    const response = await page.request.get(`/admin/businesses/${id}`);
-    if (response.ok() && (await response.text()).includes(`/m/${publicId}`)) return id;
+    const response = await page.goto(`/admin/businesses/${id}`);
+    if (response?.ok() && (await page.content()).includes(`/m/${publicId}`)) return id;
   }
 
   return '';
 }
 
 test.describe('the template preview', () => {
-  test('the three frames render real profile content, not an empty document', async ({
+  test('the design page frames real profile content, not an empty document', async ({
     page,
   }) => {
     await signIn(page);
     const businessId = await businessIdFor(page, 'DEM001');
     expect(businessId).not.toBe('');
 
-    await page.goto(`/admin/businesses/${businessId}/template`);
+    await page.goto(`/admin/businesses/${businessId}/design`);
 
-    for (const label of ['Mobile — 390px', 'Tablet — 768px', 'Desktop — 1200px']) {
-      const frame = page.frameLocator(`iframe[title="${label}"]`);
+    const frame = page.frameLocator('iframe[title="Menu preview"]');
 
-      // The profile root is what the real renderer emits. An empty or errored
-      // frame has no such element, which is the failure this catches.
-      await expect(
-        frame.locator('[data-profile-root]'),
-        `${label} should contain the rendered profile`,
-      ).toBeVisible({ timeout: 20_000 });
+    // The profile root is what the real renderer emits. An empty or errored
+    // frame has no such element, which is the failure this catches.
+    await expect(frame.locator('[data-profile-root]')).toBeVisible({ timeout: 20_000 });
+    // And it must carry actual menu content, not just a shell.
+    await expect(frame.locator('[data-item]').first()).toBeAttached({ timeout: 20_000 });
 
-      // And it must carry actual menu content, not just a shell.
-      await expect(frame.locator('[data-item]').first()).toBeVisible({ timeout: 20_000 });
+    // Each photo layout card frames the same menu in that layout.
+    for (const key of ['a', 'b', 'c']) {
+      const card = page.frameLocator(`.build__style-frame iframe[src*="variant=${key}"]`);
+      await expect(card.locator(`[data-profile-root][data-variant="${key}"]`)).toBeAttached({
+        timeout: 20_000,
+      });
     }
   });
 
-  test('the frames are real viewports at their stated widths', async ({ page }) => {
+  test('the old brand and template addresses lead to the design page', async ({ page }) => {
     await signIn(page);
     const businessId = await businessIdFor(page, 'DEM001');
-    await page.goto(`/admin/businesses/${businessId}/template`);
 
-    for (const [label, width] of [
-      ['Mobile — 390px', 390],
-      ['Tablet — 768px', 768],
-      ['Desktop — 1200px', 1200],
-    ] as const) {
-      const frame = page.frameLocator(`iframe[title="${label}"]`);
-      await expect(frame.locator('[data-profile-root]')).toBeVisible({ timeout: 20_000 });
-
-      // The document inside reports the frame's own width — a real viewport,
-      // not a desktop page scaled down with a transform.
-      const inner = await frame.locator('body').evaluate((el) => el.ownerDocument.documentElement.clientWidth);
-      expect(Math.abs(inner - width)).toBeLessThanOrEqual(20);
+    for (const old of ['brand', 'template']) {
+      await page.goto(`/admin/businesses/${businessId}/${old}`);
+      await expect(page).toHaveURL(new RegExp(`/admin/businesses/${businessId}/design$`));
     }
   });
 
@@ -101,53 +96,57 @@ test.describe('the template preview', () => {
     const businessId = await businessIdFor(page, 'DRAFT1');
     if (!businessId) test.skip(true, 'no draft business in this dataset');
 
-    const preview = await page.request.get(`/admin/preview/${businessId}`);
-    expect(preview.status(), 'the staff preview must serve a draft business').toBe(200);
-    expect(await preview.text()).toContain('data-profile-root');
+    const preview = await page.goto(`/admin/preview/${businessId}`);
+    expect(preview?.status(), 'the staff preview must serve a draft business').toBe(200);
+    expect(await page.content()).toContain('data-profile-root');
   });
 
-  test('every template family renders through the preview route', async ({ page }) => {
+  test('every photo layout renders through the preview route', async ({ page }) => {
     await signIn(page);
     const businessId = await businessIdFor(page, 'DEM001');
+    const [design] = listTemplates();
 
-    for (const template of listTemplates()) {
+    for (const variant of design!.variants) {
       for (const lang of ['ar', 'en'] as const) {
-        const response = await page.request.get(
-          `/admin/preview/${businessId}?template=${template.key}&lang=${lang}`,
+        const response = await page.goto(
+          `/admin/preview/${businessId}?variant=${variant.key}&lang=${lang}`,
         );
+        const label = `${variant.key} (${lang})`;
 
-        expect(response.status(), `${template.key} (${lang})`).toBe(200);
+        expect(response?.status(), label).toBe(200);
 
-        const html = await response.text();
-        expect(html, `${template.key} (${lang}) must render the profile`).toContain(
-          'data-profile-root',
-        );
-        expect(html, `${template.key} (${lang}) must select that template`).toContain(
-          `data-template="${template.key}"`,
-        );
-        expect(html, `${template.key} (${lang}) must carry menu content`).toContain('data-item=');
+        const html = await page.content();
+        expect(html, `${label} must render the profile`).toContain('data-profile-root');
+        expect(html, `${label} must select that layout`).toContain(`data-variant="${variant.key}"`);
+        expect(html, `${label} must carry menu content`).toContain('data-item=');
         expect(html).toContain(`dir="${lang === 'ar' ? 'rtl' : 'ltr'}"`);
       }
     }
   });
 
-  test('switching template changes the layout and not the content', async ({ page }) => {
+  test('switching photo layout changes the layout and not the content', async ({ page }) => {
     await signIn(page);
     const businessId = await businessIdFor(page, 'DEM001');
 
     const itemsIn = (html: string) =>
       [...html.matchAll(/data-item="([A-Z0-9-]+)"/g)].map((match) => match[1]).sort();
 
-    const first = await (await page.request.get(`/admin/preview/${businessId}?template=luxury`)).text();
-    const second = await (await page.request.get(`/admin/preview/${businessId}?template=bold`)).text();
+    const html = async (url: string) => {
+      await page.goto(url);
+      return page.content();
+    };
 
-    expect(first).toContain('data-template="luxury"');
-    expect(second).toContain('data-template="bold"');
+    const cards = await html(`/admin/preview/${businessId}?variant=a`);
+    const list = await html(`/admin/preview/${businessId}?variant=b`);
 
-    // Same dishes, different design. A preview that changed the content would
+    expect(cards).toContain('data-variant="a"');
+    expect(list).toContain('data-variant="b"');
+
+    // Same dishes, different layout. A preview that changed the content would
     // be lying about what publishing does.
-    expect(itemsIn(first)).toEqual(itemsIn(second));
-    expect(first).not.toBe(second);
+    expect(itemsIn(cards).length).toBeGreaterThan(0);
+    expect(itemsIn(cards)).toEqual(itemsIn(list));
+    expect(cards).not.toBe(list);
   });
 
   test('the preview refuses another tenant, and refuses a signed-out visitor', async ({

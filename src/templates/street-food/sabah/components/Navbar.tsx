@@ -50,10 +50,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           </motion.div>
           
           <div className="flex flex-col min-w-0">
-            <span className="text-lg md:text-xl font-black text-white tracking-tight leading-tight group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
-              <span className="truncate">{isAr ? RESTAURANT_INFO.nameAr : RESTAURANT_INFO.nameEn}</span>
+            {/* The restaurant name is the page's one h1; hero slides are h2. */}
+            <div className="text-lg md:text-xl font-black text-white tracking-tight leading-tight group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+              <h1
+                className="truncate text-[length:inherit] font-[inherit] leading-[inherit]"
+                // An Arabic-only name on an English page is still Arabic; say so
+                // for screen readers and the text renderer.
+                {...(!isAr && RESTAURANT_INFO.nameEn === RESTAURANT_INFO.nameAr ? { lang: 'ar', dir: 'rtl' } : {})}
+              >
+                {isAr ? RESTAURANT_INFO.nameAr : RESTAURANT_INFO.nameEn}
+              </h1>
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            </span>
+            </div>
             <span className="text-[11px] text-emerald-300/80 font-medium truncate">
               {isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}
             </span>
@@ -127,6 +135,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.94 }}
             onClick={onOpenCart}
+            // The label is hidden on narrow phones; the icon alone needs a name.
+            aria-label={isAr ? 'الطلب' : 'Order'}
             className="relative flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer border border-amber-300"
           >
             <ShoppingBag className="w-4 h-4 stroke-[2.5]" />

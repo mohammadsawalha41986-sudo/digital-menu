@@ -102,12 +102,12 @@ test.describe('a new restaurant, start to finish', () => {
     // And the card renders the menu alone — not the admin wrapped around it.
     await expect(card.locator('.admin__sidebar')).toHaveCount(0);
 
-    await page.locator('.build__style').filter({ hasText: 'Luxury' }).click();
-    await page.getByRole('button', { name: 'Use this style' }).click();
-    await expect(page.getByRole('status').first()).toContainText('Style applied');
+    await page.locator('.build__style').filter({ hasText: 'Large photos' }).click();
+    await page.getByRole('button', { name: 'Save layout' }).click();
+    await expect(page.getByRole('status').first()).toContainText('Photo layout saved');
 
     const preview = page.frameLocator('iframe[title="Live preview"]');
-    await expect(preview.locator('[data-profile-root]')).toHaveAttribute('data-template', 'luxury');
+    await expect(preview.locator('[data-profile-root]')).toHaveAttribute('data-variant', 'c');
   });
 
   test('step 4: details are saved and nothing empty is invented', async ({ page }) => {
@@ -146,11 +146,11 @@ test.describe('a new restaurant, start to finish', () => {
 
     await expect(page.locator('.build__qr-art svg')).toBeVisible();
 
-    // Change the style; the destination is byte-identical afterwards.
+    // Change the photo layout; the destination is byte-identical afterwards.
     await page.goto(`/admin/build/${businessId}/style`);
-    await page.locator('.build__style').filter({ hasText: 'Modern' }).click();
-    await page.getByRole('button', { name: 'Use this style' }).click();
-    await expect(page.getByRole('status').first()).toContainText('Style applied');
+    await page.locator('.build__style').filter({ hasText: 'List' }).click();
+    await page.getByRole('button', { name: 'Save layout' }).click();
+    await expect(page.getByRole('status').first()).toContainText('Photo layout saved');
 
     await page.goto(`/admin/build/${businessId}/qr`);
     expect((await page.locator('.build__url code').textContent())?.trim()).toBe(link);

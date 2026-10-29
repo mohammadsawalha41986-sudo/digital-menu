@@ -48,7 +48,7 @@ beforeAll(async () => {
       status: 'ACTIVE',
       nameAr: 'مطعم الاختبار',
       nameEn: 'Fixture Restaurant',
-      templateKey: 'editorial',
+      templateKey: 'street-food',
       variantKey: 'a',
       brandTheme: { create: { colorPrimary: '#2B2118', colorAccent: '#B8874B' } },
       branches: { create: { key: BRANCH_KEY, nameAr: 'فرع', nameEn: 'Branch' } },
@@ -153,7 +153,7 @@ describe.skipIf(!databaseReachable)('the QR survives everything staff can change
     const resolved = resolveTemplate(profile?.templateKey ?? '', profile?.variantKey ?? '');
 
     expect(resolved.usedFallback).toBe(true);
-    expect(resolved.definition.key).toBe('editorial');
+    expect(resolved.definition.key).toBe('street-food');
   });
 
   it('produces a branch destination that is equally stable', async () => {

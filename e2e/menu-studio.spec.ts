@@ -150,10 +150,8 @@ test.describe('the studio', () => {
     const stillOriginal = page.context();
     const probe = await stillOriginal.newPage();
     await probe.goto(`/m/${publicId}?lang=ar`);
-    await expect(probe.locator('[data-menu-theme]').first()).not.toHaveAttribute(
-      'data-menu-theme',
-      'dark-luxury',
-    );
+    await expect(probe.locator('[data-profile-root]')).toBeVisible();
+    await expect(probe.locator('[data-menu-theme="dark-luxury"]')).toHaveCount(0);
     await probe.close();
 
     // --- Applying, and autosave -------------------------------------------

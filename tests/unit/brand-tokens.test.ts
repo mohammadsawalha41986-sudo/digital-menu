@@ -42,32 +42,22 @@ function emittedTokens(): Set<string> {
 }
 
 function templateStylesheets(): { file: string; css: string }[] {
-  const sheets: { file: string; css: string }[] = [];
-
-  for (const family of readdirSync(TEMPLATES_DIR, { withFileTypes: true })) {
-    if (!family.isDirectory()) continue;
-
-    const dir = path.join(TEMPLATES_DIR, family.name);
-
-    for (const entry of readdirSync(dir)) {
-      if (entry.endsWith('.css')) {
-        sheets.push({
-          file: `${family.name}/${entry}`,
-          css: readFileSync(path.join(dir, entry), 'utf8'),
-        });
-      }
-    }
-  }
-
-  return sheets;
+  // Recursive: the menu design keeps its stylesheet a level down
+  // (`street-food/sabah/sabah.css`).
+  return readdirSync(TEMPLATES_DIR, { recursive: true, encoding: 'utf8' })
+    .filter((entry) => entry.endsWith('.css'))
+    .map((entry) => ({
+      file: entry.split(path.sep).join('/'),
+      css: readFileSync(path.join(TEMPLATES_DIR, entry), 'utf8'),
+    }));
 }
 
 describe('brand custom properties', () => {
   const emitted = emittedTokens();
   const sheets = templateStylesheets();
 
-  it('finds the template stylesheets', () => {
-    expect(sheets.length).toBeGreaterThanOrEqual(10);
+  it('finds the menu design stylesheet', () => {
+    expect(sheets.map((sheet) => sheet.file)).toContain('street-food/sabah/sabah.css');
   });
 
   it('emits every token name the templates reference', () => {
@@ -84,11 +74,16 @@ describe('brand custom properties', () => {
     expect(unknown).toEqual([]);
   });
 
-  it('references at least one brand token per family, so the check has teeth', () => {
-    const families = new Set(
-      sheets.filter((s) => /var\(\s*--brand-/.test(s.css)).map((s) => s.file.split('/')[0]),
-    );
+  it('reads the brand colours and fonts, so the check has teeth', () => {
+    const css = sheets.map((sheet) => sheet.css).join('\n');
 
-    expect(families.size).toBeGreaterThanOrEqual(10);
+    for (const token of [
+      '--brand-color-primary',
+      '--brand-color-accent',
+      '--brand-font-heading',
+      '--brand-font-body',
+    ]) {
+      expect(css, token).toMatch(new RegExp(`var\\(\\s*${token}\\b`));
+    }
   });
 });

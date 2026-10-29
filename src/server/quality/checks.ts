@@ -145,7 +145,7 @@ export function evaluateHealth(input: HealthInput): Finding[] {
       severity: 'ERROR',
       area: 'brand',
       message: 'No logo. The brand engine has nothing to read, and the profile has no mark.',
-      fixPath: `${base}/brand`,
+      fixPath: `${base}/design`,
     });
   }
 
@@ -155,7 +155,7 @@ export function evaluateHealth(input: HealthInput): Finding[] {
       severity: 'ERROR',
       area: 'brand',
       message: `Body text contrast is ${input.brandContrast.text.toFixed(1)}:1 — below the 4.5:1 needed to be readable.`,
-      fixPath: `${base}/brand`,
+      fixPath: `${base}/design`,
     });
   }
 
@@ -165,7 +165,7 @@ export function evaluateHealth(input: HealthInput): Finding[] {
       severity: 'WARNING',
       area: 'brand',
       message: `Secondary text contrast is ${input.brandContrast.muted.toFixed(1)}:1 — hard to read on a phone in daylight.`,
-      fixPath: `${base}/brand`,
+      fixPath: `${base}/design`,
     });
   }
 

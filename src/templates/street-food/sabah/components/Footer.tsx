@@ -41,10 +41,12 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
                 ? RESTAURANT_INFO.sloganAr
                 : RESTAURANT_INFO.sloganEn}
             </p>
+            {RESTAURANT_INFO.openingHoursAr || RESTAURANT_INFO.openingHoursEn ? (
             <div className="flex items-center gap-1.5 text-emerald-400 font-bold pt-1">
               <Clock className="w-3.5 h-3.5" />
               <span>{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
             </div>
+            ) : null}
           </div>
 
           {/* Quick Navigation */}

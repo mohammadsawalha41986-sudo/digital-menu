@@ -179,21 +179,14 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                   </div>
                 </div>
 
-                {/* Operating Hours */}
+                {/* Operating hours — shown only when the restaurant has stated
+                    them; the design must never claim "open now" on its own. */}
+                {RESTAURANT_INFO.openingHoursAr || RESTAURANT_INFO.openingHoursEn ? (
                 <div className="flex items-start gap-3">
                   <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30 text-xs">
-                        {isAr ? 'مفتوح الآن' : 'Open Now'}
-                      </span>
-                      <span className="text-stone-300 font-semibold">{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
-                    </div>
-                    <p className="text-xs text-stone-400 mt-1">
-                      {isAr ? 'خدمة متميزة وسريعة طوال ساعات الليل' : 'Fast service and late night dining'}
-                    </p>
-                  </div>
+                  <span className="text-stone-300 font-semibold">{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
                 </div>
+                ) : null}
 
                 {/* Direct Phone */}
                 <div className="flex items-center gap-3">
