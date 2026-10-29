@@ -5,7 +5,7 @@ import type {
   MenuItem,
   RestaurantInfo,
 } from './sabah/data/menuData';
-import type { HeroSlide } from './sabah/context';
+import type { HeroSlide, MenuOffer } from './sabah/context';
 
 /**
  * Map the platform's `PublicProfile` shape into the shape the Sabah El Lail
@@ -29,6 +29,7 @@ export function profileToSabah(profile: PublicProfile): {
   menuItems: MenuItem[];
   logoUrl: string | null;
   slides: HeroSlide[];
+  offers: MenuOffer[];
 } {
   const categoriesAll = profile.menus.flatMap((menu) =>
     menu.categories.map((category) => ({
@@ -69,6 +70,8 @@ export function profileToSabah(profile: PublicProfile): {
           isUnavailable: item.isUnavailable,
           // No price stored: shown without one, never as 0.00 (GOALS I9).
           noPrice: item.priceMinor === null,
+          pairsWith: item.pairsWith,
+          isNew: item.tags?.includes('new') ?? false,
         })),
     ),
   );
@@ -128,6 +131,7 @@ export function profileToSabah(profile: PublicProfile): {
     menuCategories,
     menuItems: itemsAll,
     logoUrl: profile.logo?.url ?? null,
+    offers: menuOffers(profile.offers, toAmount),
     slides: [
       ...offerSlides(profile.offers, toAmount),
       ...buildSlides(restaurantInfo, itemsAll.filter((item) => !item.isUnavailable)),
@@ -204,5 +208,29 @@ function offerSlides(offers: PublicOffer[], toAmount: (minor: number | null) => 
       image: offer.image?.url ?? '',
       imageSrcSet: offer.image?.srcSet ?? undefined,
       imagePosition: offer.image?.objectPosition,
+    }));
+}
+
+/** Every current offer, photographed or not, for the strip mid-menu. */
+function menuOffers(offers: PublicOffer[], toAmount: (minor: number | null) => number): MenuOffer[] {
+  const now = Date.now();
+
+  return offers
+    .filter((offer) => !offer.endsAt || new Date(offer.endsAt).getTime() > now)
+    .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
+    .map((offer) => ({
+      key: offer.key,
+      titleAr: offer.titleAr,
+      titleEn: offer.titleEn ?? offer.titleAr,
+      descriptionAr: offer.descriptionAr ?? '',
+      descriptionEn: offer.descriptionEn ?? offer.descriptionAr ?? '',
+      image: offer.image?.url,
+      imageSrcSet: offer.image?.srcSet ?? undefined,
+      price: offer.offerPriceMinor === null ? undefined : toAmount(offer.offerPriceMinor),
+      originalPrice: offer.originalPriceMinor === null ? undefined : toAmount(offer.originalPriceMinor),
+      discountPercent: offer.discountPercent ?? undefined,
+      ctaUrl: offer.ctaUrl ?? undefined,
+      ctaLabelAr: offer.ctaLabelAr ?? undefined,
+      ctaLabelEn: offer.ctaLabelEn ?? undefined,
     }));
 }

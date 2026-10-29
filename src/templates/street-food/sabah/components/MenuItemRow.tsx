@@ -57,6 +57,11 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
           <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-amber-300 transition-colors truncate">
             {isAr ? item.nameAr : item.nameEn}
           </h3>
+          {item.isNew ? (
+            <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-400 text-stone-950" data-new>
+              {isAr ? 'جديد' : 'New'}
+            </span>
+          ) : null}
           {item.isOffer && (
             <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-stone-950 shrink-0">
               {isAr ? 'عرض' : 'Offer'}

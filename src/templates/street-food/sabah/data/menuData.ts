@@ -20,6 +20,10 @@ export interface MenuItem {
   isUnavailable?: boolean;
   /** No price was entered; the dish is listed but cannot be added to an order. */
   noPrice?: boolean;
+  /** Dishes the restaurant suggests with this one, by id (item code). */
+  pairsWith?: string[];
+  /** Marked new by the restaurant. */
+  isNew?: boolean;
   options?: {
     nameAr: string;
     nameEn: string;

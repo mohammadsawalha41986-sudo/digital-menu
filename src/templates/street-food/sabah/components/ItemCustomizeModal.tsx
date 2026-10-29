@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { currencyUnit, formatAmount } from '../money';
 import { useSabah } from '../context';
+import { Suggestions, orderableSuggestions } from './Suggestions';
 import { X, Plus, Minus, Flame, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
@@ -13,6 +14,8 @@ interface ItemCustomizeModalProps {
   lang: Language;
   onClose: () => void;
   onAddToCart: (cartItem: CartItem) => void;
+  /** Adds a suggested dish as it is, without closing the sheet. */
+  onQuickAdd?: (dish: MenuItem) => void;
 }
 
 export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
@@ -20,8 +23,9 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
   lang,
   onClose,
   onAddToCart,
+  onQuickAdd,
 }) => {
-  const { currency } = useSabah().info;
+  const { info: { currency }, items: MENU_ITEMS } = useSabah();
   const [selectedOption, setSelectedOption] = useState(
     item && item.options && item.options.length > 0 ? item.options[0] : undefined,
   );
@@ -183,6 +187,16 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                 </div>
               </div>
             )}
+
+            {/* Complete your meal — the restaurant's own suggestions */}
+            {onQuickAdd ? (
+              <Suggestions
+                title={isAr ? 'يكمل وجبتك' : 'Complete your meal'}
+                dishes={orderableSuggestions(item.pairsWith ?? [], MENU_ITEMS, [item.id])}
+                isAr={isAr}
+                onAdd={onQuickAdd}
+              />
+            ) : null}
 
             {/* Special Instructions */}
             <div className="space-y-1.5 pt-2">

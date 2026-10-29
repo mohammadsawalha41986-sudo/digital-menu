@@ -26,6 +26,7 @@ function item(overrides: Partial<PublicItem>): PublicItem {
     ingredientsEn: null,
     allergens: [],
     tags: [],
+    pairsWith: [],
     isFeatured: false,
     isUnavailable: false,
     image: null,

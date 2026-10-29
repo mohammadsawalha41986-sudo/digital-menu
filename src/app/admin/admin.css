@@ -2858,3 +2858,42 @@
   min-inline-size: 0;
   font-weight: 600;
 }
+
+/* --- Upsell page ---------------------------------------------------------- */
+
+.upsell {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.upsell__form {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  gap: var(--sys-space-2) var(--sys-space-3);
+  align-items: center;
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+}
+
+.upsell__name {
+  font-weight: 700;
+}
+
+.upsell__new {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  font-size: var(--sys-font-size-sm);
+}
+
+.upsell__picks {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+  gap: var(--sys-space-2);
+}

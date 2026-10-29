@@ -75,6 +75,7 @@ export type AuditAction =
   | 'modifier_group.deleted'
   | 'item.modifiers_changed'
   | 'items.bulk_updated'
+  | 'item.upsell_updated'
   | 'user.signed_in';
 
 export interface AuditEntry {

@@ -575,6 +575,10 @@ model MenuItem {
   isFeatured   Boolean          @default(false)
   sortOrder    Int              @default(0)
 
+  /// Item codes (same business) suggested with this dish — "complete your
+  /// meal". At most three, chosen by the restaurant, never inferred.
+  pairsWith String[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

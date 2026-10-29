@@ -6,6 +6,8 @@ import { X, Trash2, Plus, Minus, MessageCircle, Phone, ShoppingBag, MapPin, Stor
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem, Language, OrderType } from '../types';
 import { useSabah } from '../context';
+import type { MenuItem } from '../data/menuData';
+import { Suggestions, orderableSuggestions } from './Suggestions';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -15,6 +17,8 @@ interface CartDrawerProps {
   onUpdateQuantity: (cartItemId: string, newQty: number) => void;
   onRemoveItem: (cartItemId: string) => void;
   onClearCart: () => void;
+  /** Adds a suggested dish as it is, keeping the cart open. */
+  onQuickAdd?: (dish: MenuItem) => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -25,8 +29,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  onQuickAdd,
 }) => {
-  const { info: RESTAURANT_INFO } = useSabah();
+  const { info: RESTAURANT_INFO, items: MENU_ITEMS } = useSabah();
+
+  // What the restaurant pairs with what is already in the cart; when it pairs
+  // nothing, its new dishes ("try something new"). Never what is already in.
+  const inCart = cart.map((line) => line.item.id);
+  const paired = orderableSuggestions(
+    Array.from(new Set(cart.flatMap((line) => MENU_ITEMS.find((dish) => dish.id === line.item.id)?.pairsWith ?? []))),
+    MENU_ITEMS,
+    inCart,
+  ).slice(0, 3);
+  const fresh = paired.length > 0
+    ? []
+    : orderableSuggestions(MENU_ITEMS.filter((dish) => dish.isNew).map((dish) => dish.id), MENU_ITEMS, inCart).slice(0, 3);
   const [orderType, setOrderType] = useState<OrderType>('takeaway');
   const [tableNumber, setTableNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -302,6 +319,15 @@ ${noteInfo}
                     placeholder={isAr ? 'أي ملاحظة إضافية للمطعم؟' : 'Any additional instructions?'}
                     className="w-full bg-stone-950 border border-emerald-950 rounded-xl px-3 py-2 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400"
                   />
+
+                  {onQuickAdd ? (
+                    <Suggestions
+                      title={paired.length > 0 ? (isAr ? 'قد يعجبك أيضاً' : 'You may also like') : isAr ? 'جرّب الجديد' : 'Try something new'}
+                      dishes={paired.length > 0 ? paired : fresh}
+                      isAr={isAr}
+                      onAdd={onQuickAdd}
+                    />
+                  ) : null}
                 </>
               )}
             </div>

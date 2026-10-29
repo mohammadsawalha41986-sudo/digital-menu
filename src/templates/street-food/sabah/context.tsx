@@ -8,6 +8,25 @@ import {
 } from './data/menuData';
 import type { MenuCategory, MenuItem, RestaurantInfo } from './data/menuData';
 
+/** A restaurant offer, as the menu shows it in its offers strip. */
+export interface MenuOffer {
+  key: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  image?: string;
+  imageSrcSet?: string;
+  /** Offer price; absent when the offer has none. */
+  price?: number;
+  /** Price before the offer, shown struck through. */
+  originalPrice?: number;
+  discountPercent?: number;
+  ctaUrl?: string;
+  ctaLabelAr?: string;
+  ctaLabelEn?: string;
+}
+
 export interface HeroSlide {
   id: string;
   tagAr: string;
@@ -38,6 +57,8 @@ export interface SabahData {
   slides: HeroSlide[];
   /** QR code for the permanent menu link, as an SVG data URI. */
   qrDataUri: string | null;
+  /** Current offers, for the strip in the middle of the menu. */
+  offers?: MenuOffer[];
 }
 
 const FALLBACK: SabahData = {

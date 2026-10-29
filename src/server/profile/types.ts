@@ -54,6 +54,8 @@ export interface PublicItem {
   ingredientsEn: string | null;
   allergens: string[];
   tags: string[];
+  /** Item codes the restaurant suggests with this dish ("complete your meal"). */
+  pairsWith: string[];
   isFeatured: boolean;
   /** True when the item is served but currently out (§83). */
   isUnavailable: boolean;

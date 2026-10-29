@@ -20,7 +20,7 @@ import {
   RESTAURANT_INFO as DEFAULT_INFO,
 } from './data/menuData';
 import type { MenuItem, MenuCategory, RestaurantInfo } from './data/menuData';
-import { SabahDataProvider, type HeroSlide } from './context';
+import { SabahDataProvider, type HeroSlide, type MenuOffer } from './context';
 import type { CartItem, Language } from './types';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
@@ -28,6 +28,7 @@ import { CategoryNav } from './components/CategoryNav';
 import { MenuSearchAndFilter } from './components/MenuSearchAndFilter';
 import { MenuItemCard } from './components/MenuItemCard';
 import { MenuItemRow } from './components/MenuItemRow';
+import { OffersStrip } from './components/OffersStrip';
 import { CustomerReviewsSection } from './components/CustomerReviewsSection';
 import { GoogleLocationSection } from './components/GoogleLocationSection';
 import { CaloriesTableModal } from './components/CaloriesTableModal';
@@ -56,6 +57,8 @@ export interface SabahAppProps {
   customColors?: { page: boolean; card: boolean; price: boolean };
   /** The restaurant's permanent id; it scopes the visitor's cart. */
   publicId?: string;
+  /** Current offers, for the strip in the middle of the menu. */
+  offers?: MenuOffer[];
 }
 
 export default function App({
@@ -68,6 +71,7 @@ export default function App({
   qrDataUri = null,
   imageLayout = 'grid',
   publicId = 'reference',
+  offers = [],
   tone = 'dark',
   imageShape = 'landscape',
   customColors = { page: false, card: false, price: false },
@@ -157,6 +161,23 @@ export default function App({
   };
 
   // Cart Operations
+  // A suggested dish added from the dish sheet or the cart: one, plain, and
+  // the cart stays where it is.
+  const quickAdd = (dish: MenuItem) => {
+    setCart((prev) => {
+      const existing = prev.find((line) => line.item.id === dish.id && !line.selectedOption && !line.notes && !line.spiceLevel);
+      if (existing) {
+        return prev.map((line) =>
+          line === existing ? { ...line, quantity: line.quantity + 1, totalPrice: line.unitPrice * (line.quantity + 1) } : line,
+        );
+      }
+      return [
+        ...prev,
+        { cartItemId: `${dish.id}-${Date.now()}`, item: dish, quantity: 1, unitPrice: dish.price, totalPrice: dish.price },
+      ];
+    });
+  };
+
   const handleAddToCart = (newItem: CartItem) => {
     setCart((prev) => {
       const existingIndex = prev.findIndex(
@@ -254,7 +275,7 @@ export default function App({
 
   return (
     <SabahDataProvider
-      value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri }}
+      value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri, offers }}
     >
     <div
       className="sf-root min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950"
@@ -322,10 +343,17 @@ export default function App({
             {categoriesToDisplay.map((cat: MenuCategory, catIndex: number) => {
               const itemsInThisCat = filteredItems.filter((i) => i.categoryId === cat.id);
               if (itemsInThisCat.length === 0) return null;
+              // The offers strip sits after the second category of the full
+              // menu, where a visitor scrolling the dishes meets it.
+              const showOffersAfter =
+                catIndex === Math.min(1, categoriesToDisplay.length - 1) &&
+                selectedCategory === 'all' &&
+                activeFilter === 'all' &&
+                searchQuery.trim() === '';
 
               return (
+                <React.Fragment key={cat.id}>
                 <motion.section 
-                  key={cat.id} 
                   id={cat.id}
                   data-category={cat.id}
                   initial={{ opacity: 0, y: 35 }}
@@ -393,6 +421,8 @@ export default function App({
                     </div>
                   )}
                 </motion.section>
+                {showOffersAfter ? <OffersStrip lang={lang} /> : null}
+                </React.Fragment>
               );
             })}
 
@@ -519,6 +549,7 @@ export default function App({
         lang={lang}
         onClose={() => setActiveItemForCustomization(null)}
         onAddToCart={handleAddToCart}
+        onQuickAdd={quickAdd}
       />
 
       <CartDrawer
@@ -529,6 +560,7 @@ export default function App({
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
+        onQuickAdd={quickAdd}
       />
 
       <QrCodeModal

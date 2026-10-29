@@ -109,3 +109,25 @@ test('a cart belongs to one restaurant and never upsets hydration', async ({ pag
 
   expect(errors).toEqual([]);
 });
+
+test('current offers appear as a strip in the middle of the menu', async ({ page }) => {
+  await page.goto('/m/DEM001?lang=ar');
+
+  const strip = page.locator('[data-offers-strip]');
+  await expect(strip).toHaveCount(1);
+  // Placed after the second category, not at the top or the end.
+  const order = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-category], [data-offers-strip]')).map((el) =>
+      el.hasAttribute('data-offers-strip') ? 'OFFERS' : el.getAttribute('data-category'),
+    ),
+  );
+  expect(order.indexOf('OFFERS')).toBe(2);
+
+  const family = strip.locator('[data-offer]').filter({ hasText: 'ليلة العائلة' });
+  await expect(family).toContainText('126.00');
+  await expect(family.getByRole('link')).toHaveAttribute('href', /wa\.me\/\d+\?text=.+/);
+
+  // Searching hides it; the strip is for browsing, not for results.
+  await page.getByRole('searchbox').fill('حمص');
+  await expect(strip).toHaveCount(0);
+});

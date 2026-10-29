@@ -71,6 +71,11 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
                 <span>{isAr ? 'عرض توفير' : 'Value Deal'}</span>
               </span>
             )}
+            {item.isNew ? (
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-amber-400 text-stone-950 shadow" data-new>
+                {isAr ? 'جديد' : 'New'}
+              </span>
+            ) : null}
             {item.isPopular && !item.isOffer && (
               <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 shadow">
                 {isAr ? 'الأكثر طلباً' : 'Bestseller'}

@@ -25,6 +25,7 @@ import {
   updateTemplate,
   updateWorkingHours,
   upsertItem,
+  setItemUpsell,
 } from './business-service';
 import {
   branchSchema,
@@ -406,5 +407,28 @@ export async function restoreMenuVersionAction(
     const result = await restoreMenuVersion(user, businessId, menuId, versionId);
     revalidateBusiness(businessId, publicId);
     return `Restored version ${result.restoredFrom}, published as version ${result.version.version}`;
+  });
+}
+
+/** Upsell for one dish: up to three suggested dishes and the "new" mark. */
+export async function setUpsellAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const itemCode = String(formData.get('itemCode') ?? '');
+  const pairsWith = formData
+    .getAll('pairsWith')
+    .map((value) => String(value))
+    .filter(Boolean);
+  const isNew = formData.get('isNew') === 'on';
+
+  return run(async () => {
+    await setItemUpsell(user, businessId, { itemCode, pairsWith, isNew });
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/upsell`);
+    return 'Saved';
   });
 }

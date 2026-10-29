@@ -43,6 +43,7 @@ export default async function BusinessPage({
       links: [
         { href: `${build}/builder`, label: 'الأطباق والأسعار', sub: 'Dishes & prices', primary: true },
         { href: `${build}/images`, label: 'صور الأطباق', sub: 'Dish photos' },
+        { href: `${base}/upsell`, label: 'اقتراحات البيع', sub: 'Upsell: pairings & new dishes' },
         { href: `${base}/data`, label: 'استيراد / تصدير', sub: 'Import / export (Excel)' },
         { href: `${base}/nutrition`, label: 'السعرات', sub: 'Calories' },
       ],

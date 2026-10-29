@@ -275,6 +275,7 @@ async function loadProfile(
                   tags: true,
                   isFeatured: true,
                   availability: true,
+                  pairsWith: true,
                   image: { select: MEDIA_SELECT },
                   gallery: {
                     orderBy: { sortOrder: 'asc' },
@@ -582,6 +583,7 @@ interface ItemRow {
   ingredientsEn: string | null;
   allergens: string[];
   tags: string[];
+  pairsWith: string[];
   isFeatured: boolean;
   availability: string;
   image: MediaRow | null;
@@ -682,6 +684,7 @@ function toItem(item: ItemRow, overrides: OverrideMap | null): PublicItem | null
     ingredientsEn: item.ingredientsEn,
     allergens: item.allergens,
     tags: item.tags,
+    pairsWith: item.pairsWith,
     isFeatured: item.isFeatured,
     isUnavailable: availability === 'UNAVAILABLE',
     image: toImage(item.image),

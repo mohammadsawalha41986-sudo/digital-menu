@@ -931,3 +931,73 @@ export async function getHoursForAdmin(user: AuthenticatedUser, businessId: stri
     })),
   };
 }
+
+/** At most this many dishes are suggested with any one dish. */
+export const MAX_PAIRINGS = 3;
+
+/** The tag that marks a dish as new on the menu ("جديد"). */
+export const NEW_TAG = 'new';
+
+/**
+ * Upsell for one dish: the dishes suggested with it ("complete your meal")
+ * and whether it is shown as new.
+ *
+ * Suggestions are item codes of the same business, validated here: an
+ * unknown code, the dish itself, a duplicate or more than MAX_PAIRINGS is
+ * refused rather than silently dropped, so the owner sees what happened.
+ */
+export async function setItemUpsell(
+  user: AuthenticatedUser,
+  businessId: string,
+  input: { itemCode: string; pairsWith: string[]; isNew: boolean },
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const itemCode = input.itemCode.trim().toUpperCase();
+  const pairsWith = input.pairsWith.map((code) => code.trim().toUpperCase()).filter(Boolean);
+
+  const item = await prisma.menuItem.findFirst({
+    where: { businessId: context.businessId, itemCode },
+    select: { id: true, tags: true, pairsWith: true },
+  });
+  if (!item) throw new ValidationError(`No dish with code ${itemCode}`);
+
+  if (pairsWith.length > MAX_PAIRINGS) {
+    throw new ValidationError(`Suggest at most ${MAX_PAIRINGS} dishes`);
+  }
+  if (new Set(pairsWith).size !== pairsWith.length) {
+    throw new ValidationError('A dish is suggested twice');
+  }
+  if (pairsWith.includes(itemCode)) {
+    throw new ValidationError('A dish cannot be suggested with itself');
+  }
+
+  if (pairsWith.length > 0) {
+    const found = await prisma.menuItem.findMany({
+      where: { businessId: context.businessId, itemCode: { in: pairsWith } },
+      select: { itemCode: true },
+    });
+    const missing = pairsWith.filter((code) => !found.some((entry) => entry.itemCode === code));
+    if (missing.length > 0) throw new ValidationError(`No dish with code ${missing.join(', ')}`);
+  }
+
+  const tags = input.isNew
+    ? Array.from(new Set([...item.tags, NEW_TAG]))
+    : item.tags.filter((tag) => tag !== NEW_TAG);
+
+  const updated = await prisma.menuItem.update({
+    where: { id: item.id },
+    data: { pairsWith, tags },
+    select: { itemCode: true, pairsWith: true, tags: true },
+  });
+
+  await recordAudit({
+    action: 'item.upsell_updated',
+    entity: 'menu_item',
+    entityId: item.id,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { before: { pairsWith: item.pairsWith, tags: item.tags }, after: { pairsWith, tags } },
+  });
+
+  return updated;
+}
