@@ -11,6 +11,7 @@ import {
   type AuthenticatedUser,
 } from '@/server/tenancy/context';
 import { isValidTemplateSelection } from '@/templates/registry';
+import { isFoodBusinessType } from './validation';
 import { parseSnapshot, summarise } from '@/server/menus/snapshot';
 import {
   applySnapshot,
@@ -69,6 +70,9 @@ type TemplateInput = z.infer<typeof templateSelectionSchema>;
  */
 export async function createBusiness(user: AuthenticatedUser, input: BusinessInput) {
   if (user.role !== 'SUPER_ADMIN') throw new TenantAccessError('Only platform staff may create a business');
+  if (!isFoodBusinessType(input.type)) {
+    throw new ValidationError('Only restaurants, cafés, bakeries and dessert shops can be created');
+  }
 
   const publicId = await allocatePublicId();
 
@@ -129,6 +133,11 @@ export async function updateBusiness(
   const context = await requireTenantContext(user, businessId, 'MANAGER');
 
   const before = await prisma.business.findUniqueOrThrow({ where: { id: context.businessId } });
+
+  // A legacy non-food type may be kept as it is, but never newly chosen.
+  if (input.type !== before.type && !isFoodBusinessType(input.type)) {
+    throw new ValidationError('Choose restaurant, café, bakery or dessert shop');
+  }
 
   // The public id is never in the update payload — it is the printed QR.
   const updated = await prisma.business.update({

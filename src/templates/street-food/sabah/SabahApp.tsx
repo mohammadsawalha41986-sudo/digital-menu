@@ -13,6 +13,7 @@ import React, { useState, useMemo, useEffect, useSyncExternalStore } from 'react
 import { useRouter } from 'next/navigation';
 import { currencyUnit, formatAmount } from './money';
 import { hoursLine } from './hours';
+import { cartStorageKey, getCart, getServerCart, setCart as writeCart, subscribeToCart } from './cart-store';
 import {
   MENU_CATEGORIES as DEFAULT_CATEGORIES,
   MENU_ITEMS as DEFAULT_ITEMS,
@@ -47,6 +48,8 @@ export interface SabahAppProps {
   qrDataUri?: string | null;
   /** How dishes are laid out by default; the visitor can still switch. */
   imageLayout?: 'grid' | 'list' | 'large';
+  /** The restaurant's permanent id; it scopes the visitor's cart. */
+  publicId?: string;
 }
 
 export default function App({
@@ -58,6 +61,7 @@ export default function App({
   slides = [],
   qrDataUri = null,
   imageLayout = 'grid',
+  publicId = 'reference',
 }: SabahAppProps = {}) {
   const BASE_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
 
@@ -90,23 +94,23 @@ export default function App({
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Cart state
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('sabah_el_lail_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // One cart per restaurant, read without disturbing hydration.
+  const cartKey = cartStorageKey(publicId);
+  const storedCart = useSyncExternalStore(subscribeToCart, () => getCart(cartKey), getServerCart);
+  const setCart = (update: CartItem[] | ((previous: CartItem[]) => CartItem[])) =>
+    writeCart(cartKey, typeof update === 'function' ? update : () => update);
 
-  // Sync cart to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('sabah_el_lail_cart', JSON.stringify(cart));
-    } catch {
-      // ignore
-    }
-  }, [cart]);
+  // A stored cart can outlive the menu it came from: a dish removed, marked
+  // unavailable or repriced since. Those lines are dropped rather than sent
+  // to the restaurant at a price it no longer charges.
+  const cart = useMemo(
+    () =>
+      storedCart.filter((line) => {
+        const current = MENU_ITEMS.find((dish) => dish.id === line.item?.id);
+        return Boolean(current && !current.isUnavailable && !current.noPrice && current.price === line.item.price);
+      }),
+    [storedCart, MENU_ITEMS],
+  );
 
   // In Next.js the <html> `lang` and `dir` attributes are owned by the
   // layout and this app renders inside a profile root that already carries

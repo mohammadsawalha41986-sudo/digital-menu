@@ -270,3 +270,19 @@ describe.skipIf(!databaseReachable)('ordering', () => {
     ).rejects.toThrow(/twice/i);
   });
 });
+
+describe.skipIf(!databaseReachable)('food businesses only', () => {
+  it('refuses to create a business that is not a food business', async () => {
+    await expect(
+      createBusiness(user, {
+        slug: `salon-${Date.now().toString(36)}`,
+        type: 'SALON',
+        status: 'DRAFT',
+        defaultLocale: 'ar',
+        currency: 'SAR',
+        nameAr: 'صالون',
+        nameEn: null,
+      } as Parameters<typeof createBusiness>[1]),
+    ).rejects.toThrow(/restaurants, cafés, bakeries and dessert shops/);
+  });
+});

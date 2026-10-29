@@ -6,18 +6,10 @@ import { createProjectAction } from '@/server/admin/wizard-actions';
 import type { ActionState } from '@/server/admin/actions';
 
 const TYPES = [
-  { value: 'RESTAURANT', label: 'Restaurant' },
-  { value: 'CAFE', label: 'Café' },
-  { value: 'BAKERY', label: 'Bakery' },
-  { value: 'DESSERT', label: 'Desserts' },
-  { value: 'HOTEL', label: 'Hotel' },
-  { value: 'SALON', label: 'Salon' },
-  { value: 'BEAUTY_CENTER', label: 'Beauty centre' },
-  { value: 'SPA', label: 'Spa' },
-  { value: 'BARBER', label: 'Barber' },
-  { value: 'GYM', label: 'Gym' },
-  { value: 'RETAIL', label: 'Shop' },
-  { value: 'OTHER', label: 'Something else' },
+  { value: 'RESTAURANT', label: 'مطعم · Restaurant' },
+  { value: 'CAFE', label: 'مقهى · Café' },
+  { value: 'BAKERY', label: 'مخبز · Bakery' },
+  { value: 'DESSERT', label: 'حلويات · Desserts' },
 ];
 
 /**

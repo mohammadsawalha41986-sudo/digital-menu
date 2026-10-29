@@ -45,6 +45,7 @@ async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; l
       qrDataUri={qrDataUri}
       imageLayout={IMAGE_LAYOUTS[profile.variantKey] ?? 'grid'}
       initialLang={locale}
+      publicId={profile.publicId}
     />
   );
 }

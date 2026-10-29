@@ -86,3 +86,26 @@ test('the design takes its colours from the brand, not from itself', async ({ pa
   const after = await addButton.evaluate((el) => getComputedStyle(el).backgroundImage);
   expect(after).not.toEqual(before);
 });
+
+test('a cart belongs to one restaurant and never upsets hydration', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(String(error)));
+
+  await page.goto(`${SABAH}?lang=ar`);
+  const card = page.locator('#menu-items-container [data-item]').first();
+  await card.scrollIntoViewIfNeeded();
+  await card.getByRole('button').last().click();
+  await page.getByRole('button', { name: /إضافة إلى الطلب/ }).click();
+  await expect(page.getByRole('button', { name: /إرسال الطلب عبر واتساب/ })).toBeVisible();
+
+  // Reloading the same restaurant restores its cart, without a hydration error.
+  await page.goto(`${SABAH}?lang=en`);
+  await expect(page.getByRole('button', { name: /View Order/ })).toBeVisible();
+
+  // Another restaurant on the same domain starts with an empty cart.
+  await page.goto('/m/DEM001?lang=en');
+  await expect(page.locator('[data-profile-root]')).toBeVisible();
+  await expect(page.getByRole('button', { name: /View Order/ })).toHaveCount(0);
+
+  expect(errors).toEqual([]);
+});

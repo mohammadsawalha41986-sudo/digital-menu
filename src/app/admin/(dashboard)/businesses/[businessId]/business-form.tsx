@@ -3,20 +3,14 @@
 import { ActionForm, CheckboxField, SelectField, TextArea, TextField } from '../../components';
 import type { ActionState } from '@/server/admin/actions';
 
+// Food businesses only. A legacy record keeps its stored type in the list so
+// saving other fields never silently changes it.
 const TYPES = [
-  'RESTAURANT',
-  'CAFE',
-  'BAKERY',
-  'DESSERT',
-  'SALON',
-  'BEAUTY_CENTER',
-  'SPA',
-  'BARBER',
-  'GYM',
-  'HOTEL',
-  'RETAIL',
-  'OTHER',
-] as const;
+  { value: 'RESTAURANT', label: 'مطعم · Restaurant' },
+  { value: 'CAFE', label: 'مقهى · Café' },
+  { value: 'BAKERY', label: 'مخبز · Bakery' },
+  { value: 'DESSERT', label: 'حلويات · Desserts' },
+];
 
 const CURRENCIES = ['SAR', 'AED', 'KWD', 'QAR', 'BHD', 'OMR', 'USD'] as const;
 
@@ -89,7 +83,11 @@ export function BusinessForm({
           name="type"
           label="Business type"
           defaultValue={business.type ?? 'RESTAURANT'}
-          options={TYPES.map((value) => ({ value, label: value.replace(/_/g, ' ') }))}
+          options={
+            TYPES.some((option) => option.value === (business.type ?? 'RESTAURANT'))
+              ? TYPES
+              : [...TYPES, { value: business.type as string, label: `${business.type} (old)` }]
+          }
         />
         <SelectField
           name="status"

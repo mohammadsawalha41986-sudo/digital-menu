@@ -55,6 +55,17 @@ const phoneSchema = z
   .nullable()
   .catch(null);
 
+/**
+ * The platform serves food businesses only. Older records may carry another
+ * type; they keep it and keep working, but no new business — and no edit —
+ * can choose one.
+ */
+export const FOOD_BUSINESS_TYPES = ['RESTAURANT', 'CAFE', 'BAKERY', 'DESSERT'] as const;
+
+export function isFoodBusinessType(type: string): boolean {
+  return (FOOD_BUSINESS_TYPES as readonly string[]).includes(type);
+}
+
 export const businessSchema = z.object({
   nameAr: requiredText(),
   nameEn: optionalText(200),
