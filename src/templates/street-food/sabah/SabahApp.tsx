@@ -65,6 +65,14 @@ export default function App({
 }: SabahAppProps = {}) {
   const BASE_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
 
+  // The admin's photo layout cards open the menu at the dishes. Scrolling this
+  // window only — a #fragment would also scroll the admin page around it.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('focus') !== 'dishes') return;
+    const dishes = document.getElementById('menu-items-container');
+    if (dishes) window.scrollTo(0, dishes.getBoundingClientRect().top + window.scrollY - 120);
+  }, []);
+
   // Opening hours depend on the visitor's "now", so they are worked out in
   // the browser (and refreshed each minute); the server render carries no
   // time-sensitive claim.

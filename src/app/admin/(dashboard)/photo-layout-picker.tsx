@@ -75,7 +75,7 @@ export function PhotoLayoutPicker({
             <span className="build__style-frame" aria-hidden="true">
               <iframe
                 title={`${layout.label} preview`}
-                src={`/admin/preview/${businessId}?lang=ar&variant=${layout.key}#menu-items-container`}
+                src={`/admin/preview/${businessId}?lang=ar&variant=${layout.key}&focus=dishes`}
                 width={390}
                 height={620}
                 loading="lazy"

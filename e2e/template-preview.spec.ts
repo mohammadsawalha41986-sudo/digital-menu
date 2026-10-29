@@ -72,6 +72,10 @@ test.describe('the template preview', () => {
         timeout: 20_000,
       });
     }
+
+    // The cards open their menu at the dishes without dragging this page down.
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 
   test('the old brand and template addresses lead to the design page', async ({ page }) => {
