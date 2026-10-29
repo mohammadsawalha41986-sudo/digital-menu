@@ -127,7 +127,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       
       {/* 1. Full-Width Panoramic Motion Banner (Edge-to-Edge 100vw) */}
       <div
-        className="relative w-full h-[500px] sm:h-[620px] lg:h-[700px] overflow-hidden"
+        className="relative w-full sm:h-[620px] lg:h-[700px] overflow-hidden bg-[var(--sf-ink-070c08)]"
         data-hero-effect={effect}
         style={effect === 'flip' ? { perspective: '1400px' } : undefined}
       >
@@ -155,7 +155,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             initial="enter"
             animate="center"
             exit="exit"
-            className="absolute inset-0 w-full h-full"
+            // On a phone the photo has its own frame and the text sits below
+            // it; from tablet up the text floats on a small card beside it.
+            className="absolute inset-x-0 top-0 aspect-[4/3] sm:aspect-auto sm:inset-0 w-full sm:h-full"
             // Swipe between slides with a finger; the next slide follows the
             // reading direction (leftwards in Arabic).
             drag={slideCount > 1 ? 'x' : false}
@@ -174,22 +176,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               sizes="100vw"
               style={{ objectPosition: slide.imagePosition }}
               alt={isAr ? slide.headlineAr : slide.headlineEn}
-              className={`w-full h-full object-cover object-center filter brightness-[0.95] contrast-[1.08] ${
+              className={`w-full h-full object-cover object-center ${
                 effect === 'zoom' || effect === 'story' ? 'sf-kb-zoom' : effect === 'pan' ? 'sf-kb-pan' : ''
               }`}
               referrerPolicy="no-referrer"
             /> : <div className="w-full h-full bg-gradient-to-br from-emerald-950 via-stone-950 to-black" />}
-
-            {/* Cinematic Gradient Scrim: Dark on text side, transparent over food image */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/30 lg:bg-gradient-to-r lg:from-black/95 lg:via-black/70 lg:to-black/20 rtl:lg:from-black/95 rtl:lg:via-black/70 rtl:lg:to-black/20" />
-            
-            {/* Ambient heat & glow overlay */}
-            <div className="absolute inset-0 bg-radial from-amber-500/10 via-transparent to-black/40 pointer-events-none" />
+            {/* No scrim and no glow: the restaurant's photo is shown as it is. */}
           </motion.div>
         </AnimatePresence>
 
+        {/* Holds the photo's place on a phone, where the text follows it. */}
+        <div className="sm:hidden aspect-[4/3]" aria-hidden="true" />
+
         {/* Animated Rising Steam across the banner */}
-        <div className="absolute top-1/4 right-1/4 lg:right-1/3 flex items-center gap-3 pointer-events-none z-20 opacity-75">
+        <div className="hidden absolute top-1/4 right-1/4 lg:right-1/3 items-center gap-3 pointer-events-none z-20 opacity-75">
           <svg className="w-10 h-20 text-amber-100/40 animate-steam" viewBox="0 0 24 36" fill="none">
             <path d="M6 32 C 10 24, 2 16, 8 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
@@ -199,7 +199,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
 
         {/* 2. Hero Content Overlay (Positioned gracefully over the full-width panoramic banner) */}
-        <div className="absolute inset-0 z-20 flex flex-col justify-end sm:justify-between gap-4 sm:gap-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-12 pointer-events-none">
+        <div className="relative sm:absolute sm:inset-0 z-20 flex flex-col justify-end sm:justify-between gap-4 sm:gap-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-12 pointer-events-none">
           
           {/* Top Live Trust Strip — desktop and tablet; on a phone the same
               facts sit in the action row below the banner. */}
@@ -244,7 +244,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Main Slide Content in Hero Foreground */}
-          <div className="max-w-2xl space-y-3 sm:space-y-4 pointer-events-auto sm:py-4">
+          <div className="max-w-2xl space-y-3 sm:space-y-4 pointer-events-auto sm:p-6 sm:rounded-3xl sm:bg-black/55 sm:backdrop-blur-md sm:border sm:border-white/10">
             
             <AnimatePresence mode="wait">
               <motion.div

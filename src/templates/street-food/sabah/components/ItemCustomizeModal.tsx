@@ -81,7 +81,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               <img
                 src={item.image}
                 alt={isAr ? item.nameAr : item.nameEn}
-                className="w-full h-full object-cover filter brightness-[1.03] contrast-[1.04]"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
             ) : (
@@ -89,8 +89,6 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                 <Sparkles className="w-12 h-12 text-amber-500/30" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--sf-ink-111913)] via-[var(--sf-ink-111913)]/40 to-transparent" />
-            
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -100,16 +98,18 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               <X className="w-5 h-5" />
             </motion.button>
 
-            <div className="absolute bottom-3 right-4 rtl:right-4 ltr:left-4 left-4">
-              <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
-                {isAr ? item.nameAr : item.nameEn}
-              </h2>
-              {item.calories && (
-                <span className="text-xs text-amber-300 font-mono mt-0.5 block font-semibold">
-                  {item.calories} {isAr ? 'سعرة حرارية تقريبية' : 'estimated calories'}
-                </span>
-              )}
-            </div>
+          </div>
+
+          {/* The name sits under the photo, so the photo needs no shade. */}
+          <div className="px-4 sm:px-5 pt-4">
+            <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+              {isAr ? item.nameAr : item.nameEn}
+            </h2>
+            {item.calories && (
+              <span className="text-xs text-amber-300 font-mono mt-0.5 block font-semibold">
+                {item.calories} {isAr ? 'سعرة حرارية تقريبية' : 'estimated calories'}
+              </span>
+            )}
           </div>
 
           {/* Scrollable Body */}

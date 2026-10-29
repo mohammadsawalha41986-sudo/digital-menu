@@ -54,14 +54,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             loading="lazy"
             decoding="async"
             alt={isAr ? item.nameAr : item.nameEn}
-            className={`w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 filter brightness-[1.02] contrast-[1.04] ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
+            className={`w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
             referrerPolicy="no-referrer"
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none';
             }}
           />
-          {/* Appetizing warm gradient scrim */}
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/20 to-transparent group-hover:via-stone-950/10 transition-colors" />
           
           {/* Subtle badges */}
           <div className="absolute top-2.5 right-2.5 rtl:right-2.5 ltr:left-2.5 flex items-center gap-1.5 z-10">
