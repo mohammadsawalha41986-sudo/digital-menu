@@ -36,7 +36,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
   };
 
   return (
-    <section id="google-location" className="py-16 bg-[#0a0f0b] border-t border-emerald-950/80 scroll-mt-20 relative overflow-hidden">
+    <section id="google-location" className="py-16 bg-[var(--sf-ink-0a0f0b)] border-t border-emerald-950/80 scroll-mt-20 relative overflow-hidden">
       
       {/* Background brand ambiance */}
       <div className="absolute top-1/2 left-0 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -101,7 +101,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
             initial={{ opacity: 0, x: isAr ? 20 : -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="lg:col-span-5 flex flex-col justify-between space-y-5 bg-gradient-to-b from-[#111913] to-stone-950 rounded-3xl border border-emerald-500/30 p-6 shadow-2xl relative"
+            className="lg:col-span-5 flex flex-col justify-between space-y-5 bg-gradient-to-b from-[var(--sf-ink-111913)] to-stone-950 rounded-3xl border border-emerald-500/30 p-6 shadow-2xl relative"
           >
             
             {/* Top Place Branding */}
@@ -269,7 +269,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
           >
             
             {/* Top Bar on Map */}
-            <div className="bg-[#0e1510]/95 backdrop-blur-md px-5 py-3.5 border-b border-emerald-950 flex items-center justify-between z-10">
+            <div className="bg-[var(--sf-ink-0e1510)]/95 backdrop-blur-md px-5 py-3.5 border-b border-emerald-950 flex items-center justify-between z-10">
               <div className="flex items-center gap-2 text-xs text-stone-300">
                 <MapPin className="w-4 h-4 text-red-500" />
                 <span className="font-extrabold text-white">{isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}</span>

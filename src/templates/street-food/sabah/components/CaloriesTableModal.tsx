@@ -56,12 +56,12 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-4xl bg-[#0f1712] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-4xl bg-[var(--sf-ink-0f1712)] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-emerald-950 via-[#111c14] to-stone-950 border-b border-emerald-950 flex items-center justify-between gap-4">
+        <div className="p-5 bg-gradient-to-r from-emerald-950 via-[var(--sf-ink-111c14)] to-stone-950 border-b border-emerald-950 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
               <Activity className="w-6 h-6" />

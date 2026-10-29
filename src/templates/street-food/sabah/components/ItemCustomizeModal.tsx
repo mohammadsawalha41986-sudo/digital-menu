@@ -75,7 +75,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-lg bg-[#111913] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-lg bg-[var(--sf-ink-111913)] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           
@@ -93,7 +93,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                 <Sparkles className="w-12 h-12 text-amber-500/30" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#111913] via-[#111913]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--sf-ink-111913)] via-[var(--sf-ink-111913)]/40 to-transparent" />
             
             <motion.button
               whileHover={{ scale: 1.1 }}

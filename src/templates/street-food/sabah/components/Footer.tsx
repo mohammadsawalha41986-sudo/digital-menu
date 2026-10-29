@@ -15,7 +15,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
   const isAr = lang === 'ar';
 
   return (
-    <footer className="bg-[#060a07] border-t border-emerald-950/80 pt-12 pb-8 text-stone-400 text-xs">
+    <footer className="bg-[var(--sf-ink-060a07)] border-t border-emerald-950/80 pt-12 pb-8 text-stone-400 text-xs">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">

@@ -31,7 +31,7 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
   const isAr = lang === 'ar';
 
   return (
-    <div className="py-5 border-b border-emerald-950/80 bg-[#0e140f]/70 backdrop-blur-md">
+    <div className="py-5 border-b border-emerald-950/80 bg-[var(--sf-ink-0e140f)]/70 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">

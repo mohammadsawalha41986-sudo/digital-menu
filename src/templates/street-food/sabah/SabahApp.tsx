@@ -207,7 +207,7 @@ export default function App({
     <SabahDataProvider
       value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri }}
     >
-    <div className="min-h-screen bg-[#070b08] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
+    <div className="min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
       
       {/* 1. Navbar */}
       <Navbar

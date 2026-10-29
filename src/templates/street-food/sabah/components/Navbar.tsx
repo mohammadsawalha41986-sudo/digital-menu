@@ -27,15 +27,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isAr = lang === 'ar';
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#080d09]/95 backdrop-blur-md border-b border-emerald-950/80 transition-colors shadow-lg shadow-black/30">
+    <header className="sticky top-0 z-40 w-full bg-[var(--sf-ink-080d09)]/95 backdrop-blur-md border-b border-emerald-950/80 transition-colors shadow-lg shadow-black/30">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4 md:gap-8">
         
         {/* Zone 1: Brand Wordmark & Logo */}
-        <a href="#hero" className="flex items-center gap-3 shrink-0 group">
+        <a href="#hero" className="flex items-center gap-3 min-w-0 group">
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 2 }}
             whileTap={{ scale: 0.95 }}
-            className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-600/25 via-amber-500/20 to-emerald-950/60 border border-emerald-500/50 flex items-center justify-center overflow-hidden p-1 shadow-md shadow-emerald-950/40 group-hover:border-amber-400/90 transition-colors relative"
+            className="w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br from-emerald-600/25 via-amber-500/20 to-emerald-950/60 border border-emerald-500/50 flex items-center justify-center overflow-hidden p-1 shadow-md shadow-emerald-950/40 group-hover:border-amber-400/90 transition-colors relative"
           >
             {logoUrl ? <img
               src={logoUrl}
@@ -49,12 +49,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="absolute inset-0 bg-emerald-500/10 pointer-events-none rounded-xl" />
           </motion.div>
           
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0">
             <span className="text-lg md:text-xl font-black text-white tracking-tight leading-tight group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
-              <span>{isAr ? RESTAURANT_INFO.nameAr : RESTAURANT_INFO.nameEn}</span>
+              <span className="truncate">{isAr ? RESTAURANT_INFO.nameAr : RESTAURANT_INFO.nameEn}</span>
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
             </span>
-            <span className="text-[11px] text-emerald-300/80 font-medium">
+            <span className="text-[11px] text-emerald-300/80 font-medium truncate">
               {isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}
             </span>
           </div>

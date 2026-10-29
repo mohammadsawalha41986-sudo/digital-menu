@@ -317,7 +317,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       </div>
 
       {/* 3. Quick Highlights Strip Below Full-Width Banner */}
-      <div className="w-full bg-[#070c08] border-t border-emerald-950/80 py-3.5 px-4 sm:px-6 lg:px-8">
+      <div className="w-full bg-[var(--sf-ink-070c08)] border-t border-emerald-950/80 py-3.5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-stone-300">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />

@@ -93,7 +93,7 @@ ${noteInfo}
             animate={{ x: 0 }}
             exit={{ x: isAr ? '100%' : '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="w-screen max-w-md bg-[#0f1711] border-l rtl:border-l rtl:border-r-0 ltr:border-r ltr:border-l-0 border-emerald-950 shadow-2xl flex flex-col justify-between"
+            className="w-screen max-w-md bg-[var(--sf-ink-0f1711)] border-l rtl:border-l rtl:border-r-0 ltr:border-r ltr:border-l-0 border-emerald-950 shadow-2xl flex flex-col justify-between"
           >
             
             {/* Header */}

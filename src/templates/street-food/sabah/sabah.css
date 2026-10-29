@@ -75,3 +75,74 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* ---------------------------------------------------------------------------
+ * Brand colours.
+ *
+ * The design is written with Tailwind's emerald (primary) and amber (accent)
+ * palettes plus a set of tinted near-blacks. Tailwind v4 compiles every one
+ * of those utilities to `var(--color-…)`, so re-pointing the variables here
+ * recolours the whole design from the restaurant's own brand — and through
+ * it, from its logo — without touching a single component.
+ *
+ * Each step keeps the lightness Tailwind gives it and takes the hue from the
+ * brand, so contrast between steps stays what the design was drawn with.
+ * Browsers without relative-colour support keep the original palette.
+ * ------------------------------------------------------------------------- */
+[data-template='street-food'] {
+  --sf-ink-060a07: #060a07;
+  --sf-ink-070b08: #070b08;
+  --sf-ink-070c08: #070c08;
+  --sf-ink-080d09: #080d09;
+  --sf-ink-0a0f0b: #0a0f0b;
+  --sf-ink-0d120e: #0d120e;
+  --sf-ink-0e140f: #0e140f;
+  --sf-ink-0e1510: #0e1510;
+  --sf-ink-0f1711: #0f1711;
+  --sf-ink-0f1712: #0f1712;
+  --sf-ink-101712: #101712;
+  --sf-ink-111913: #111913;
+  --sf-ink-111a13: #111a13;
+  --sf-ink-111c14: #111c14;
+}
+
+@supports (color: oklch(from red l c h)) {
+  [data-template='street-food'] {
+    --color-emerald-50: oklch(from var(--brand-color-primary) 0.979 min(c, 0.021) h);
+    --color-emerald-100: oklch(from var(--brand-color-primary) 0.95 min(c, 0.052) h);
+    --color-emerald-200: oklch(from var(--brand-color-primary) 0.905 min(c, 0.093) h);
+    --color-emerald-300: oklch(from var(--brand-color-primary) 0.845 min(c, 0.143) h);
+    --color-emerald-400: oklch(from var(--brand-color-primary) 0.765 min(c, 0.177) h);
+    --color-emerald-500: oklch(from var(--brand-color-primary) 0.696 min(c, 0.17) h);
+    --color-emerald-600: oklch(from var(--brand-color-primary) 0.596 min(c, 0.145) h);
+    --color-emerald-700: oklch(from var(--brand-color-primary) 0.508 min(c, 0.118) h);
+    --color-emerald-800: oklch(from var(--brand-color-primary) 0.432 min(c, 0.095) h);
+    --color-emerald-900: oklch(from var(--brand-color-primary) 0.378 min(c, 0.077) h);
+    --color-emerald-950: oklch(from var(--brand-color-primary) 0.262 min(c, 0.051) h);
+    --color-amber-50: oklch(from var(--brand-color-accent) 0.987 min(c, 0.022) h);
+    --color-amber-100: oklch(from var(--brand-color-accent) 0.962 min(c, 0.059) h);
+    --color-amber-200: oklch(from var(--brand-color-accent) 0.924 min(c, 0.12) h);
+    --color-amber-300: oklch(from var(--brand-color-accent) 0.879 min(c, 0.169) h);
+    --color-amber-400: oklch(from var(--brand-color-accent) 0.828 min(c, 0.189) h);
+    --color-amber-500: oklch(from var(--brand-color-accent) 0.769 min(c, 0.188) h);
+    --color-amber-600: oklch(from var(--brand-color-accent) 0.666 min(c, 0.179) h);
+    --color-amber-700: oklch(from var(--brand-color-accent) 0.555 min(c, 0.163) h);
+    --color-amber-800: oklch(from var(--brand-color-accent) 0.473 min(c, 0.137) h);
+    --color-amber-900: oklch(from var(--brand-color-accent) 0.414 min(c, 0.112) h);
+    --color-amber-950: oklch(from var(--brand-color-accent) 0.279 min(c, 0.077) h);
+    --sf-ink-060a07: oklch(from var(--brand-color-primary) 0.138 min(c, 0.02) h);
+    --sf-ink-070b08: oklch(from var(--brand-color-primary) 0.143 min(c, 0.02) h);
+    --sf-ink-070c08: oklch(from var(--brand-color-primary) 0.147 min(c, 0.02) h);
+    --sf-ink-080d09: oklch(from var(--brand-color-primary) 0.152 min(c, 0.02) h);
+    --sf-ink-0a0f0b: oklch(from var(--brand-color-primary) 0.161 min(c, 0.02) h);
+    --sf-ink-0d120e: oklch(from var(--brand-color-primary) 0.175 min(c, 0.02) h);
+    --sf-ink-0e140f: oklch(from var(--brand-color-primary) 0.183 min(c, 0.02) h);
+    --sf-ink-0e1510: oklch(from var(--brand-color-primary) 0.187 min(c, 0.02) h);
+    --sf-ink-0f1711: oklch(from var(--brand-color-primary) 0.194 min(c, 0.02) h);
+    --sf-ink-0f1712: oklch(from var(--brand-color-primary) 0.195 min(c, 0.02) h);
+    --sf-ink-101712: oklch(from var(--brand-color-primary) 0.195 min(c, 0.02) h);
+    --sf-ink-111913: oklch(from var(--brand-color-primary) 0.203 min(c, 0.02) h);
+    --sf-ink-111a13: oklch(from var(--brand-color-primary) 0.206 min(c, 0.02) h);
+    --sf-ink-111c14: oklch(from var(--brand-color-primary) 0.213 min(c, 0.02) h);
+  }
+}
