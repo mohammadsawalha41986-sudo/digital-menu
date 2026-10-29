@@ -2930,3 +2930,60 @@
   font-weight: 400;
   color: var(--admin-muted);
 }
+
+/* Background templates on the Design page. */
+.design__themes-field {
+  grid-column: 1 / -1;
+}
+
+.design__themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--sys-space-2);
+}
+
+.design__theme {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 2px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-surface);
+  cursor: pointer;
+  text-align: start;
+}
+
+.design__theme[aria-checked='true'] {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--admin-accent) 25%, transparent);
+}
+
+.design__theme-swatch {
+  display: grid;
+  place-items: center;
+  block-size: 3.5rem;
+  border-radius: 8px;
+  border: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.design__theme-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.design__theme-card i {
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: 999px;
+}
+
+.design__theme-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+}

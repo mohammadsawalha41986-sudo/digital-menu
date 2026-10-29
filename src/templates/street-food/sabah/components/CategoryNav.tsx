@@ -61,7 +61,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   };
 
   return (
-    <div className="sticky top-18 z-30 bg-[var(--sf-ink-0d120e)]/95 backdrop-blur-md border-b border-emerald-950/80 py-3 shadow-md">
+    <div className="sticky top-14 sm:top-18 z-30 bg-[var(--sf-ink-0d120e)]/95 backdrop-blur-md border-b border-emerald-950/80 py-2 sm:py-3 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div data-category-rail className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none hide-scrollbar">
           
@@ -70,7 +70,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onSelectCategory('all')}
-            className={`relative px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black whitespace-nowrap shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${
+            className={`relative px-4 py-2 sm:py-2.5 rounded-full sm:rounded-xl text-[13px] sm:text-sm font-black whitespace-nowrap shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${
               selectedCategory === 'all'
                 ? 'bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 border-amber-300 shadow-md shadow-amber-500/30'
                 : 'bg-stone-900/90 hover:bg-stone-850 text-stone-300 hover:text-white border-emerald-950 hover:border-emerald-700/60'
@@ -88,7 +88,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onSelectCategory(cat.id)}
-                className={`relative px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${
+                className={`relative px-3.5 py-2 sm:py-2.5 rounded-full sm:rounded-xl text-[13px] sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer flex items-center gap-2 border ${
                   isSelected
                     ? 'bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 text-stone-950 border-emerald-300 shadow-md shadow-emerald-500/25'
                     : 'bg-stone-900/90 hover:bg-stone-850 text-stone-300 hover:text-white border-emerald-950 hover:border-emerald-700/60'

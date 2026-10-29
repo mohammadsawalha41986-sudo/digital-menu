@@ -1,7 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { startTransition, useActionState } from 'react';
 import type { ActionState } from '@/server/admin/actions';
 
 export function UpsellRow({
@@ -21,11 +20,20 @@ export function UpsellRow({
   max: number;
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>;
 }) {
-  const [state, submit] = useActionState<ActionState, FormData>(action, {});
+  const [state, submit, isPending] = useActionState<ActionState, FormData>(action, {});
 
   return (
     <li className="upsell__row" data-upsell={code}>
-      <form action={submit} className="upsell__form">
+      <form
+        // Submitted by hand: an action-bound form is reset by React after
+        // saving, which showed the previous suggestions again.
+        onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          startTransition(() => submit(data));
+        }}
+        className="upsell__form"
+      >
         <input type="hidden" name="itemCode" value={code} />
         <span className="upsell__name">{name}</span>
 
@@ -53,7 +61,7 @@ export function UpsellRow({
           ))}
         </div>
 
-        <Save />
+        <Save pending={isPending} />
         {state.error ? (
           <span className="admin__message admin__message--error" role="alert">
             {state.error}
@@ -68,8 +76,7 @@ export function UpsellRow({
   );
 }
 
-function Save() {
-  const { pending } = useFormStatus();
+function Save({ pending }: { pending: boolean }) {
   return (
     <button type="submit" className="admin__button admin__button--small" disabled={pending}>
       {pending ? '…' : 'حفظ · Save'}

@@ -100,3 +100,37 @@ test('a restaurant with offers can put them above the menu', async ({ page }) =>
   await page.getByRole('button', { name: 'Save design' }).click();
   await expect(page.getByRole('status').first()).toContainText('Brand saved');
 });
+
+test('after saving, the form keeps what was chosen, and saving again does not undo it', async ({ page }) => {
+  await signIn(page);
+  await designPage(page);
+
+  await page.locator('[data-theme-key="cream"]').click();
+  await page.getByLabel('Dish photo effect').selectOption('shine');
+  await page.getByLabel('Background style').selectOption('aurora');
+  await page.getByRole('button', { name: 'Save design' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
+
+  // Without a reload, the form still shows the new settings…
+  await expect(page.getByLabel('Dish photo effect')).toHaveValue('shine');
+  await expect(page.getByLabel('Background style')).toHaveValue('aurora');
+  await expect(page.locator('[data-theme-key="cream"]')).toHaveAttribute('aria-checked', 'true');
+
+  // …so a second save keeps them rather than writing the old ones back.
+  await page.getByRole('button', { name: 'Save design' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
+  await page.reload();
+  await expect(page.getByLabel('Dish photo effect')).toHaveValue('shine');
+
+  // The cream template turns the menu light.
+  await page.goto('/m/DEM006?lang=ar');
+  await expect(page.locator('.sf-root')).toHaveAttribute('data-menu-tone', 'light');
+
+  // Restore.
+  await designPage(page);
+  await page.locator('[data-theme-key="auto"]').click();
+  await page.getByLabel('Dish photo effect').selectOption('zoom');
+  await page.getByLabel('Background style').selectOption('solid');
+  await page.getByRole('button', { name: 'Save design' }).click();
+  await expect(page.getByRole('status').first()).toContainText('Brand saved');
+});

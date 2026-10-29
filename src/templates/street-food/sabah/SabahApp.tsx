@@ -304,7 +304,7 @@ export default function App({
     menu: (
       <>
         {/* 3. Menu Category Sticky Bar */}
-        <div id="menu-section" className="scroll-mt-18">
+        <div id="menu-section" className="scroll-mt-14 sm:scroll-mt-18">
           <CategoryNav
             lang={lang}
             selectedCategory={selectedCategory}
@@ -354,7 +354,7 @@ export default function App({
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.55, delay: catIndex * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                  className="space-y-6 scroll-mt-36"
+                  className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36"
                 >
                   {/* Category Header with Scroll Reveal */}
                   <div className="flex items-end justify-between gap-2 pb-3.5 border-b border-emerald-950/80">
@@ -477,7 +477,7 @@ export default function App({
       value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri, offers }}
     >
     <div
-      className="sf-root min-h-screen bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950"
+      className="sf-root min-h-screen pb-24 md:pb-0 bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950"
       data-menu-tone={tone}
       data-image-shape={imageShape}
       data-dish-effect={dishEffect}
@@ -515,12 +515,15 @@ export default function App({
       />
 
       {/* Floating Bottom Quick Bar on Mobile */}
-      <div className="fixed bottom-4 inset-x-4 z-30 md:hidden flex items-center gap-2">
+      <div
+        className="fixed inset-x-3 z-30 md:hidden flex items-center gap-1.5 p-1.5 rounded-[1.25rem] bg-black/55 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60"
+        style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
         {totalCartCount > 0 ? (
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsCartOpen(true)}
-            className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 font-black text-sm shadow-xl shadow-amber-500/30 border border-amber-300 flex items-center justify-between"
+            className="flex-1 h-12 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 font-black text-sm border border-amber-300 flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
@@ -541,7 +544,7 @@ export default function App({
             )}`}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-xl shadow-emerald-700/40 border border-emerald-400/40 flex items-center justify-center gap-2 transition-all"
+            className="flex-1 h-12 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm border border-emerald-400/40 flex items-center justify-center gap-2 transition-all"
           >
             <MessageCircle className="w-4 h-4 fill-white" />
             <span>{isAr ? 'اطلب سريعاً عبر واتساب' : 'Order via WhatsApp'}</span>
@@ -553,7 +556,8 @@ export default function App({
         {RESTAURANT_INFO.phone ? (
         <a data-event="contact_phone"
           href={`tel:${RESTAURANT_INFO.phone}`}
-          className="w-12 h-12 rounded-2xl bg-stone-900 border border-emerald-500/40 text-amber-400 flex items-center justify-center shadow-lg shrink-0"
+          aria-label={isAr ? 'اتصال' : 'Call'}
+            className="w-12 h-12 rounded-2xl bg-stone-900 border border-emerald-500/40 text-amber-400 flex items-center justify-center shrink-0"
           title="اتصال هاتفي"
         >
           <Phone className="w-5 h-5" />

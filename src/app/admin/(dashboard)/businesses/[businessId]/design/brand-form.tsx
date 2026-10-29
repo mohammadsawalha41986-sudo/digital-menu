@@ -67,6 +67,23 @@ const SHAPES = [
   { value: 'portrait', label: 'طولية · Portrait', ratio: '4 / 5' },
 ];
 
+/* Ready-made backgrounds: a page and card colour that belong together. The
+ * text colour is never chosen here — a light page flips the menu to dark text
+ * on its own, so every template stays readable. */
+const BACKGROUND_THEMES: { key: string; label: string; page: string | null; card: string | null }[] = [
+  { key: 'auto', label: 'تلقائي من الشعار · From the logo', page: null, card: null },
+  { key: 'charcoal', label: 'فحمي · Charcoal', page: '#121212', card: '#1E1E1E' },
+  { key: 'navy', label: 'كحلي · Navy night', page: '#0F172A', card: '#1E293B' },
+  { key: 'espresso', label: 'قهوة · Espresso', page: '#1C1410', card: '#2B2019' },
+  { key: 'olive', label: 'زيتوني · Olive', page: '#141A12', card: '#202A1C' },
+  { key: 'burgundy', label: 'عنابي · Burgundy', page: '#1F0D12', card: '#2E161D' },
+  { key: 'cream', label: 'كريمي · Cream', page: '#FBF6EC', card: '#FFFFFF' },
+  { key: 'sand', label: 'رملي · Sand', page: '#F3E9D7', card: '#FFFBF3' },
+  { key: 'white', label: 'أبيض نظيف · Clean white', page: '#FFFFFF', card: '#F6F6F4' },
+  { key: 'mint', label: 'نعناعي · Mint', page: '#EEF7F1', card: '#FFFFFF' },
+  { key: 'blush', label: 'وردي ناعم · Blush', page: '#FFF1EE', card: '#FFFFFF' },
+];
+
 const SECTION_LABELS: Record<string, string> = {
   hero: 'الواجهة (السلايدر) · Hero',
   menu: 'المنيو · Menu',
@@ -185,7 +202,7 @@ export function BrandForm({
   const ratio = SHAPES.find((entry) => entry.value === imageShape)?.ratio ?? '16 / 10';
 
   return (
-    <ActionForm action={action} submitLabel="حفظ · Save design">
+    <ActionForm action={action} submitLabel="حفظ · Save design" keepValues>
       {CARRIED.map((field) => (
         <input key={field.key} type="hidden" name={field.key} value={brand?.[field.key] ?? field.fallback} />
       ))}
@@ -195,6 +212,37 @@ export function BrandForm({
         <div className="design__brand-fields">
           <fieldset className="admin__fieldset design__group">
             <legend className="admin__label">الألوان · Colours</legend>
+
+            <div className="admin__field design__themes-field">
+              <span className="admin__label">قوالب الخلفية · Background templates</span>
+              <div className="design__themes" role="radiogroup" aria-label="Background templates">
+                {BACKGROUND_THEMES.map((theme) => {
+                  const active = optional.menuPage === theme.page && optional.menuCard === theme.card;
+                  const swatchPage = theme.page ?? '#0d120e';
+                  const swatchCard = theme.card ?? '#111613';
+                  const ink = theme.page && isLight(theme.page) ? '#1c1917' : '#fafaf9';
+                  return (
+                    <button
+                      key={theme.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      data-theme-key={theme.key}
+                      className="design__theme"
+                      onClick={() => setOptional((prev) => ({ ...prev, menuPage: theme.page, menuCard: theme.card }))}
+                    >
+                      <span className="design__theme-swatch" style={{ background: swatchPage }}>
+                        <span className="design__theme-card" style={{ background: swatchCard, color: ink }}>
+                          أبجد
+                          <i style={{ background: primary }} />
+                        </span>
+                      </span>
+                      <span className="design__theme-name">{theme.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <ColorField
               id="colorPrimary"

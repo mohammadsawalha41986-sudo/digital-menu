@@ -97,12 +97,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       )}
 
       {/* Card Body */}
-      <div className={`${compact ? 'p-3' : 'p-4'} sm:p-5 flex-1 flex flex-col justify-between space-y-3`}>
-        <div className="space-y-1.5">
+      <div className={`${compact ? 'p-3 space-y-2' : 'p-4 space-y-3'} sm:p-5 sm:space-y-3 flex-1 flex flex-col justify-between`}>
+        <div className={compact ? 'space-y-1 sm:space-y-1.5' : 'space-y-1.5'}>
           
           {/* Title */}
           <div className="flex items-start justify-between gap-2">
-            <h3 className={`${compact ? 'text-sm' : 'text-base'} sm:text-lg font-bold text-white group-hover:text-amber-300 transition-colors leading-snug`}>
+            <h3 className={`${compact ? 'text-[15px] line-clamp-2 sm:line-clamp-none' : 'text-base'} sm:text-lg font-bold text-white group-hover:text-amber-300 transition-colors leading-snug`}>
               {isAr ? item.nameAr : item.nameEn}
             </h3>
           </div>
@@ -118,7 +118,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
               them wherever a dish is listed. Nothing is said about a dish the
               restaurant did not say itself. */}
           {item.calories || (item.options && item.options.length > 0) ? (
-          <div className="flex items-center gap-2 text-xs text-stone-400 pt-1">
+          <div className={`flex items-center gap-2 ${compact ? 'text-[11px] sm:text-xs' : 'text-xs'} text-stone-400 sm:pt-1`}>
             {item.calories ? (
               <span className="tabular-nums font-mono text-emerald-300/90 font-medium" data-calories>
                 {item.calories} {isAr ? 'سعرة' : 'kcal'}
@@ -137,12 +137,14 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
         </div>
 
         {/* Price & Action Row */}
-        <div className={`pt-3 border-t border-emerald-950/80 flex items-center justify-between ${compact ? 'gap-1.5 sm:gap-3' : 'gap-3'}`}>
+        <div className={`flex items-center justify-between ${compact ? 'gap-1.5 sm:gap-3 sm:pt-3 sm:border-t' : 'gap-3 pt-3 border-t'} border-emerald-950/80`}>
 {item.noPrice ? (
   <span />
 ) : (
           <div className="flex flex-col">
-            <span className="text-[11px] text-stone-400">
+            {/* On a phone the price speaks for itself; "Price" is shown only
+                where there is room, "From" always (it changes the meaning). */}
+            <span className={`text-[11px] text-stone-400 ${compact && !(item.options && item.options.length > 0) ? 'hidden sm:block' : ''}`}>
               {item.options && item.options.length > 0 ? (isAr ? 'يبدأ من' : 'From') : (isAr ? 'السعر' : 'Price')}
             </span>
             <div className="flex items-baseline gap-1">
@@ -166,9 +168,9 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             whileTap={{ scale: 0.93 }}
             onClick={() => onSelect(item)}
             aria-label={item.options || item.isSpicyOption ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
-            className={`inline-flex shrink-0 items-center gap-1.5 ${compact ? 'p-2 sm:px-3.5' : 'px-3.5'} py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 border border-emerald-400/30 transition-all cursor-pointer`}
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 ${compact ? 'w-10 h-10 rounded-full sm:w-auto sm:h-auto sm:rounded-xl sm:px-3.5 sm:py-2' : 'px-3.5 py-2 rounded-xl'} bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 border border-emerald-400/30 transition-all cursor-pointer`}
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus className={`${compact ? 'w-5 h-5 sm:w-4 sm:h-4' : 'w-4 h-4'} stroke-[2.5]`} />
             <span className={compact ? 'hidden sm:inline' : undefined}>
               {item.options || item.isSpicyOption
                 ? (isAr ? 'اختيار' : 'Choose')

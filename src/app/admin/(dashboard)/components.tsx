@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useId } from 'react';
+import { startTransition, useActionState, useId } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ReactNode } from 'react';
 import type { ActionState } from '@/server/admin/actions';
@@ -18,16 +18,35 @@ export function ActionForm({
   children,
   submitLabel,
   className = 'admin__form',
+  keepValues = false,
 }: {
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>;
   children: ReactNode;
   submitLabel: string;
   className?: string;
+  /**
+   * Keep what is on screen after saving. A `<form action>` is reset by React
+   * once the action finishes, which puts controlled fields (selects, colour
+   * pickers held in state) back to the values the page first rendered with:
+   * the screen then shows the old settings, and saving again writes them
+   * back. Settings forms that hold their fields in state pass this.
+   */
+  keepValues?: boolean;
 }) {
-  const [state, formAction] = useActionState<ActionState, FormData>(action, {});
+  const [state, formAction, isPending] = useActionState<ActionState, FormData>(action, {});
+
+  const submitWithoutReset = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    startTransition(() => formAction(data));
+  };
 
   return (
-    <form action={formAction} className={className}>
+    <form
+      action={keepValues ? undefined : formAction}
+      onSubmit={keepValues ? submitWithoutReset : undefined}
+      className={className}
+    >
       {state.error ? (
         <p className="admin__message admin__message--error" role="alert">
           {state.error}
@@ -42,7 +61,7 @@ export function ActionForm({
       {children}
 
       <div className="admin__actions">
-        <SubmitButton label={submitLabel} />
+        <SubmitButton label={submitLabel} pending={keepValues ? isPending : undefined} />
       </div>
     </form>
   );
@@ -99,12 +118,16 @@ function SubmitButton({
   label,
   pendingLabel,
   className = 'admin__button',
+  pending: pendingOverride,
 }: {
   label: string;
   pendingLabel?: string;
   className?: string;
+  /** For forms submitted by hand, where the form status cannot see it. */
+  pending?: boolean;
 }) {
-  const { pending } = useFormStatus();
+  const status = useFormStatus();
+  const pending = pendingOverride ?? status.pending;
 
   return (
     <button type="submit" className={className} disabled={pending}>

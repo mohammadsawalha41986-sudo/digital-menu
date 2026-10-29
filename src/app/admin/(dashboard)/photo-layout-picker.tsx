@@ -1,7 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { startTransition, useActionState, useState } from 'react';
 import type { ActionState } from '@/server/admin/actions';
 import { DEFAULT_TEMPLATE_KEY } from '@/templates/registry';
 
@@ -35,13 +34,22 @@ export function PhotoLayoutPicker({
   current: string;
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>;
 }) {
-  const [state, submit] = useActionState<ActionState, FormData>(action, {});
+  const [state, submit, isPending] = useActionState<ActionState, FormData>(action, {});
   const [selected, setSelected] = useState(
     layouts.some((layout) => layout.key === current) ? current : (layouts[0]?.key ?? 'a'),
   );
 
   return (
-    <form action={submit} className="build__stack">
+    <form
+      // Submitted by hand rather than through `action`: React resets a form
+      // after its action, which put the chosen layout back to the old one.
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        startTransition(() => submit(data));
+      }}
+      className="build__stack"
+    >
       {state.error ? (
         <p className="admin__message admin__message--error" role="alert">
           {state.error}
@@ -93,14 +101,12 @@ export function PhotoLayoutPicker({
         ))}
       </div>
 
-      <Apply />
+      <Apply pending={isPending} />
     </form>
   );
 }
 
-function Apply() {
-  const { pending } = useFormStatus();
-
+function Apply({ pending }: { pending: boolean }) {
   return (
     <div className="build__actions">
       <button type="submit" className="admin__button build__cta" disabled={pending}>

@@ -14,7 +14,8 @@ import {
   ChevronRight,
   ShoppingBag,
   MessageCircle,
-  MapPin
+  MapPin,
+  Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSabah } from '../context';
@@ -126,7 +127,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       
       {/* 1. Full-Width Panoramic Motion Banner (Edge-to-Edge 100vw) */}
       <div
-        className="relative w-full h-[580px] sm:h-[620px] lg:h-[700px] overflow-hidden"
+        className="relative w-full h-[500px] sm:h-[620px] lg:h-[700px] overflow-hidden"
         data-hero-effect={effect}
         style={effect === 'flip' ? { perspective: '1400px' } : undefined}
       >
@@ -155,6 +156,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             animate="center"
             exit="exit"
             className="absolute inset-0 w-full h-full"
+            // Swipe between slides with a finger; the next slide follows the
+            // reading direction (leftwards in Arabic).
+            drag={slideCount > 1 ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.25}
+            onDragEnd={(_event, info) => {
+              if (Math.abs(info.offset.x) < 60) return;
+              const towardsNext = isAr ? info.offset.x > 0 : info.offset.x < 0;
+              paginate(towardsNext ? 1 : -1);
+            }}
           >
             {/* Full-Width Image */}
             {slide.image ? <img
@@ -188,10 +199,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
 
         {/* 2. Hero Content Overlay (Positioned gracefully over the full-width panoramic banner) */}
-        <div className="absolute inset-0 z-20 flex flex-col justify-between max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 pointer-events-none">
+        <div className="absolute inset-0 z-20 flex flex-col justify-end sm:justify-between gap-4 sm:gap-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-12 pointer-events-none">
           
-          {/* Top Live Trust Strip */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pointer-events-auto">
+          {/* Top Live Trust Strip — desktop and tablet; on a phone the same
+              facts sit in the action row below the banner. */}
+          <div className="hidden sm:flex flex-wrap items-center justify-between gap-3 pointer-events-auto">
             <div className="flex flex-wrap items-center gap-2">
               {(isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn) ? (
               <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/90 backdrop-blur-md border border-emerald-500/50 text-emerald-300 text-xs font-black shadow-lg max-w-[18rem]">
@@ -232,7 +244,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Main Slide Content in Hero Foreground */}
-          <div className="max-w-2xl space-y-4 pointer-events-auto py-4">
+          <div className="max-w-2xl space-y-3 sm:space-y-4 pointer-events-auto sm:py-4">
             
             <AnimatePresence mode="wait">
               <motion.div
@@ -252,20 +264,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 ) : null}
 
                 {/* Headline */}
-                <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] drop-shadow-lg [text-wrap:balance]">
+                <h2 className="text-[1.75rem] leading-tight sm:text-5xl lg:text-6xl font-black text-white tracking-tight sm:leading-[1.12] drop-shadow-lg [text-wrap:balance]">
                   {isAr ? slide.headlineAr : slide.headlineEn}
                 </h2>
 
                 {/* Subtitle */}
-                <p className="text-sm sm:text-lg text-stone-200 leading-relaxed drop-shadow max-w-xl">
+                <p className="text-[13px] sm:text-lg text-stone-200 leading-relaxed drop-shadow max-w-xl line-clamp-2 sm:line-clamp-none">
                   {isAr ? slide.subtitleAr : slide.subtitleEn}
                 </p>
 
                 {/* Live Price Tag & Metrics */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-0.5 sm:pt-1">
                   {slide.price > 0 ? (
-                  <div className="flex items-baseline gap-1.5 bg-black/80 backdrop-blur-md border border-amber-400/50 rounded-2xl px-4 py-2 shadow-2xl">
-                    <span className="text-2xl sm:text-3xl font-black text-amber-400 tabular-nums sf-price">
+                  <div className="flex items-baseline gap-1.5 bg-black/80 backdrop-blur-md border border-amber-400/50 rounded-xl sm:rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2 shadow-2xl">
+                    <span className="text-xl sm:text-3xl font-black text-amber-400 tabular-nums sf-price">
                       {formatAmount(slide.price, RESTAURANT_INFO.currency)}
                     </span>
                     <span className="text-sm font-bold text-emerald-400">
@@ -293,16 +305,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </AnimatePresence>
 
             {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 sm:gap-3 pt-1 sm:pt-2">
               {slideItem ? (
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={handleOrderCurrent}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-black text-sm shadow-2xl shadow-amber-500/40 border border-amber-200 transition-all cursor-pointer"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 sm:gap-2.5 h-12 sm:h-auto px-5 sm:px-7 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-black text-sm shadow-2xl shadow-amber-500/40 border border-amber-200 transition-all cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
-                <span>{isAr ? 'طلب وتخصيص هذه الوجبة' : 'Order This Meal'}</span>
+                <span className="sm:hidden">{isAr ? 'اطلب الآن' : 'Order now'}</span>
+                <span className="hidden sm:inline">{isAr ? 'طلب وتخصيص هذه الوجبة' : 'Order This Meal'}</span>
               </motion.button>
               ) : null}
 
@@ -316,16 +329,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-700/40 border border-emerald-400/40 transition-all cursor-pointer backdrop-blur-sm"
+                aria-label={isAr ? 'طلب سريع واتساب' : 'WhatsApp Order'}
+                className={`inline-flex items-center justify-center gap-2 h-12 sm:h-auto ${slideItem ? 'w-12 shrink-0 sm:w-auto' : 'flex-1 sm:flex-initial px-5'} sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-700/40 border border-emerald-400/40 transition-all cursor-pointer backdrop-blur-sm`}
               >
-                <MessageCircle className="w-4 h-4 fill-white" />
-                <span>{isAr ? 'طلب سريع واتساب' : 'WhatsApp Order'}</span>
+                <MessageCircle className="w-5 h-5 sm:w-4 sm:h-4 fill-white" />
+                <span className={slideItem ? 'hidden sm:inline' : undefined}>{isAr ? 'طلب سريع واتساب' : 'WhatsApp Order'}</span>
               </motion.a>
               ) : null}
 
               <a
                 href="#menu-section"
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-black/75 hover:bg-stone-900 border border-stone-700 text-stone-200 text-xs font-bold transition-colors backdrop-blur-md"
+                className="hidden sm:inline-flex items-center justify-center gap-1.5 px-4 py-4 rounded-2xl bg-black/75 hover:bg-stone-900 border border-stone-700 text-stone-200 text-xs font-bold transition-colors backdrop-blur-md"
               >
                 <span>{isAr ? 'تصفح كل المنيو' : 'Full Menu'}</span>
                 <ChevronDown className="w-4 h-4" />
@@ -335,26 +349,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Bottom Slider Progress Bars & Carousel Arrows */}
-          <div className="flex items-center justify-between gap-4 pt-2 pointer-events-auto">
+          <div className="flex items-center justify-center sm:justify-between gap-4 sm:pt-2 pointer-events-auto">
             
             {/* Progress indicators */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               {FULL_WIDTH_SLIDES.map((s, idx) => (
                 <button
                   key={s.id}
                   onClick={() => setSlideState([idx, idx > currentSlide ? 1 : -1])}
-                  className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                  aria-label={isAr ? s.headlineAr : s.headlineEn}
+                  className={`h-2 sm:h-2.5 rounded-full transition-all cursor-pointer ${
                     currentSlide === idx
-                      ? 'w-10 bg-amber-400 shadow-lg shadow-amber-400/50'
-                      : 'w-2.5 bg-white/40 hover:bg-white/70'
+                      ? 'w-7 sm:w-10 bg-amber-400 shadow-lg shadow-amber-400/50'
+                      : 'w-2 sm:w-2.5 bg-white/40 hover:bg-white/70'
                   }`}
                   title={isAr ? s.headlineAr : s.headlineEn}
                 />
               ))}
             </div>
 
-            {/* Slide Navigation Buttons */}
-            <div className="flex items-center gap-2">
+            {/* Slide Navigation Buttons — a phone swipes instead. */}
+            <div className="hidden sm:flex items-center gap-2">
               <button
                 onClick={() => paginate(-1)}
                 className="w-11 h-11 rounded-2xl bg-black/80 hover:bg-stone-900 border border-emerald-500/40 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl backdrop-blur-md active:scale-95"
@@ -377,8 +392,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
       </div>
 
-      {/* 3. Quick Highlights Strip Below Full-Width Banner */}
-      <div className="w-full bg-[var(--sf-ink-070c08)] border-t border-emerald-950/80 py-3.5 px-4 sm:px-6 lg:px-8">
+      {/* 3. Quick Highlights Strip Below Full-Width Banner (tablet and up) */}
+      <div className="hidden sm:block w-full bg-[var(--sf-ink-070c08)] border-t border-emerald-950/80 py-3.5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3 text-xs text-stone-300">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -400,6 +415,38 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             ) : null}
           </div>
         </div>
+      </div>
+
+      {/* 3b. On a phone: the restaurant's one-line description and the four
+          things a visitor actually does, as big round actions. */}
+      <div className="sm:hidden w-full bg-[var(--sf-ink-070c08)] border-t border-emerald-950/80 px-4 pt-3 pb-4 space-y-3">
+        {(isAr ? RESTAURANT_INFO.sloganAr : RESTAURANT_INFO.sloganEn) ? (
+          <p className="text-[13px] text-stone-300 text-center line-clamp-1">
+            {isAr ? RESTAURANT_INFO.sloganAr : RESTAURANT_INFO.sloganEn}
+          </p>
+        ) : null}
+        <nav className="grid grid-cols-4 gap-2" aria-label={isAr ? 'تواصل سريع' : 'Quick actions'}>
+          {RESTAURANT_INFO.phone ? (
+            <a data-event="contact_phone" href={`tel:${RESTAURANT_INFO.phone}`} className="sf-action">
+              <Phone className="w-5 h-5" />
+              <span>{isAr ? 'اتصال' : 'Call'}</span>
+            </a>
+          ) : null}
+          {RESTAURANT_INFO.whatsappNumber ? (
+            <a data-event="contact_whatsapp" href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}`} target="_blank" rel="noreferrer" className="sf-action">
+              <MessageCircle className="w-5 h-5" />
+              <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
+            </a>
+          ) : null}
+          <a href="#google-location" className="sf-action">
+            <MapPin className="w-5 h-5" />
+            <span>{isAr ? 'الموقع' : 'Location'}</span>
+          </a>
+          <button type="button" onClick={onOpenCalories} className="sf-action">
+            <Activity className="w-5 h-5" />
+            <span>{isAr ? 'السعرات' : 'Calories'}</span>
+          </button>
+        </nav>
       </div>
 
     </section>
