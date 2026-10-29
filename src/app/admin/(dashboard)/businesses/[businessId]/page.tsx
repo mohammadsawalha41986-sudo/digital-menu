@@ -69,6 +69,12 @@ export default async function BusinessPage({
       links: [
         { href: `${build}/review`, label: 'مراجعة ونشر', sub: 'Review & publish', primary: true },
         { href: `${base}/qr`, label: 'رمز QR', sub: 'QR codes' },
+        {
+          href: `/m/${business.publicId}/screen`,
+          label: 'شاشة العرض',
+          sub: 'TV / display screen — 3D motion menu',
+          newTab: true,
+        },
         { href: `${base}/share`, label: 'الروابط والتضمين', sub: 'Links & embed' },
         { href: `${base}/analytics`, label: 'الإحصائيات', sub: 'Analytics' },
       ],
@@ -161,11 +167,18 @@ interface HubLink {
   label: string;
   sub: string;
   primary?: boolean;
+  /** Opens in a new tab — for pages that run on another screen. */
+  newTab?: boolean;
 }
 
 function HubTile({ link }: { link: HubLink }) {
   return (
-    <Link href={link.href} className="hub__tile" data-primary={link.primary ? '' : undefined}>
+    <Link
+      href={link.href}
+      className="hub__tile"
+      data-primary={link.primary ? '' : undefined}
+      {...(link.newTab ? { target: '_blank', rel: 'noreferrer' } : {})}
+    >
       <span className="hub__tile-label">{link.label}</span>
       <span className="hub__tile-sub">{link.sub}</span>
     </Link>

@@ -61,6 +61,8 @@ export function profileToSabah(profile: PublicProfile): {
           descriptionAr: item.descriptionAr ?? undefined,
           descriptionEn: item.descriptionEn ?? item.descriptionAr ?? undefined,
           image: item.image?.url ?? undefined,
+          imageSrcSet: item.image?.srcSet ?? undefined,
+          imagePosition: item.image?.objectPosition,
           isPopular: item.isFeatured,
           isOffer: item.tags?.includes('offer') ?? false,
           isSpicyOption: item.tags?.includes('spicy') ?? false,
@@ -115,6 +117,10 @@ export function profileToSabah(profile: PublicProfile): {
     serviceOptionsEn: [],
     currency: profile.currency,
     workingHours: profile.contact.workingHours,
+    socials: (['instagram', 'tiktok', 'facebook', 'youtube', 'linkedin', 'website'] as const).flatMap((key) => {
+      const url = profile.contact[key];
+      return url ? [{ key, url }] : [];
+    }),
   };
 
   return {
@@ -169,6 +175,8 @@ function buildSlides(info: RestaurantInfo, items: MenuItem[]): HeroSlide[] {
     price: item.price,
     calories: item.calories,
     image: item.image ?? '',
+    imageSrcSet: item.imageSrcSet,
+    imagePosition: item.imagePosition,
   }));
 }
 
@@ -194,5 +202,7 @@ function offerSlides(offers: PublicOffer[], toAmount: (minor: number | null) => 
       subtitleEn: offer.descriptionEn ?? offer.descriptionAr ?? '',
       price: offer.offerPriceMinor === null ? 0 : toAmount(offer.offerPriceMinor),
       image: offer.image?.url ?? '',
+      imageSrcSet: offer.image?.srcSet ?? undefined,
+      imagePosition: offer.image?.objectPosition,
     }));
 }

@@ -47,6 +47,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
         <div className={`relative w-full overflow-hidden bg-stone-950 ${size === 'large' ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
           <img
             src={item.image}
+            // WebP widths from the upload; the browser picks the one the card needs.
+            srcSet={item.imageSrcSet}
+            sizes={size === 'large' ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, 50vw'}
+            style={{ objectPosition: item.imagePosition }}
+            loading="lazy"
+            decoding="async"
             alt={isAr ? item.nameAr : item.nameEn}
             className={`w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 filter brightness-[1.02] contrast-[1.04] ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
             referrerPolicy="no-referrer"

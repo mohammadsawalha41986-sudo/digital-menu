@@ -9,6 +9,10 @@ export interface MenuItem {
   descriptionAr?: string;
   descriptionEn?: string;
   image?: string;
+  /** WebP widths generated on upload, as a srcset; absent for fixtures. */
+  imageSrcSet?: string;
+  /** Focal point, as CSS object-position. */
+  imagePosition?: string;
   isPopular?: boolean;
   isOffer?: boolean;
   isSpicyOption?: boolean;
@@ -63,7 +67,11 @@ export interface RestaurantInfo {
   currency: string;
   /** Weekly hours, when the restaurant published them. */
   workingHours?: WorkingHours | null;
+  /** Social profiles the restaurant entered, in display order. */
+  socials?: { key: SocialKey; url: string }[];
 }
+
+export type SocialKey = 'instagram' | 'tiktok' | 'facebook' | 'youtube' | 'linkedin' | 'website';
 
 export const RESTAURANT_INFO: RestaurantInfo = {
   nameAr: 'مطعم صباح الليل',

@@ -1,0 +1,305 @@
+/*
+ * The display-screen menu. Sized in viewport units so the same page fills a
+ * 1080p TV, a 4K board or a tablet on a stand. Colours and type come only
+ * from the brand tokens on the root, so a screen matches its restaurant.
+ */
+
+.menu-screen {
+  --card-w: 24vw;
+  --card-h: 30vw;
+  /* One step of type: a hundredth of the width on a landscape TV, larger on
+     a portrait board where the width is the short side. */
+  --u: 1vw;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  cursor: none;
+  color: #fafaf9;
+  font-family: var(--brand-font-body);
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 55%,
+      color-mix(in oklab, var(--brand-color-primary) 38%, transparent),
+      transparent 70%),
+    radial-gradient(ellipse 40% 30% at 85% 10%,
+      color-mix(in oklab, var(--brand-color-accent) 22%, transparent),
+      transparent 70%),
+    #07090a;
+}
+
+@media (max-aspect-ratio: 1/1) {
+  /* A portrait board: bigger cards relative to the width. */
+  .menu-screen {
+    --card-w: 52vw;
+    --card-h: 66vw;
+    --u: 1.9vw;
+  }
+}
+
+.menu-screen__stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.menu-screen__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2vw;
+  padding: 2.5vh 3vw 0;
+}
+
+.menu-screen__brand {
+  display: flex;
+  align-items: center;
+  gap: 1.2vw;
+  min-width: 0;
+}
+
+.menu-screen__logo {
+  width: 5.5vw;
+  height: 5.5vw;
+  object-fit: contain;
+  border-radius: 1vw;
+  background: #fff;
+  padding: 0.4vw;
+}
+
+.menu-screen__name {
+  margin: 0;
+  font-family: var(--brand-font-heading);
+  font-size: calc(var(--u) * 2.6);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-screen__category {
+  margin: 0;
+  padding: 0.8vh 1.6vw;
+  border-radius: 999px;
+  font-family: var(--brand-font-heading);
+  font-size: calc(var(--u) * 2);
+  font-weight: 800;
+  color: #0b0b0b;
+  background: var(--brand-color-accent);
+  animation: menu-screen-pop 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- The ring ----------------------------------------------------------- */
+
+.menu-screen__ring-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  perspective: 70vw;
+  perspective-origin: 50% 45%;
+  padding-bottom: 14vh;
+}
+
+.menu-screen__ring {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  transform-style: preserve-3d;
+  /* backwards, not both: a transform held after the animation ends makes
+     Chromium flatten the ring, and the cards lose their angle. */
+  animation: menu-screen-flip-in 900ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+.menu-screen__card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.4vw;
+  overflow: hidden;
+  background: #111513;
+  border: 0.12vw solid color-mix(in oklab, var(--brand-color-primary) 55%, transparent);
+  box-shadow: 0 2vw 4vw rgb(0 0 0 / 0.55);
+  filter: saturate(0.75) brightness(0.55);
+  transition:
+    transform 1000ms cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 800ms ease,
+    filter 800ms ease,
+    box-shadow 800ms ease;
+}
+
+.menu-screen__card[data-front] {
+  opacity: 1;
+  filter: none;
+  box-shadow:
+    0 0 0 0.25vw var(--brand-color-accent),
+    0 2.5vw 6vw color-mix(in oklab, var(--brand-color-primary) 55%, transparent);
+}
+
+.menu-screen__card img,
+.menu-screen__card-blank {
+  width: 100%;
+  height: 66%;
+  object-fit: cover;
+  flex: none;
+}
+
+.menu-screen__card[data-front] img {
+  animation: menu-screen-ken-burns 6s ease-in-out both;
+}
+
+.menu-screen__card-blank {
+  background: linear-gradient(135deg, var(--brand-color-primary), var(--brand-color-accent));
+}
+
+.menu-screen__card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5vh;
+  padding: 1vw 1.2vw;
+}
+
+.menu-screen__card-body h2 {
+  margin: 0;
+  font-family: var(--brand-font-heading);
+  font-size: calc(var(--u) * 1.7);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.menu-screen__price {
+  margin: 0;
+  font-size: calc(var(--u) * 2.2);
+  font-weight: 900;
+  color: var(--brand-color-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.menu-screen__price small {
+  font-size: 0.55em;
+  color: #d6d3d1;
+}
+
+.menu-screen__detail {
+  position: absolute;
+  bottom: 3vh;
+  inset-inline: 22vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8vh;
+  text-align: center;
+  animation: menu-screen-rise 700ms ease both;
+}
+
+.menu-screen__detail p {
+  margin: 0;
+  font-size: calc(var(--u) * 1.5);
+  color: #e7e5e4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.menu-screen__kcal {
+  font-size: calc(var(--u) * 1.2);
+  font-weight: 700;
+  color: color-mix(in oklab, var(--brand-color-primary) 30%, #ffffff);
+}
+
+/* --- Corner furniture ----------------------------------------------------- */
+
+.menu-screen__qr {
+  position: absolute;
+  bottom: 3vh;
+  inset-inline-end: 2.5vw;
+  width: 11vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6vh;
+  padding: 0.8vw;
+  border-radius: 1vw;
+  background: #fff;
+  color: #111;
+  text-align: center;
+  font-size: calc(var(--u) * 0.9);
+  font-weight: 700;
+}
+
+.menu-screen__qr img {
+  width: 100%;
+  height: auto;
+}
+
+.menu-screen__dots {
+  position: absolute;
+  bottom: 3vh;
+  inset-inline-start: 3vw;
+  display: flex;
+  gap: 0.5vw;
+}
+
+.menu-screen__dots span {
+  width: 0.7vw;
+  height: 0.7vw;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.3);
+  transition: width 500ms ease, background 500ms ease;
+}
+
+.menu-screen__dots span[data-active] {
+  width: 2.4vw;
+  background: var(--brand-color-accent);
+}
+
+.menu-screen__empty {
+  place-self: center;
+  font-size: calc(var(--u) * 3);
+  font-weight: 800;
+}
+
+/* --- Motion -------------------------------------------------------------- */
+
+@keyframes menu-screen-flip-in {
+  from {
+    opacity: 0;
+    transform: translateZ(-20vw) rotateX(-60deg);
+  }
+}
+
+@keyframes menu-screen-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-1.5vh) scale(0.9);
+  }
+}
+
+@keyframes menu-screen-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.5vh);
+  }
+}
+
+@keyframes menu-screen-ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-screen__ring,
+  .menu-screen__card,
+  .menu-screen__card[data-front] img,
+  .menu-screen__category,
+  .menu-screen__detail {
+    animation: none;
+    transition: none;
+  }
+}

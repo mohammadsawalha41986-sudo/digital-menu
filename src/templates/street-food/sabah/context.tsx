@@ -20,6 +20,8 @@ export interface HeroSlide {
   calories?: number;
   prepTimeAr?: string;
   image: string;
+  imageSrcSet?: string;
+  imagePosition?: string;
 }
 
 /**

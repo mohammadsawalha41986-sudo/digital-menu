@@ -39,6 +39,11 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-stone-900 shrink-0 border border-emerald-950 group-hover:border-amber-400/40 transition-colors">
           <img
             src={item.image}
+            srcSet={item.imageSrcSet}
+            sizes="80px"
+            style={{ objectPosition: item.imagePosition }}
+            loading="lazy"
+            decoding="async"
             alt=""
             className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
             referrerPolicy="no-referrer"

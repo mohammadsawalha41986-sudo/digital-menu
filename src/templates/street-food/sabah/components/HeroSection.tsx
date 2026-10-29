@@ -112,6 +112,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {/* Full-Width Image */}
             {slide.image ? <img
               src={slide.image}
+              srcSet={slide.imageSrcSet}
+              sizes="100vw"
+              style={{ objectPosition: slide.imagePosition }}
               alt={isAr ? slide.headlineAr : slide.headlineEn}
               className="w-full h-full object-cover object-center filter brightness-[0.95] contrast-[1.08]"
               referrerPolicy="no-referrer"

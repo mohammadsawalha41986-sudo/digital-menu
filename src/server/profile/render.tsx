@@ -14,10 +14,6 @@ import { preloadFontsFor } from '@/menu-studio/typography';
 import { looksLikeQrScan, recordEventByPublicId } from '@/server/analytics/record';
 import { AnalyticsScript } from './analytics-script';
 import { EmbedHeightScript } from './embed-script';
-import { MenuSearch } from './menu-search';
-import { menuSearchStrings } from './menu-search-strings';
-import { MenuCart } from './menu-cart';
-import { menuCartStrings } from './menu-cart-strings';
 import type { PublicProfile } from './types';
 
 /**
@@ -30,17 +26,6 @@ import type { PublicProfile } from './types';
  */
 
 export type SearchParams = Record<string, string | string[] | undefined>;
-
-/** Item count at which the public menu offers a search box. */
-const MENU_SEARCH_THRESHOLD = 6;
-
-function countItems(profile: PublicProfile): number {
-  return profile.menus.reduce(
-    (total, menu) =>
-      total + menu.categories.reduce((n, category) => n + category.items.length, 0),
-    0,
-  );
-}
 
 export async function resolveRequestLocale(
   searchParams: SearchParams,
@@ -150,28 +135,7 @@ export async function renderProfile(
       {options.preview ? null : (
         <AnalyticsScript publicId={profile.publicId} branchKey={profile.activeBranchKey} locale={locale} />
       )}
-      {/* Rendered last and relocated by its own script — see MenuSearch.
-
-          Offered from six items up. That is roughly where a menu stops fitting
-          on one phone screen, and past the fold "search" beats "scroll and
-          hope". Below it the control would be a box that finds things already
-          visible, which is clutter rather than help. */}
-      {countItems(profile) >= MENU_SEARCH_THRESHOLD ? (
-        <MenuSearch strings={menuSearchStrings(locale)} />
-      ) : null}
-      {/* Order basket + WhatsApp hand-off, only on the Street Food family
-          (its composition is designed around it) and only when the business
-          has a WhatsApp number. Embedded views have no basket — a cart on
-          someone else's website would be confusing. */}
-      {definition.key === 'street-food' && profile.contact.whatsapp && !options.embed ? (
-        <MenuCart
-          publicId={profile.publicId}
-          whatsapp={profile.contact.whatsapp.replace(/[^0-9]/g, '')}
-          currency={profile.currency}
-          locale={locale}
-          strings={menuCartStrings(locale)}
-        />
-      ) : null}
+      {/* Search and the order basket belong to the menu design itself. */}
       {options.embed ? <EmbedHeightScript /> : null}
     </div>
   );

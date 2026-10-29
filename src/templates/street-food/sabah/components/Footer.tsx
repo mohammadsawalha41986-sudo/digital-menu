@@ -3,6 +3,7 @@
 import React from 'react';
 import { MapPin, Phone, MessageCircle, Clock, ExternalLink } from 'lucide-react';
 import { useSabah } from '../context';
+import { SocialLinks } from './SocialLinks';
 import type { Language } from '../types';
 
 interface FooterProps {
@@ -95,6 +96,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
             <h4 className="text-amber-300 font-extrabold text-xs uppercase tracking-wider">
               {isAr ? 'الطلب والتواصل المباشر' : 'Order & Contact'}
             </h4>
+            <SocialLinks socials={RESTAURANT_INFO.socials ?? []} isAr={isAr} />
             <div className="space-y-2.5">
               {RESTAURANT_INFO.phone ? (
               <a data-event="contact_phone"
