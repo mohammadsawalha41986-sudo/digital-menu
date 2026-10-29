@@ -203,7 +203,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                       href={`tel:${RESTAURANT_INFO.phone}`}
                       className="font-extrabold text-amber-400 hover:underline tabular-nums text-sm"
                     >
-                      {RESTAURANT_INFO.phoneFormatted}
+                      <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
                     </a>
                     <span className="text-stone-500">·</span>
                     <span className="text-stone-400 text-xs">{isAr ? 'اتصال مباشر' : 'Direct Call'}</span>

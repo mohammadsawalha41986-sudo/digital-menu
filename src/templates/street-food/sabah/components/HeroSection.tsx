@@ -333,7 +333,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </a>
             <span className="text-stone-600">|</span>
             <a href={`tel:${RESTAURANT_INFO.phone}`} className="text-amber-400 font-black hover:underline tabular-nums">
-              {RESTAURANT_INFO.phoneFormatted}
+              <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
             </a>
           </div>
         </div>

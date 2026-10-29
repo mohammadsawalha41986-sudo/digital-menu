@@ -42,6 +42,8 @@ export interface SabahAppProps {
   logoUrl?: string | null;
   slides?: HeroSlide[];
   qrDataUri?: string | null;
+  /** How dishes are laid out by default; the visitor can still switch. */
+  imageLayout?: 'grid' | 'list' | 'large';
 }
 
 export default function App({
@@ -52,6 +54,7 @@ export default function App({
   logoUrl = null,
   slides = [],
   qrDataUri = null,
+  imageLayout = 'grid',
 }: SabahAppProps = {}) {
   const RESTAURANT_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
   const MENU_CATEGORIES: MenuCategory[] = menuCategories ?? DEFAULT_CATEGORIES;
@@ -61,7 +64,7 @@ export default function App({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'popular' | 'offers' | 'spicy'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'large'>(imageLayout);
   
   // Modals & Drawers
   const [activeItemForCustomization, setActiveItemForCustomization] = useState<MenuItem | null>(null);
@@ -250,8 +253,8 @@ export default function App({
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
             resultCount={filteredItems.length}
-            viewMode={viewMode}
-            onToggleViewMode={setViewMode}
+            viewMode={viewMode === 'list' ? 'list' : 'grid'}
+            onToggleViewMode={(mode) => setViewMode(mode === 'grid' && imageLayout === 'large' ? 'large' : mode)}
             onOpenCaloriesModal={() => setIsCaloriesOpen(true)}
           />
 
@@ -292,7 +295,7 @@ export default function App({
                   </div>
 
                   {/* Items Display: Grid vs List Mode with Animated Stagger */}
-                  {viewMode === 'grid' ? (
+                  {viewMode !== 'list' ? (
                     <motion.div 
                       initial="hidden"
                       whileInView="visible"
@@ -305,13 +308,14 @@ export default function App({
                           }
                         }
                       }}
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6"
+                      className={viewMode === 'large' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6'}
                     >
                       {itemsInThisCat.map((dish) => (
                         <MenuItemCard
                           key={dish.id}
                           item={dish}
                           lang={lang}
+                          size={viewMode === 'large' ? 'large' : 'regular'}
                           onSelect={(item) => setActiveItemForCustomization(item)}
                         />
                       ))}

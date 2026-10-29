@@ -158,8 +158,9 @@ const STREET_FOOD: TemplateDefinition = {
   description:
     'Delivery-app composition: a full-bleed photo-led hero card, a horizontally snap-scrolling category chip rail as the only navigation, and items set as a vertical photo-card grid (2 columns on phone, up to 4 on wide screens). Price sits on the card, not aligned to a rule.',
   variants: [
-    { key: 'a', label: 'Street Food A', description: 'Standard — 2/3/4 column grid.' },
-    { key: 'b', label: 'Street Food B', description: 'Compact — denser grid for very long menus.' },
+    { key: 'a', label: 'Photo cards', description: 'Dishes as photo cards in a 2-4 column grid.' },
+    { key: 'b', label: 'List', description: 'Compact rows with a small photo — best for long menus.' },
+    { key: 'c', label: 'Large photos', description: 'One or two big photographs per row — best when the food photography is strong.' },
   ],
   render: StreetFoodTemplate,
 };

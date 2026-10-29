@@ -99,7 +99,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
                 className="flex items-center gap-2 text-white hover:text-amber-400 transition-colors font-black text-sm tabular-nums"
               >
                 <Phone className="w-4 h-4 text-emerald-400" />
-                <span>{RESTAURANT_INFO.phoneFormatted}</span>
+                <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
               </a>
 
               <a

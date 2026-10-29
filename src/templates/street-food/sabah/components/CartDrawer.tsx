@@ -360,7 +360,7 @@ ${noteInfo}
                     className="text-amber-400 font-extrabold hover:underline flex items-center gap-1 tabular-nums"
                   >
                     <Phone className="w-3.5 h-3.5" />
-                    <span>{RESTAURANT_INFO.phoneFormatted}</span>
+                    <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
                   </a>
                 </div>
 

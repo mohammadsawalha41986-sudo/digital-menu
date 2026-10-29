@@ -5,6 +5,9 @@ import type { PublicProfile } from '@/server/profile/types';
 import type { Locale } from '@/i18n/config';
 import type { TemplateRenderProps } from '../types';
 
+/** The template's variants are its dish photo layouts. */
+const IMAGE_LAYOUTS: Record<string, 'grid' | 'list' | 'large'> = { a: 'grid', b: 'list', c: 'large' };
+
 /**
  * STREET FOOD — the Sabah El Lail reference app, hoisted into the templates
  * registry so it serves any restaurant whose `templateKey` is set to it.
@@ -40,6 +43,7 @@ async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; l
       logoUrl={logoUrl}
       slides={slides}
       qrDataUri={qrDataUri}
+      imageLayout={IMAGE_LAYOUTS[profile.variantKey] ?? 'grid'}
       initialLang={locale}
     />
   );

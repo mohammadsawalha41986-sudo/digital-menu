@@ -10,12 +10,15 @@ interface MenuItemCardProps {
   item: MenuItem;
   lang: Language;
   onSelect: (item: MenuItem) => void;
+  /** `large` gives the photograph a taller frame for photo-led menus. */
+  size?: 'regular' | 'large';
 }
 
 export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item,
   lang,
   onSelect,
+  size = 'regular',
 }) => {
   const isAr = lang === 'ar';
 
@@ -31,7 +34,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       
       {/* Top Media & Banner with Image Motion & Warm Appetizing Glow */}
       {item.image ? (
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-stone-950">
+        <div className={`relative w-full overflow-hidden bg-stone-950 ${size === 'large' ? 'aspect-[4/3]' : 'aspect-[16/10]'}`}>
           <img
             src={item.image}
             alt={isAr ? item.nameAr : item.nameEn}

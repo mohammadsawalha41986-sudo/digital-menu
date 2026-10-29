@@ -75,6 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Activity className="w-4 h-4 text-emerald-400" />
             <span>{isAr ? 'جدول السعرات' : 'Calories Guide'}</span>
           </button>
+          {RESTAURANT_INFO.rating > 0 ? (
           <a
             href="#customer-reviews"
             className="flex items-center gap-1.5 hover:text-amber-300 transition-colors whitespace-nowrap shrink-0 text-stone-300"
@@ -82,6 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
             <span>{isAr ? 'تقييمات العملاء' : 'Reviews'}</span>
           </a>
+          ) : null}
           <button
             onClick={onOpenQr}
             className="flex items-center gap-1.5 hover:text-amber-400 transition-colors whitespace-nowrap shrink-0 cursor-pointer text-stone-300"
@@ -117,7 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-850 text-stone-200 border border-emerald-900/50 hover:border-amber-500/40 text-xs font-bold transition-colors"
           >
             <Phone className="w-3.5 h-3.5 text-amber-400" />
-            <span className="tabular-nums font-semibold">{RESTAURANT_INFO.phoneFormatted}</span>
+            <span className="tabular-nums font-semibold" dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
           </a>
 
           {/* Cart Button */}
