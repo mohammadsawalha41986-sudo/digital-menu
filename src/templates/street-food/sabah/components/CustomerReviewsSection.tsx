@@ -3,7 +3,7 @@
 import React from 'react';
 import { Star, MessageSquare, ShieldCheck, ExternalLink, ThumbsUp } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { RESTAURANT_INFO } from '../data/menuData';
+import { useSabah } from '../context';
 import type { Language } from '../types';
 
 interface CustomerReviewsSectionProps {
@@ -70,6 +70,11 @@ const REVIEWS: Review[] = [
 ];
 
 export const CustomerReviewsSection: React.FC<CustomerReviewsSectionProps> = ({ lang }) => {
+  const { info: RESTAURANT_INFO } = useSabah();
+  // These reviews are design sample text, not customer reviews. They render
+  // only when the restaurant itself is the reference fixture; real reviews
+  // arrive with the reviews system.
+  if (!(RESTAURANT_INFO.rating > 0)) return null;
   const isAr = lang === 'ar';
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MENU_CATEGORIES } from '../data/menuData';
+import { useSabah } from '../context';
 import type { Language } from '../types';
 import { 
   Sparkles, 
@@ -27,6 +27,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   selectedCategory,
   onSelectCategory,
 }) => {
+  const { categories: MENU_CATEGORIES } = useSabah();
   const isAr = lang === 'ar';
 
   const renderIcon = (id: string, isSelected: boolean) => {

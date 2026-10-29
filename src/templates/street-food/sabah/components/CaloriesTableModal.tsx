@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { X, Search, Activity, Flame, Info, Check, Filter } from 'lucide-react';
-import { MENU_ITEMS, MENU_CATEGORIES } from '../data/menuData';
+import { useSabah } from '../context';
 import type { Language } from '../types';
 
 interface CaloriesTableModalProps {
@@ -16,6 +16,7 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
   onClose,
   lang,
 }) => {
+  const { items: MENU_ITEMS, categories: MENU_CATEGORIES } = useSabah();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [calorieFilter, setCalorieFilter] = useState<'all' | 'low' | 'moderate' | 'high'>('all');
@@ -43,7 +44,7 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
 
       return true;
     });
-  }, [searchQuery, selectedCategory, calorieFilter]);
+  }, [searchQuery, selectedCategory, calorieFilter, MENU_ITEMS]);
 
   if (!isOpen) return null;
 
@@ -74,8 +75,8 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
               </h2>
               <p className="text-xs text-stone-300 mt-0.5">
                 {isAr
-                  ? 'قائمة مفصلة بسعرات وأسعار وجبات مطعم صباح الليل للمحافظة على نمط حياة صحي'
-                  : 'Detailed nutritional calorie information for Sabah El Lail menu items'}
+                  ? 'قائمة مفصلة بالسعرات الحرارية وأسعار الوجبات'
+                  : 'Calorie information for every menu item'}
               </p>
             </div>
           </div>

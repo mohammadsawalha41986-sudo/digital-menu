@@ -43,7 +43,7 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={isAr ? 'ابحث عن صنف: شاورما، بروستد، بيتزا، مشاوي، برجر، عصير...' : 'Search for shawarma, broasted, pizza, burger, juices...'}
+              placeholder={isAr ? 'ابحث عن صنف...' : 'Search the menu...'}
               className="w-full bg-stone-950/90 border border-emerald-900/60 rounded-xl py-2.5 rtl:pr-10 rtl:pl-10 ltr:pl-10 ltr:pr-10 text-sm text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors shadow-inner"
             />
             {searchQuery && (
@@ -166,7 +166,7 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
         {/* Results Count Line */}
         <div className="flex items-center justify-between text-xs text-stone-400 pt-1">
           <span className="text-emerald-300/80 font-medium">
-            {isAr ? `يعرض ${resultCount} صنفاً في قائمة صباح الليل` : `Showing ${resultCount} items on Sabah El Lail menu`}
+            {isAr ? `يعرض ${resultCount} صنفاً` : `Showing ${resultCount} items`}
           </span>
           <span className="text-stone-400">
             {isAr ? 'الأسعار شاملة ضريبة القيمة المضافة 15%' : 'All prices include 15% VAT'}
