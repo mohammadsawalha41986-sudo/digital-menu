@@ -115,7 +115,7 @@ export default async function BusinessesPage() {
                   </header>
 
                   <p className="business-card__meta">
-                    {business.type.toLowerCase()} · {business.templateKey} ·{' '}
+                    {business.type.toLowerCase()} ·{' '}
                     <code>{business.publicId}</code>
                   </p>
 

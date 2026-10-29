@@ -185,7 +185,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
             )}
 
             {/* Special Instructions */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pt-2">
               <label className="text-xs font-bold text-stone-300 block">
                 {isAr ? 'ملاحظات خاصة للطلب (اختياري)' : 'Special Requests (Optional)'}
               </label>

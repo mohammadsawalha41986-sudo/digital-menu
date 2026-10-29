@@ -102,7 +102,9 @@ ${noteInfo}
                     {isAr ? 'طلبك الحالي' : 'Your Order'}
                   </h2>
                   <span className="text-xs text-emerald-400 font-semibold">
-                    {cart.length} {isAr ? 'أصناف محددة' : 'items selected'}
+                    {isAr
+                      ? cart.length === 1 ? 'صنف واحد' : cart.length === 2 ? 'صنفان' : `${cart.length} أصناف`
+                      : `${cart.length} ${cart.length === 1 ? 'item' : 'items'}`}
                   </span>
                 </div>
               </div>
