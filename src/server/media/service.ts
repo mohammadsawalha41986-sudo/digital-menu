@@ -89,15 +89,19 @@ export async function storeMedia(businessId: string, input: UploadMediaInput) {
   // which is most of what a menu opened on a phone over mobile data costs.
   const webp = await normalizeToWebp(input.upload.bytes, validated.contentType);
   const stored = webp ?? { bytes: input.upload.bytes, contentType: validated.contentType };
-  const storageKey = buildMediaKey(business.publicId, webp ? '.webp' : validated.extension);
-
   // Identical bytes already uploaded for this tenant: reuse rather than store
-  // a second copy. Menus repeat images far more often than they don't.
+  // a second copy. Menus repeat images far more often than they don't — but
+  // only while the stored file is still there. If it was lost (a wiped disk,
+  // a restored database), the same upload writes it back under the same
+  // record, which brings the photo back on every dish that uses it.
   const existing = await prisma.media.findFirst({ where: { businessId, checksum } });
-
-  if (existing) return { media: existing, deduplicated: true, derivatives: 0 };
-
   const storage = getStorage();
+
+  if (existing && (await storage.exists(existing.storageKey))) {
+    return { media: existing, deduplicated: true, derivatives: 0 };
+  }
+
+  const storageKey = existing?.storageKey ?? buildMediaKey(business.publicId, webp ? '.webp' : validated.extension);
 
   await storage.put({
     key: storageKey,
@@ -130,6 +134,14 @@ export async function storeMedia(businessId: string, input: UploadMediaInput) {
     } catch (error) {
       console.error('[media] derivative generation failed', error);
     }
+  }
+
+  if (existing) {
+    const media = await prisma.media.update({
+      where: { id: existing.id },
+      data: { sizeBytes: stored.bytes.byteLength, derivativeWidths },
+    });
+    return { media, deduplicated: false, derivatives: derivativeWidths.length };
   }
 
   const media = await prisma.media.create({

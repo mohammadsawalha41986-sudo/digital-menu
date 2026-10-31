@@ -46,9 +46,9 @@ test('many photos at once: matched by code and by Arabic name, made WebP, set on
   // The public menu shows both dishes with their new photos, served as WebP.
   await page.goto('/m/DEM006?lang=ar');
   for (const code of ['BK-001', 'BK-010']) {
-    const img = page.locator(`#menu-items-container [data-item="${code}"] img`).first();
-    await img.scrollIntoViewIfNeeded();
-    const src = await img.getAttribute('src');
+    // The address is read and fetched directly: no need to scroll a card
+    // whose photo may be moving (the dish photo effects animate).
+    const src = await page.locator(`#menu-items-container [data-item="${code}"] img`).first().getAttribute('src');
     const response = await page.request.get(src ?? '');
     expect(response.ok()).toBe(true);
     expect(response.headers()['content-type']).toBe('image/webp');

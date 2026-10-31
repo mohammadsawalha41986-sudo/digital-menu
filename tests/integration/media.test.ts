@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { access, mkdtemp } from 'node:fs/promises';
+import { access, mkdtemp, rm } from 'node:fs/promises';
 import sharp from 'sharp';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -145,6 +145,29 @@ describe.skipIf(!databaseReachable)('media upload', () => {
 
     expect(second).toBe(first);
     expect(media.checksum).not.toBeNull();
+  });
+
+  it('writes a lost file back when the same photo is uploaded again', async () => {
+    const photo = new Uint8Array(
+      await sharp({ create: { width: 900, height: 600, channels: 3, background: { r: 20, g: 120, b: 60 } } })
+        .jpeg()
+        .toBuffer(),
+    );
+    const first = await uploadMedia(user, businessId, {
+      kind: 'ITEM_IMAGE',
+      upload: { bytes: photo, declaredContentType: 'image/jpeg', fileName: 'lost.jpg' },
+    });
+    const file = path.join(root, first.storageKey);
+    await rm(file);
+
+    const again = await uploadMedia(user, businessId, {
+      kind: 'ITEM_IMAGE',
+      upload: { bytes: photo, declaredContentType: 'image/jpeg', fileName: 'lost.jpg' },
+    });
+
+    // Same record, so every dish using it gets its photo back; file present.
+    expect(again.id).toBe(first.id);
+    await expect(access(file)).resolves.toBeUndefined();
   });
 
   it('refuses a file that is not the image type it claims', async () => {
