@@ -5,7 +5,6 @@ import { getBusinessForAdmin } from '@/server/admin/business-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { prisma } from '@/server/db/client';
 import { getMenuDesign } from '@/server/menu-studio/design';
-import { MENU_THEMES } from '@/menu-studio/themes';
 import { computeMargin, summariseMargins } from '@/server/menu-studio/margin';
 import { StudioEditor } from './editor';
 import { BulkEdit } from './bulk-edit';
@@ -132,18 +131,6 @@ export default async function StudioEditorPage({
           showImages: design.showImages,
           showCalories: design.showCalories,
         }}
-        themes={MENU_THEMES.map((theme) => ({
-          key: theme.key,
-          label: theme.label,
-          description: theme.description,
-          tonePreference: theme.tonePreference,
-          recommendedFor: theme.suits,
-          layouts: theme.layouts.map((layout) => ({
-            key: layout.key,
-            label: layout.label,
-            description: layout.description,
-          })),
-        }))}
         structure={structure.map((category) => ({
           ...category,
           items: category.items.map(toItemView),

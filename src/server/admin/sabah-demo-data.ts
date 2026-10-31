@@ -68,15 +68,16 @@ export const SABAH_PROFILE = {
 } as const;
 
 export const SABAH_BRAND = {
-  colorPrimary: '#2B1810',
-  colorSecondary: '#8B4513',
-  colorAccent: '#D4A017',
+  // Taken from the restaurant's logo: emerald green and gold.
+  colorPrimary: '#059669',
+  colorSecondary: '#065F46',
+  colorAccent: '#F59E0B',
   colorBackground: '#FBF6ED',
   colorSurface: '#FFFFFF',
   colorText: '#1A0F08',
   colorMuted: '#7A6050',
   colorBorder: '#E8DCC8',
-  fontHeading: 'system-serif',
+  fontHeading: 'system-sans',
   fontBody: 'system-sans',
   radiusScale: 'lg',
 } as const;

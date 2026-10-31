@@ -188,6 +188,22 @@ export async function deleteMediaAction(
   }
 }
 
+/** Form-shaped delete for the photos step: the photo id arrives in the form. */
+export async function deleteMediaFormAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const mediaId = String(formData.get('mediaId') ?? '');
+  if (!mediaId) return { error: 'Choose a photo to delete' };
+
+  const result = await deleteMediaAction(businessId, mediaId, publicId);
+  revalidatePath(`/admin/build/${businessId}`, 'layout');
+  revalidatePath(`/admin/preview/${businessId}`);
+  return result.ok ? { ok: true, message: 'Photo deleted' } : result;
+}
+
 /**
  * Media Studio actions (master spec §46, §47, §49, §50).
  *

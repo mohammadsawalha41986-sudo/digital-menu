@@ -18,20 +18,43 @@ export interface ImageTarget {
   currentUrl: string | null;
 }
 
+export interface LibraryImage {
+  id: string;
+  url: string;
+  alt: string;
+  width?: number | null;
+  height?: number | null;
+  sizeBytes?: number;
+  contentType?: string;
+}
+
+function describe(image: LibraryImage): string {
+  const parts: string[] = [];
+  if (image.width && image.height) parts.push(`${image.width}×${image.height}`);
+  if (image.sizeBytes) parts.push(`${Math.max(1, Math.round(image.sizeBytes / 1024))} KB`);
+  if (image.contentType) parts.push(image.contentType.replace('image/', '').toUpperCase());
+  return parts.join(' · ');
+}
+
 export function ImagesStep({
   images,
   items,
   uploadMedia,
   assignMedia,
+  deleteMedia,
 }: {
-  images: { id: string; url: string; alt: string }[];
+  images: LibraryImage[];
   items: ImageTarget[];
   /** The existing media actions, already bound to this business by the page. */
   uploadMedia: (previous: ActionState, formData: FormData) => Promise<ActionState>;
   assignMedia: (previous: ActionState, formData: FormData) => Promise<ActionState>;
+  deleteMedia: (previous: ActionState, formData: FormData) => Promise<ActionState>;
 }) {
   const [uploadState, upload] = useActionState<ActionState, FormData>(uploadMedia, {});
   const [assignState, assign] = useActionState<ActionState, FormData>(assignMedia, {});
+  const [deleteState, remove] = useActionState<ActionState, FormData>(deleteMedia, {});
+  const [clearState, clear] = useActionState<ActionState, FormData>(assignMedia, {});
+  const withPhotos = items.filter((item) => item.currentUrl);
 
   return (
     <div className="build__stack">
@@ -77,23 +100,54 @@ export function ImagesStep({
             />
             <span className="admin__hint">Read aloud to visitors who cannot see the photo.</span>
           </div>
+          <div className="admin__field">
+            <span className="admin__hint">
+              Saved as WebP automatically, at most 2000px on the longest side, with smaller
+              copies for phones.
+            </span>
+          </div>
         </div>
 
         <Submit label="Upload photo" />
       </form>
 
       <section className="build__card">
-        <h3 className="build__step-subtitle">Your photos</h3>
+        <h3 className="build__step-subtitle">صورك · Your photos</h3>
+
+        {deleteState.error ? (
+          <p className="admin__message admin__message--error" role="alert">
+            {deleteState.error}
+          </p>
+        ) : null}
+        {deleteState.ok && deleteState.message ? (
+          <p className="admin__message admin__message--ok" role="status">
+            {deleteState.message}
+          </p>
+        ) : null}
 
         {images.length === 0 ? (
           <p className="admin__empty">Nothing uploaded yet.</p>
         ) : (
-          <div className="build__thumbs build__thumbs--library">
+          <ul className="photo-library">
             {images.map((image) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={image.id} src={image.url} alt={image.alt} loading="lazy" />
+              <li key={image.id} className="photo-library__item">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image.url} alt={image.alt} loading="lazy" />
+                <span className="photo-library__facts">{describe(image)}</span>
+                <form
+                  action={remove}
+                  onSubmit={(event) => {
+                    if (!window.confirm('حذف هذه الصورة نهائياً؟ ستُزال من أي طبق يستخدمها.\nDelete this photo? It is removed from any dish using it.')) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  <input type="hidden" name="mediaId" value={image.id} />
+                  <DeleteButton />
+                </form>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </section>
 
@@ -144,7 +198,54 @@ export function ImagesStep({
           <Submit label="Use this photo" />
         </form>
       ) : null}
+
+      {withPhotos.length > 0 ? (
+        <section className="build__card">
+          <h3 className="build__step-subtitle">صور الأطباق · Dishes with a photo</h3>
+
+          {clearState.ok && clearState.message ? (
+            <p className="admin__message admin__message--ok" role="status">
+              {clearState.message}
+            </p>
+          ) : null}
+
+          <ul className="photo-dishes">
+            {withPhotos.map((item) => (
+              <li key={item.code} className="photo-dishes__item">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.currentUrl ?? ''} alt="" loading="lazy" />
+                <span className="photo-dishes__name">{item.label}</span>
+                <form action={clear}>
+                  <input type="hidden" name="targetType" value="item" />
+                  <input type="hidden" name="targetKey" value={item.code} />
+                  <input type="hidden" name="mediaId" value="" />
+                  <RemoveButton />
+                </form>
+              </li>
+            ))}
+          </ul>
+          <p className="admin__hint">Removing takes the photo off the dish; the photo stays in your library.</p>
+        </section>
+      ) : null}
     </div>
+  );
+}
+
+function RemoveButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="admin__button admin__button--secondary admin__button--small" disabled={pending}>
+      {pending ? '…' : 'إزالة الصورة · Remove photo'}
+    </button>
+  );
+}
+
+function DeleteButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="admin__button admin__button--danger admin__button--small" disabled={pending}>
+      {pending ? '…' : 'حذف · Delete'}
+    </button>
   );
 }
 

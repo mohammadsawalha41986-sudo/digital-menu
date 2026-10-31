@@ -37,7 +37,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose, lang 
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-xs sm:max-w-sm bg-[#101712] border-2 border-emerald-500/40 rounded-3xl shadow-2xl p-6 text-center space-y-4"
+        className="relative w-full max-w-xs sm:max-w-sm bg-[var(--sf-ink-101712)] border-2 border-emerald-500/40 rounded-3xl shadow-2xl p-6 text-center space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -78,7 +78,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose, lang 
             )}
           </button>
 
-          <a
+          <a data-event="contact_maps"
             href={RESTAURANT_INFO.googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"

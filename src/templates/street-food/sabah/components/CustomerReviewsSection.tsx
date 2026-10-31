@@ -78,7 +78,7 @@ export const CustomerReviewsSection: React.FC<CustomerReviewsSectionProps> = ({ 
   const isAr = lang === 'ar';
 
   return (
-    <section id="customer-reviews" className="py-16 bg-[#0a0f0b] border-t border-emerald-950/80 relative overflow-hidden">
+    <section id="customer-reviews" className="py-16 bg-[var(--sf-ink-0a0f0b)] border-t border-emerald-950/80 relative overflow-hidden">
       
       {/* Background glow */}
       <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -103,7 +103,7 @@ export const CustomerReviewsSection: React.FC<CustomerReviewsSectionProps> = ({ 
             </p>
           </div>
 
-          <a
+          <a data-event="contact_maps"
             href={RESTAURANT_INFO.googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -116,7 +116,7 @@ export const CustomerReviewsSection: React.FC<CustomerReviewsSectionProps> = ({ 
         </div>
 
         {/* Rating Summary Bar */}
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-[#111a13] to-stone-950 border border-emerald-500/30 mb-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-[var(--sf-ink-111a13)] to-stone-950 border border-emerald-500/30 mb-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
           
           {/* Left score lockup */}
           <div className="md:col-span-4 flex items-center gap-4 sm:gap-6 border-b md:border-b-0 md:border-l rtl:md:border-l rtl:md:border-r-0 ltr:md:border-r ltr:md:border-l-0 border-emerald-950 pb-5 md:pb-0">
@@ -178,7 +178,7 @@ export const CustomerReviewsSection: React.FC<CustomerReviewsSectionProps> = ({ 
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.35 }}
               whileHover={{ y: -3 }}
-              className="p-5 sm:p-6 rounded-2xl bg-gradient-to-b from-[#111913] to-stone-950 border border-emerald-950/80 hover:border-emerald-500/50 shadow-xl space-y-3.5 transition-all"
+              className="p-5 sm:p-6 rounded-2xl bg-gradient-to-b from-[var(--sf-ink-111913)] to-stone-950 border border-emerald-950/80 hover:border-emerald-500/50 shadow-xl space-y-3.5 transition-all"
             >
               
               {/* Reviewer Header */}

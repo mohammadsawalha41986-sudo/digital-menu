@@ -8,18 +8,18 @@ import { getBrandPreset } from '@/server/brand/service';
 import { listMedia } from '@/server/media/service';
 import { renderQr } from '@/server/qr/service';
 import { buildQrDestination } from '@/server/qr/destination';
-import { listTemplates, resolveTemplate } from '@/templates/registry';
+import { resolveTemplate } from '@/templates/registry';
 import { resolveFont } from '@/menu-studio/typography';
 import { formatMinorAsDecimal } from '@/lib/money';
 import {
   createCategoryAction,
   upsertItemAction,
 } from '@/server/admin/actions';
-import { uploadMediaAction, assignMediaAction } from '@/server/admin/media-actions';
+import { uploadMediaAction, assignMediaAction, deleteMediaFormAction } from '@/server/admin/media-actions';
 import { BUILD_STEPS, nextStep, previousStep, stepAt } from '../steps';
 import { PreviewPane } from '../preview-pane';
 import { BrandStep } from './steps/brand-step';
-import { StyleStep, type StyleOption } from './steps/style-step';
+import { StyleStep } from './steps/style-step';
 import { DetailsStep } from './steps/details-step';
 import { MenuStep } from './steps/menu-step';
 import { ImagesStep } from './steps/images-step';
@@ -37,26 +37,6 @@ export const dynamic = 'force-dynamic';
  * which is the whole point of the flow: an owner should never wonder what
  * their change did.
  */
-
-/**
- * The styles an owner chooses between.
- *
- * A style pairs a template family (composition) with a menu theme
- * (presentation), so choosing "Luxury" sets both and they can never disagree.
- * The words are the ones a restaurant owner would use; the keys stay behind
- * the scenes.
- */
-const STYLES: StyleOption[] = [
-  { key: 'street-food', label: 'Street Food', description: 'Dark, photo-led delivery-app menu with a cart and WhatsApp ordering.', themeKey: 'bold-street' },
-  { key: 'modern', label: 'Modern', description: 'Photos, clear sections, easy to scan on a phone.', themeKey: 'modern-minimal' },
-  { key: 'editorial', label: 'Editorial', description: 'Large type, generous space, magazine feel.', themeKey: 'ember-editorial' },
-  { key: 'luxury', label: 'Luxury', description: 'Dark, quiet and ceremonial.', themeKey: 'dark-luxury' },
-  { key: 'minimal', label: 'Minimal', description: 'Text only. Fast, and it never looks cluttered.', themeKey: 'minimal-line' },
-  { key: 'cafe', label: 'Café', description: 'Warm and soft, for short menus.', themeKey: 'premium-cafe' },
-  { key: 'bold', label: 'Bold', description: 'Big photographs and strong headlines.', themeKey: 'bold-street' },
-  { key: 'premium', label: 'Fine dining', description: 'Typography-led, almost no decoration.', themeKey: 'fine-dining' },
-  { key: 'hospitality', label: 'Hospitality', description: 'For hotels and venues with several menus.', themeKey: 'modern-mediterranean' },
-];
 
 export default async function BuildStepPage({
   params,
@@ -201,6 +181,10 @@ async function renderStep(context: StepContext) {
     id: image.id,
     url: image.url,
     alt: image.altEn ?? image.altAr ?? 'Uploaded image',
+    width: image.width,
+    height: image.height,
+    sizeBytes: image.sizeBytes,
+    contentType: image.contentType,
   }));
 
   // A media id means nothing to an owner; the steps show pictures, so ids are
@@ -225,14 +209,10 @@ async function renderStep(context: StepContext) {
       );
     }
 
-    case 'style':
-      return (
-        <StyleStep
-          businessId={business.id}
-          options={STYLES.filter((style) => listTemplates().some((template) => template.key === style.key))}
-          current={business.templateKey}
-        />
-      );
+    case 'style': {
+      const { definition, variant } = resolveTemplate(business.templateKey, business.variantKey);
+      return <StyleStep businessId={business.id} layouts={definition.variants} current={variant.key} />;
+    }
 
     case 'details':
     case 'connect':
@@ -279,6 +259,7 @@ async function renderStep(context: StepContext) {
           }))}
           uploadMedia={uploadMediaAction.bind(null, business.id, business.publicId)}
           assignMedia={assignMediaAction.bind(null, business.id, business.publicId)}
+          deleteMedia={deleteMediaFormAction.bind(null, business.id, business.publicId)}
         />
       );
 
@@ -342,7 +323,7 @@ async function renderStep(context: StepContext) {
     }
 
     case 'review': {
-      const { definition } = resolveTemplate(business.templateKey, business.variantKey);
+      const { variant } = resolveTemplate(business.templateKey, business.variantKey);
       const logo = media.find((image) => image.id === business.logoMediaId);
 
       return (
@@ -354,7 +335,7 @@ async function renderStep(context: StepContext) {
           publicPath={`/m/${business.publicId}`}
           summary={{
             name: business.nameEn ?? business.nameAr,
-            style: definition.label,
+            style: variant.label,
             categories: context.menu?.categories.length ?? 0,
             items: context.items.length,
             photos: context.items.filter((item) => item.imageMediaId !== null).length,

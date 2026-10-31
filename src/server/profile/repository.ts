@@ -14,6 +14,7 @@ import type {
   PublicDownload,
   PublicImage,
   PublicItem,
+  PublicModifierGroup,
   PublicMenu,
   PublicProfile,
 } from './types';
@@ -253,6 +254,7 @@ async function loadProfile(
               descriptionAr: true,
               descriptionEn: true,
               isFeatured: true,
+              displayStyle: true,
               image: { select: MEDIA_SELECT },
               items: {
                 // HIDDEN items never reach the public profile (§83).
@@ -275,6 +277,33 @@ async function loadProfile(
                   tags: true,
                   isFeatured: true,
                   availability: true,
+                  pairsWith: true,
+                  modifiers: {
+                    where: { group: { isActive: true } },
+                    orderBy: { sortOrder: 'asc' },
+                    select: {
+                      group: {
+                        select: {
+                          key: true,
+                          nameAr: true,
+                          nameEn: true,
+                          minSelect: true,
+                          maxSelect: true,
+                          options: {
+                            where: { isActive: true },
+                            orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+                            select: {
+                              key: true,
+                              nameAr: true,
+                              nameEn: true,
+                              priceDeltaMinor: true,
+                              isDefault: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
                   image: { select: MEDIA_SELECT },
                   gallery: {
                     orderBy: { sortOrder: 'asc' },
@@ -471,6 +500,17 @@ const BRAND_SELECT = {
   fontHeading: true,
   fontBody: true,
   radiusScale: true,
+  menuPage: true,
+  menuCard: true,
+  menuPrice: true,
+  textScale: true,
+  spacing: true,
+  imageShape: true,
+  sectionOrder: true,
+  offersInsideMenu: true,
+  heroEffect: true,
+  dishEffect: true,
+  backgroundStyle: true,
 } as const;
 
 interface MediaRow {
@@ -557,6 +597,7 @@ interface CategoryRow {
   descriptionAr: string | null;
   descriptionEn: string | null;
   isFeatured: boolean;
+  displayStyle: string;
   image: MediaRow | null;
   items: ItemRow[];
 }
@@ -576,6 +617,8 @@ interface ItemRow {
   ingredientsEn: string | null;
   allergens: string[];
   tags: string[];
+  pairsWith: string[];
+  modifiers: { group: PublicModifierGroup }[];
   isFeatured: boolean;
   availability: string;
   image: MediaRow | null;
@@ -648,6 +691,7 @@ function toCategory(category: CategoryRow, overrides: OverrideMap | null): Publi
     descriptionEn: category.descriptionEn,
     image: toImage(category.image),
     isFeatured: category.isFeatured,
+    displayStyle: category.displayStyle,
     items: category.items
       .map((item) => toItem(item, overrides))
       .filter((item): item is PublicItem => item !== null),
@@ -676,6 +720,9 @@ function toItem(item: ItemRow, overrides: OverrideMap | null): PublicItem | null
     ingredientsEn: item.ingredientsEn,
     allergens: item.allergens,
     tags: item.tags,
+    pairsWith: item.pairsWith,
+    // A group with no active option offers nothing to choose.
+    modifiers: item.modifiers.map((link) => link.group).filter((group) => group.options.length > 0),
     isFeatured: item.isFeatured,
     isUnavailable: availability === 'UNAVAILABLE',
     image: toImage(item.image),
@@ -701,4 +748,15 @@ const DEFAULT_BRAND: PublicProfile['brand'] = {
   fontHeading: 'system-serif',
   fontBody: 'system-sans',
   radiusScale: 'md',
+  menuPage: null,
+  menuCard: null,
+  menuPrice: null,
+  textScale: 'md',
+  spacing: 'regular',
+  imageShape: 'landscape',
+  sectionOrder: ['hero', 'menu', 'offers', 'reviews', 'location'],
+  offersInsideMenu: true,
+  heroEffect: 'slide',
+  dishEffect: 'zoom',
+  backgroundStyle: 'solid',
 };

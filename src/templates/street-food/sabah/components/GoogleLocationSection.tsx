@@ -36,7 +36,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
   };
 
   return (
-    <section id="google-location" className="py-16 bg-[#0a0f0b] border-t border-emerald-950/80 scroll-mt-20 relative overflow-hidden">
+    <section id="google-location" className="py-16 bg-[var(--sf-ink-0a0f0b)] border-t border-emerald-950/80 scroll-mt-20 relative overflow-hidden">
       
       {/* Background brand ambiance */}
       <div className="absolute top-1/2 left-0 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -67,7 +67,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            <motion.a
+            <motion.a data-event="contact_maps"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.95 }}
               href={RESTAURANT_INFO.googleMapsUrl}
@@ -101,7 +101,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
             initial={{ opacity: 0, x: isAr ? 20 : -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="lg:col-span-5 flex flex-col justify-between space-y-5 bg-gradient-to-b from-[#111913] to-stone-950 rounded-3xl border border-emerald-500/30 p-6 shadow-2xl relative"
+            className="lg:col-span-5 flex flex-col justify-between space-y-5 bg-gradient-to-b from-[var(--sf-ink-111913)] to-stone-950 rounded-3xl border border-emerald-500/30 p-6 shadow-2xl relative"
           >
             
             {/* Top Place Branding */}
@@ -179,36 +179,32 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                   </div>
                 </div>
 
-                {/* Operating Hours */}
+                {/* Operating hours — shown only when the restaurant has stated
+                    them; the design must never claim "open now" on its own. */}
+                {RESTAURANT_INFO.openingHoursAr || RESTAURANT_INFO.openingHoursEn ? (
                 <div className="flex items-start gap-3">
                   <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30 text-xs">
-                        {isAr ? 'مفتوح الآن' : 'Open Now'}
-                      </span>
-                      <span className="text-stone-300 font-semibold">{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
-                    </div>
-                    <p className="text-xs text-stone-400 mt-1">
-                      {isAr ? 'خدمة متميزة وسريعة طوال ساعات الليل' : 'Fast service and late night dining'}
-                    </p>
-                  </div>
+                  <span className="text-stone-300 font-semibold">{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
                 </div>
+                ) : null}
 
                 {/* Direct Phone */}
+
+                {RESTAURANT_INFO.phone ? (
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
                   <div className="flex items-center gap-2.5">
-                    <a
+                    <a data-event="contact_phone"
                       href={`tel:${RESTAURANT_INFO.phone}`}
                       className="font-extrabold text-amber-400 hover:underline tabular-nums text-sm"
                     >
-                      {RESTAURANT_INFO.phoneFormatted}
+                      <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
                     </a>
                     <span className="text-stone-500">·</span>
                     <span className="text-stone-400 text-xs">{isAr ? 'اتصال مباشر' : 'Direct Call'}</span>
                   </div>
                 </div>
+                ) : null}
               </div>
 
             </div>
@@ -216,7 +212,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
             {/* Bottom Actions inside Place Card */}
             <div className="space-y-2.5 pt-3 border-t border-emerald-950">
               <div className="grid grid-cols-2 gap-2">
-                <motion.a
+                <motion.a data-event="contact_maps"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   href={RESTAURANT_INFO.googleMapsUrl}
@@ -269,14 +265,14 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
           >
             
             {/* Top Bar on Map */}
-            <div className="bg-[#0e1510]/95 backdrop-blur-md px-5 py-3.5 border-b border-emerald-950 flex items-center justify-between z-10">
+            <div className="bg-[var(--sf-ink-0e1510)]/95 backdrop-blur-md px-5 py-3.5 border-b border-emerald-950 flex items-center justify-between z-10">
               <div className="flex items-center gap-2 text-xs text-stone-300">
                 <MapPin className="w-4 h-4 text-red-500" />
                 <span className="font-extrabold text-white">{isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}</span>
                 <span className="text-stone-600 hidden sm:inline">|</span>
                 <span className="text-emerald-400 font-semibold hidden sm:inline">{isAr ? 'موقع الفرع المعتمد' : 'Verified Location'}</span>
               </div>
-              <a
+              <a data-event="contact_maps"
                 href={RESTAURANT_INFO.googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -312,7 +308,7 @@ export const GoogleLocationSection: React.FC<GoogleLocationSectionProps> = ({ la
                   {isAr ? RESTAURANT_INFO.addressAr : RESTAURANT_INFO.addressEn}
                 </p>
                 <div className="pt-2 flex items-center gap-2">
-                  <a
+                  <a data-event="contact_maps"
                     href={RESTAURANT_INFO.googleMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"

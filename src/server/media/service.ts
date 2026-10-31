@@ -6,6 +6,7 @@ import {
   assessQuality,
   derivativeKey,
   generateDerivatives,
+  normalizeToWebp,
   readImageFacts,
   supportsDerivatives,
 } from './derivatives';
@@ -80,8 +81,15 @@ export async function storeMedia(businessId: string, input: UploadMediaInput) {
 
   if (!business) throw new TenantAccessError('No such business.');
 
-  const storageKey = buildMediaKey(business.publicId, validated.extension);
+  // The checksum is of what was uploaded, so the same photo uploaded twice
+  // is still recognised after it has been converted.
   const checksum = createHash('sha256').update(input.upload.bytes).digest('hex');
+
+  // Stored as WebP: a fraction of a JPEG or PNG's size at the same quality,
+  // which is most of what a menu opened on a phone over mobile data costs.
+  const webp = await normalizeToWebp(input.upload.bytes, validated.contentType);
+  const stored = webp ?? { bytes: input.upload.bytes, contentType: validated.contentType };
+  const storageKey = buildMediaKey(business.publicId, webp ? '.webp' : validated.extension);
 
   // Identical bytes already uploaded for this tenant: reuse rather than store
   // a second copy. Menus repeat images far more often than they don't.
@@ -93,16 +101,14 @@ export async function storeMedia(businessId: string, input: UploadMediaInput) {
 
   await storage.put({
     key: storageKey,
-    body: input.upload.bytes,
-    contentType: validated.contentType,
+    body: stored.bytes,
+    contentType: stored.contentType,
     cacheControl: 'public, max-age=31536000, immutable',
   });
 
   // Dimensions are read from the bytes rather than trusted from the client:
   // the browser's report is a hint, and the quality check depends on the truth.
-  const facts = supportsDerivatives(validated.contentType)
-    ? await readImageFacts(input.upload.bytes)
-    : null;
+  const facts = supportsDerivatives(stored.contentType) ? await readImageFacts(stored.bytes) : null;
 
   const derivativeWidths: number[] = [];
 
@@ -112,7 +118,7 @@ export async function storeMedia(businessId: string, input: UploadMediaInput) {
     // A failure here must not lose the upload — the original is already stored
     // and the renderer falls back to it.
     try {
-      for (const derivative of await generateDerivatives(input.upload.bytes, facts)) {
+      for (const derivative of await generateDerivatives(stored.bytes, facts)) {
         await storage.put({
           key: derivativeKey(storageKey, derivative.width),
           body: derivative.bytes,
@@ -131,8 +137,8 @@ export async function storeMedia(businessId: string, input: UploadMediaInput) {
       businessId,
       kind: input.kind,
       storageKey,
-      contentType: validated.contentType,
-      sizeBytes: validated.sizeBytes,
+      contentType: stored.contentType,
+      sizeBytes: stored.bytes.byteLength,
       width: facts?.width ?? input.width ?? null,
       height: facts?.height ?? input.height ?? null,
       derivativeWidths,
@@ -361,6 +367,7 @@ export async function listMedia(user: AuthenticatedUser, businessId: string) {
     altAr: entry.altAr,
     altEn: entry.altEn,
     originalName: entry.originalName,
+    contentType: entry.contentType,
     sizeBytes: entry.sizeBytes,
     createdAt: entry.createdAt,
     width: entry.width,
@@ -394,7 +401,7 @@ export async function deleteMedia(user: AuthenticatedUser, businessId: string, m
 
   const media = await prisma.media.findFirst({
     where: { id: mediaId, ...tenantScope(context) },
-    select: { id: true, storageKey: true },
+    select: { id: true, storageKey: true, derivativeWidths: true },
   });
 
   if (!media) throw new TenantAccessError('Media not found');
@@ -415,7 +422,13 @@ export async function deleteMedia(user: AuthenticatedUser, businessId: string, m
   ]);
 
   try {
-    await getStorage().delete(media.storageKey);
+    const storage = getStorage();
+    await storage.delete(media.storageKey);
+    // The WebP sizes go with it; otherwise every deleted photo leaves up to
+    // four files behind on the volume.
+    for (const width of media.derivativeWidths) {
+      await storage.delete(derivativeKey(media.storageKey, width));
+    }
   } catch (error) {
     // An orphaned object costs pennies; a failed delete must not roll back the
     // reference cleanup that already committed.

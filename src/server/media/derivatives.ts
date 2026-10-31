@@ -90,6 +90,47 @@ export async function generateDerivatives(
   return derivatives;
 }
 
+/** Longest side kept for the stored original; larger photos gain nothing on a menu. */
+export const MAX_ORIGINAL_SIDE = 2000;
+
+/**
+ * The stored original, as WebP.
+ *
+ * JPEG and PNG uploads are re-encoded (alpha kept, so a transparent logo stays
+ * transparent), turned upright from their EXIF orientation, and scaled down to
+ * MAX_ORIGINAL_SIDE. A WebP upload already within bounds is kept as it is.
+ * Returns null when the bytes cannot be decoded, so the caller keeps the
+ * upload unchanged rather than losing it.
+ */
+export async function normalizeToWebp(
+  bytes: Uint8Array,
+  contentType: string,
+): Promise<{ bytes: Uint8Array; contentType: 'image/webp' } | null> {
+  if (!RASTER_TYPES.has(contentType)) return null;
+
+  try {
+    const image = sharp(Buffer.from(bytes)).rotate();
+    const metadata = await image.metadata();
+    const longest = Math.max(metadata.width ?? 0, metadata.height ?? 0);
+
+    if (contentType === 'image/webp' && longest <= MAX_ORIGINAL_SIDE) return null;
+
+    const output = await image
+      .resize({
+        width: MAX_ORIGINAL_SIDE,
+        height: MAX_ORIGINAL_SIDE,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 85 })
+      .toBuffer();
+
+    return { bytes: new Uint8Array(output), contentType: 'image/webp' };
+  } catch {
+    return null;
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Quality assessment (§49)                                                   */
 /* -------------------------------------------------------------------------- */

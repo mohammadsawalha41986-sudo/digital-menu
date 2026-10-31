@@ -80,12 +80,31 @@ function sessionSecret(): string {
   return env.AUTH_SECRET ?? 'development-only-session-secret';
 }
 
+/**
+ * Secure in production — except when the app itself is served over plain
+ * http on this machine (a local `next start` for the e2e suite), where a
+ * Secure cookie would never be sent back. Any other http address in
+ * production still gets a Secure cookie, so a misconfigured APP_URL cannot
+ * quietly weaken the session.
+ */
+function requiresSecureCookie(): boolean {
+  const env = getEnv();
+  if (env.NODE_ENV !== 'production') return false;
+  try {
+    const url = new URL(env.APP_URL);
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    return !(url.protocol === 'http:' && loopback);
+  } catch {
+    return true;
+  }
+}
+
 /** Cookie attributes used everywhere the session cookie is set. */
 export function sessionCookieOptions(maxAgeSeconds = SESSION_TTL_SECONDS) {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: getEnv().NODE_ENV === 'production',
+    secure: requiresSecureCookie(),
     path: '/',
     maxAge: maxAgeSeconds,
   };

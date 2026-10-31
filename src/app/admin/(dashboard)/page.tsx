@@ -138,7 +138,7 @@ export default async function DashboardPage() {
       ) : null}
 
       <section className="admin__cards" aria-label="Overview">
-        <Metric label="Businesses" value={businesses.length} />
+        <Metric label="Restaurants" value={businesses.length} />
         <Metric label="Active profiles" value={activeProfiles} />
         <Metric label="Branches" value={branches} />
         <Metric label="Published menus" value={menus} />

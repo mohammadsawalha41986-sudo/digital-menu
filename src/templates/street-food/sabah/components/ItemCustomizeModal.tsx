@@ -1,16 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
+import { currencyUnit, formatAmount } from '../money';
+import { useSabah } from '../context';
+import { Suggestions, orderableSuggestions } from './Suggestions';
 import { X, Plus, Minus, Flame, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
 import type { Language, CartItem } from '../types';
+import { chosen, defaultSelection, isSingle, missing, priceWith, selectionKey, toggle, type Selection } from '../choices';
 
 interface ItemCustomizeModalProps {
   item: MenuItem | null;
   lang: Language;
   onClose: () => void;
   onAddToCart: (cartItem: CartItem) => void;
+  /** Adds a suggested dish as it is, without closing the sheet. */
+  onQuickAdd?: (dish: MenuItem) => void;
 }
 
 export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
@@ -18,17 +24,17 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
   lang,
   onClose,
   onAddToCart,
+  onQuickAdd,
 }) => {
+  const { info: { currency }, items: MENU_ITEMS } = useSabah();
   const [selectedOption, setSelectedOption] = useState(
     item && item.options && item.options.length > 0 ? item.options[0] : undefined,
   );
   const [spiceLevel, setSpiceLevel] = useState<'normal' | 'spicy'>('normal');
-  const [extraCheese, setExtraCheese] = useState(false);
-  const [extraGarlic, setExtraGarlic] = useState(false);
-  const [extraSpicyGarlic, setExtraSpicyGarlic] = useState(false);
-  const [extraHummus, setExtraHummus] = useState(false);
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [selection, setSelection] = useState<Selection>(() => defaultSelection(item?.choices ?? []));
+  const [showMissing, setShowMissing] = useState(false);
 
   if (!item) return null;
 
@@ -36,26 +42,35 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
 
   // Compute base unit price
   const basePrice = selectedOption ? selectedOption.price : item.price;
-  const cheesePrice = extraCheese ? 1.00 : 0;
-  const garlicPrice = extraGarlic ? 2.00 : 0;
-  const spicyGarlicPrice = extraSpicyGarlic ? 2.00 : 0;
-  const hummusPrice = extraHummus ? 2.00 : 0;
-
-  const unitPrice = basePrice + cheesePrice + garlicPrice + spicyGarlicPrice + hummusPrice;
-  const totalPrice = unitPrice * quantity;
+  // The restaurant's own choices: each chosen option adds its difference.
+  const groups = item.choices ?? [];
+  const picks = chosen(groups, selection);
+  const unanswered = missing(groups, selection);
+  const unitPrice = priceWith(basePrice, picks);
+  const totalPrice = Math.round(unitPrice * quantity * 1000) / 1000;
+  // The size-like group — the first required single choice whose options
+  // cost differently — lists full prices (medium 15, large 20). Every other
+  // group shows what it adds, since its full price depends on the size.
+  const priceSetter = groups.find(
+    (group) => isSingle(group) && group.min > 0 && new Set(group.options.map((option) => option.price)).size > 1,
+  )?.key;
 
   const handleAdd = () => {
-    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${spiceLevel}-${extraCheese ? 'ch' : ''}-${extraGarlic ? 'g' : ''}-${extraSpicyGarlic ? 'sg' : ''}-${extraHummus ? 'h' : ''}-${Date.now()}`;
-    
+    if (unanswered.length > 0) {
+      // Point at the first choice still to make instead of adding a dish the
+      // restaurant cannot prepare as ordered.
+      setShowMissing(true);
+      document.getElementById(`choice-${unanswered[0]?.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${selectionKey(picks)}-${spiceLevel}-${Date.now()}`;
+
     onAddToCart({
       cartItemId,
       item,
       selectedOption,
+      choices: picks.length > 0 ? picks : undefined,
       spiceLevel: item.isSpicyOption ? spiceLevel : undefined,
-      extraCheese,
-      extraGarlic,
-      extraSpicyGarlic,
-      extraHummus,
       notes: notes.trim() || undefined,
       quantity,
       unitPrice,
@@ -75,7 +90,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-lg bg-[#111913] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-lg bg-[var(--sf-ink-111913)] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
           onClick={(e) => e.stopPropagation()}
         >
           
@@ -85,7 +100,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               <img
                 src={item.image}
                 alt={isAr ? item.nameAr : item.nameEn}
-                className="w-full h-full object-cover filter brightness-[1.03] contrast-[1.04]"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
             ) : (
@@ -93,8 +108,6 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                 <Sparkles className="w-12 h-12 text-amber-500/30" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#111913] via-[#111913]/40 to-transparent" />
-            
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -104,16 +117,18 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               <X className="w-5 h-5" />
             </motion.button>
 
-            <div className="absolute bottom-3 right-4 rtl:right-4 ltr:left-4 left-4">
-              <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
-                {isAr ? item.nameAr : item.nameEn}
-              </h2>
-              {item.calories && (
-                <span className="text-xs text-amber-300 font-mono mt-0.5 block font-semibold">
-                  {item.calories} {isAr ? 'سعرة حرارية تقريبية' : 'estimated calories'}
-                </span>
-              )}
-            </div>
+          </div>
+
+          {/* The name sits under the photo, so the photo needs no shade. */}
+          <div className="px-4 sm:px-5 pt-4">
+            <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+              {isAr ? item.nameAr : item.nameEn}
+            </h2>
+            {item.calories && (
+              <span className="text-xs text-amber-300 font-mono mt-0.5 block font-semibold">
+                {item.calories} {isAr ? 'سعرة حرارية تقريبية' : 'estimated calories'}
+              </span>
+            )}
           </div>
 
           {/* Scrollable Body */}
@@ -149,7 +164,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                           {isAr ? opt.nameAr : opt.nameEn}
                         </span>
                         <span className="block text-xs font-black text-amber-400 mt-1 tabular-nums">
-                          {opt.price.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                          {formatAmount(opt.price, currency)} {currencyUnit(currency, isAr)}
                         </span>
                       </button>
                     );
@@ -157,6 +172,88 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                 </div>
               </div>
             )}
+
+            {/* The restaurant's choices: size, rice, extras, swaps */}
+            {groups.map((group) => {
+              const picked = selection[group.key] ?? [];
+              const needsAnswer = showMissing && unanswered.some((entry) => entry.key === group.key);
+              const fullPrice = group.key === priceSetter;
+              return (
+                <fieldset key={group.key} id={`choice-${group.key}`} className="space-y-2.5" data-choice-group={group.key}>
+                  <legend className="w-full flex items-center justify-between gap-2 mb-2.5">
+                    <span className="text-xs font-black text-emerald-300 uppercase tracking-wider">
+                      {isAr ? group.nameAr : group.nameEn}
+                    </span>
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                        needsAnswer
+                          ? 'border-red-500 text-red-300 bg-red-950/60'
+                          : 'border-emerald-900 text-stone-400'
+                      }`}
+                      data-choice-rule
+                    >
+                      {group.min > 0
+                        ? isSingle(group)
+                          ? isAr ? 'إجباري · اختر واحداً' : 'Required · pick one'
+                          : isAr ? `إجباري · ${group.min} على الأقل` : `Required · at least ${group.min}`
+                        : isSingle(group)
+                          ? isAr ? 'اختياري' : 'Optional'
+                          : isAr ? `اختياري · حتى ${group.max}` : `Optional · up to ${group.max}`}
+                    </span>
+                  </legend>
+                  <div className={isSingle(group) ? 'grid grid-cols-2 sm:grid-cols-3 gap-2' : 'space-y-2'}>
+                    {group.options.map((option) => {
+                      const on = picked.includes(option.key);
+                      const full = !fullPrice && !isSingle(group) && !on && picked.length >= group.max;
+                      const priceLabel = fullPrice
+                        ? `${formatAmount(basePrice + option.price, currency)} ${currencyUnit(currency, isAr)}`
+                        : option.price !== 0
+                          ? `${option.price > 0 ? '+' : '−'}${formatAmount(Math.abs(option.price), currency)} ${currencyUnit(currency, isAr)}`
+                          : null;
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          role={isSingle(group) ? 'radio' : 'checkbox'}
+                          aria-checked={on}
+                          aria-disabled={full || undefined}
+                          data-choice={option.key}
+                          onClick={() => setSelection((current) => toggle(current, group, option.key))}
+                          className={`w-full rounded-2xl border transition-all cursor-pointer ${
+                            isSingle(group) ? 'p-3 text-center' : 'px-3.5 py-2.5 flex items-center justify-between gap-3 text-start'
+                          } ${
+                            on
+                              ? 'bg-emerald-950/80 border-emerald-400 text-white shadow-md shadow-emerald-950'
+                              : full
+                                ? 'bg-stone-900/60 border-emerald-950 text-stone-500'
+                                : 'bg-stone-900/90 border-emerald-950 text-stone-300 hover:border-emerald-700/60'
+                          }`}
+                        >
+                          {isSingle(group) ? null : (
+                            <span
+                              aria-hidden="true"
+                              className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center text-[12px] font-black ${
+                                on ? 'bg-emerald-500 border-emerald-400 text-stone-950' : 'border-stone-600'
+                              }`}
+                            >
+                              {on ? '✓' : ''}
+                            </span>
+                          )}
+                          <span className={`${isSingle(group) ? 'block' : 'flex-1'} text-xs sm:text-sm font-bold`}>
+                            {isAr ? option.nameAr : option.nameEn}
+                          </span>
+                          {priceLabel ? (
+                            <span className={`${isSingle(group) ? 'block mt-1' : ''} text-xs font-black text-amber-400 tabular-nums`}>
+                              {priceLabel}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              );
+            })}
 
             {/* Spice Level (if applicable) */}
             {item.isSpicyOption && (
@@ -192,78 +289,18 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               </div>
             )}
 
-            {/* Extra Add-ons */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-black text-emerald-300 block uppercase tracking-wider">
-                {isAr ? 'إضافات وصوصات لذيذة' : 'Extra Add-ons & Sauces'}
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraCheese ? 'bg-amber-500/15 border-amber-400 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraCheese}
-                      onChange={(e) => setExtraCheese(e.target.checked)}
-                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'إضافة جبن شيدر' : 'Extra Cheddar'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+1.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraGarlic ? 'bg-emerald-500/15 border-emerald-400 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraGarlic}
-                      onChange={(e) => setExtraGarlic(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'ثومية إضافية' : 'Extra Garlic Dip'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+2.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraSpicyGarlic ? 'bg-red-500/15 border-red-500 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraSpicyGarlic}
-                      onChange={(e) => setExtraSpicyGarlic(e.target.checked)}
-                      className="w-4 h-4 rounded text-red-500 focus:ring-red-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'ثومية سبايسي حارة' : 'Spicy Garlic Dip'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+2.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-                <label className={`flex items-center justify-between p-3 rounded-2xl border cursor-pointer transition-colors ${
-                  extraHummus ? 'bg-emerald-500/15 border-emerald-400 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={extraHummus}
-                      onChange={(e) => setExtraHummus(e.target.checked)}
-                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
-                    />
-                    <span className="text-xs font-bold">{isAr ? 'حمص صغير إضافي' : 'Extra Small Hummus'}</span>
-                  </div>
-                  <span className="text-xs font-black text-amber-400 tabular-nums">+2.00 {isAr ? 'ر.س' : 'SAR'}</span>
-                </label>
-
-              </div>
-            </div>
+            {/* Complete your meal — the restaurant's own suggestions */}
+            {onQuickAdd ? (
+              <Suggestions
+                title={isAr ? 'يكمل وجبتك' : 'Complete your meal'}
+                dishes={orderableSuggestions(item.pairsWith ?? [], MENU_ITEMS, [item.id])}
+                isAr={isAr}
+                onAdd={onQuickAdd}
+              />
+            ) : null}
 
             {/* Special Instructions */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pt-2">
               <label className="text-xs font-bold text-stone-300 block">
                 {isAr ? 'ملاحظات خاصة للطلب (اختياري)' : 'Special Requests (Optional)'}
               </label>
@@ -310,9 +347,17 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               onClick={handleAdd}
               className="flex-1 flex items-center justify-between px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-black text-sm shadow-xl shadow-amber-500/25 border border-amber-300 transition-all cursor-pointer"
             >
-              <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
+              <span>
+                {unanswered.length > 0 && showMissing
+                  ? isAr
+                    ? `اختر ${unanswered[0]?.nameAr}`
+                    : `Choose ${unanswered[0]?.nameEn}`
+                  : isAr
+                    ? 'إضافة إلى الطلب'
+                    : 'Add to Order'}
+              </span>
               <span className="tabular-nums">
-                {totalPrice.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                {formatAmount(totalPrice, currency)} {currencyUnit(currency, isAr)}
               </span>
             </motion.button>
 

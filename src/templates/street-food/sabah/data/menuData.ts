@@ -1,3 +1,6 @@
+import type { ChoiceGroup } from '../choices';
+import type { SectionStyle } from '../section-layout';
+import type { WorkingHours } from '@/server/business/hours';
 export interface MenuItem {
   id: string;
   nameAr: string;
@@ -8,9 +11,23 @@ export interface MenuItem {
   descriptionAr?: string;
   descriptionEn?: string;
   image?: string;
+  /** WebP widths generated on upload, as a srcset; absent for fixtures. */
+  imageSrcSet?: string;
+  /** Focal point, as CSS object-position. */
+  imagePosition?: string;
   isPopular?: boolean;
   isOffer?: boolean;
   isSpicyOption?: boolean;
+  /** Served, but out right now: shown and marked, never orderable. */
+  isUnavailable?: boolean;
+  /** No price was entered; the dish is listed but cannot be added to an order. */
+  noPrice?: boolean;
+  /** Dishes the restaurant suggests with this one, by id (item code). */
+  pairsWith?: string[];
+  /** Marked new by the restaurant. */
+  isNew?: boolean;
+  /** The restaurant's choices on this dish: size, rice, extras, swaps. */
+  choices?: ChoiceGroup[];
   options?: {
     nameAr: string;
     nameEn: string;
@@ -32,6 +49,8 @@ export interface MenuCategory {
   image?: string;
   descriptionAr?: string;
   descriptionEn?: string;
+  /** How the section lays out its dishes; `auto` when not set. */
+  displayStyle?: SectionStyle;
 }
 
 export interface RestaurantInfo {
@@ -54,7 +73,15 @@ export interface RestaurantInfo {
   openingHoursEn: string;
   serviceOptionsAr: string[];
   serviceOptionsEn: string[];
+  /** ISO currency code; prices and the order message use it. */
+  currency: string;
+  /** Weekly hours, when the restaurant published them. */
+  workingHours?: WorkingHours | null;
+  /** Social profiles the restaurant entered, in display order. */
+  socials?: { key: SocialKey; url: string }[];
 }
+
+export type SocialKey = 'instagram' | 'tiktok' | 'facebook' | 'youtube' | 'linkedin' | 'website';
 
 export const RESTAURANT_INFO: RestaurantInfo = {
   nameAr: 'مطعم صباح الليل',
@@ -76,6 +103,7 @@ export const RESTAURANT_INFO: RestaurantInfo = {
   openingHoursEn: 'Daily: 12:00 PM - 03:00 AM',
   serviceOptionsAr: ['طعام سفري', 'توصيل عبر واتساب', 'جلسات أفراد وعائلات', 'دفع مدى وApple Pay'],
   serviceOptionsEn: ['Takeaway', 'WhatsApp Delivery', 'Dine-in Seating', 'Mada & Apple Pay Accepted'],
+  currency: 'SAR',
 };
 
 export const MENU_CATEGORIES: MenuCategory[] = [

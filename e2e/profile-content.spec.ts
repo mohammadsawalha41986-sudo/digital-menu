@@ -37,15 +37,20 @@ test('calories appear only where the business supplied them', async ({ page }) =
   await expect(page.locator('[data-item="DR-002"] [data-calories]')).toHaveCount(0);
 });
 
-test('an item with detail opens and closes without JavaScript', async ({ page }) => {
+test('a dish opens its detail sheet and closes again', async ({ page }) => {
   await page.goto('/m/DEM001?lang=en');
 
-  const disclosure = page.locator('details[data-item="MN-001"]');
-  await expect(disclosure).toHaveAttribute('open', /.*/, { timeout: 1000 }).catch(() => {});
+  const dish = page.locator('[data-item="MN-001"]');
+  await dish.scrollIntoViewIfNeeded();
+  await dish.getByRole('button').last().click();
 
-  await disclosure.locator('summary').click();
-  await expect(disclosure.locator('[data-item-detail]')).toBeVisible();
-  await expect(disclosure).toContainText('Grilled chicken breast');
+  const sheet = page.getByRole('button', { name: /Add to Order/ });
+  await expect(sheet).toBeVisible();
+  await expect(page.getByText('Grilled chicken breast').last()).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await page.mouse.click(5, 5);
+  await expect(sheet).toBeHidden();
 });
 
 test('a hidden item never reaches the page', async ({ page }) => {
@@ -66,15 +71,16 @@ test('an unavailable item is flagged rather than removed', async ({ page }) => {
 test('contact actions appear only for channels the business has', async ({ page }) => {
   await page.goto('/m/DEM001?lang=en');
 
-  await expect(page.getByRole('link', { name: 'Call' })).toHaveAttribute('href', /^tel:/);
-  await expect(page.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute(
+  await expect(page.locator('a[data-event="contact_phone"]').first()).toHaveAttribute('href', /^tel:\+?\d+/);
+  await expect(page.locator('a[data-event="contact_whatsapp"]').first()).toHaveAttribute(
     'href',
-    /^https:\/\/wa\.me\//,
+    /^https:\/\/wa\.me\/\d+/,
   );
 
   // DEM002 has no contact details at all: no dead buttons (master spec §44).
   await page.goto('/m/DEM002?lang=en');
-  await expect(page.getByRole('link', { name: 'Call' })).toHaveCount(0);
+  await expect(page.locator('a[data-event="contact_phone"]')).toHaveCount(0);
+  await expect(page.locator('a[data-event="contact_whatsapp"]')).toHaveCount(0);
 });
 
 test('a branch QR resolves and applies its own price', async ({ page }) => {

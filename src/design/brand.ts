@@ -27,6 +27,18 @@ export interface BrandTokens {
   fontHeading: string;
   fontBody: string;
   radiusScale: string;
+  /** Menu design overrides; null or absent means "derived from the brand". */
+  menuPage?: string | null;
+  menuCard?: string | null;
+  menuPrice?: string | null;
+  textScale?: string;
+  spacing?: string;
+  imageShape?: string;
+  sectionOrder?: string[];
+  offersInsideMenu?: boolean;
+  heroEffect?: string;
+  dishEffect?: string;
+  backgroundStyle?: string;
 }
 
 /**
@@ -232,5 +244,24 @@ export function brandTokensToStyle(tokens: BrandTokens): CSSProperties {
     '--brand-radius-sm': `var(--sys-radius-${scale}-sm)`,
     '--brand-radius-md': `var(--sys-radius-${scale}-md)`,
     '--brand-radius-lg': `var(--sys-radius-${scale}-lg)`,
+    '--brand-text-scale': String(TEXT_SCALES[tokens.textScale ?? 'md'] ?? 1),
+    '--brand-spacing-scale': String(SPACING_SCALES[tokens.spacing ?? 'regular'] ?? 1),
+    // Emitted only when the owner chose one, so CSS falls back to the
+    // palette-derived default with a plain var() fallback.
+    ...(tokens.menuPage ? { '--brand-menu-page': tokens.menuPage } : {}),
+    ...(tokens.menuCard ? { '--brand-menu-card': tokens.menuCard } : {}),
+    ...(tokens.menuPrice ? { '--brand-menu-price': tokens.menuPrice } : {}),
   } as CSSProperties;
+}
+
+const TEXT_SCALES: Record<string, number> = { sm: 0.92, md: 1, lg: 1.12 };
+const SPACING_SCALES: Record<string, number> = { compact: 0.8, regular: 1, airy: 1.2 };
+
+/**
+ * Whether the menu should be drawn as light (dark text on a light page).
+ * Only an owner-chosen page colour can make it light; the default design is
+ * dark.
+ */
+export function menuTone(tokens: Pick<BrandTokens, 'menuPage'>): 'light' | 'dark' {
+  return tokens.menuPage && relativeLuminance(tokens.menuPage) > 0.4 ? 'light' : 'dark';
 }

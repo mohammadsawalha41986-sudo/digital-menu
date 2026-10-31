@@ -117,7 +117,7 @@ model Business {
 
   /// Structure. Validated against the in-code template registry
   /// (src/templates/registry.ts) — templates are code, not database rows.
-  templateKey String @default("editorial")
+  templateKey String @default("street-food")
   /// Layout variant within the template family.
   variantKey  String @default("a")
 
@@ -227,6 +227,30 @@ model BrandTheme {
 
   radiusScale String  @default("md")
   logoMediaId String?
+
+  /// Menu design overrides. Null colours mean "derived from the brand"
+  /// (the logo palette); a set colour wins. A light page switches the design
+  /// to dark text automatically.
+  menuPage   String?
+  menuCard   String?
+  menuPrice  String?
+  /// sm | md | lg
+  textScale  String  @default("md")
+  /// compact | regular | airy
+  spacing    String  @default("regular")
+  /// landscape | square | portrait
+  imageShape String  @default("landscape")
+  /// Order of the menu page's sections: hero, menu, offers, reviews, location.
+  sectionOrder     String[] @default(["hero", "menu", "offers", "reviews", "location"])
+  /// Offers shown inside the menu (after the second category) rather than
+  /// in their own place in sectionOrder.
+  offersInsideMenu Boolean  @default(true)
+  /// slide | fade | zoom | pan | flip | story
+  heroEffect       String   @default("slide")
+  /// none | zoom | kenburns | shine | float | tilt
+  dishEffect       String   @default("zoom")
+  /// solid | gradient | aurora | pattern
+  backgroundStyle  String   @default("solid")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -486,6 +510,10 @@ model MenuCategory {
   /// menu, and no restaurant menu in the spec's examples needs it.
   parentId String?
 
+  /// How the public menu lays this section out: auto, grid, large, list,
+  /// carousel or featured. `auto` fills the row by how many dishes it has.
+  displayStyle String @default("auto")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -561,6 +589,10 @@ model MenuItem {
   availability ItemAvailability @default(AVAILABLE)
   isFeatured   Boolean          @default(false)
   sortOrder    Int              @default(0)
+
+  /// Item codes (same business) suggested with this dish — "complete your
+  /// meal". At most three, chosen by the restaurant, never inferred.
+  pairsWith String[] @default([])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

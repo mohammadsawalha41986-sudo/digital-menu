@@ -10,10 +10,16 @@
 /* Dark background and Arabic-first type for everything the Sabah app
  * renders. Scoped so no other template is dragged into the dark theme. */
 [data-template='street-food'] {
-  background-color: #0d120e;
+  background-color: var(--sf-ink-0d120e);
   color: #f3f4f6;
-  font-family: var(--font-cairo), var(--font-tajawal), 'Cairo', 'Tajawal',
-    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* The restaurant's own fonts, chosen in the brand editor. `--font-sans`
+     is what Tailwind's `font-sans` utility reads. */
+  --font-sans: var(--brand-font-body);
+  font-family: var(--brand-font-body);
+}
+
+[data-template='street-food'] :is(h1, h2, h3, h4) {
+  font-family: var(--brand-font-heading);
 }
 
 /* Scrollbar utility used by the category rail. */
@@ -74,4 +80,435 @@
   background: linear-gradient(135deg, #86efac 0%, #22c55e 40%, #eab308 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+ * Brand colours.
+ *
+ * The design is written with Tailwind's emerald (primary) and amber (accent)
+ * palettes plus a set of tinted near-blacks. Tailwind v4 compiles every one
+ * of those utilities to `var(--color-…)`, so re-pointing the variables here
+ * recolours the whole design from the restaurant's own brand — and through
+ * it, from its logo — without touching a single component.
+ *
+ * Each step keeps the lightness Tailwind gives it and takes the hue from the
+ * brand, so contrast between steps stays what the design was drawn with.
+ * Browsers without relative-colour support keep the original palette.
+ * ------------------------------------------------------------------------- */
+[data-template='street-food'] {
+  --sf-ink-060a07: #060a07;
+  --sf-ink-070b08: #070b08;
+  --sf-ink-070c08: #070c08;
+  --sf-ink-080d09: #080d09;
+  --sf-ink-0a0f0b: #0a0f0b;
+  --sf-ink-0d120e: #0d120e;
+  --sf-ink-0e140f: #0e140f;
+  --sf-ink-0e1510: #0e1510;
+  --sf-ink-0f1711: #0f1711;
+  --sf-ink-0f1712: #0f1712;
+  --sf-ink-101712: #101712;
+  --sf-ink-111913: #111913;
+  --sf-ink-111a13: #111a13;
+  --sf-ink-111c14: #111c14;
+}
+
+@supports (color: oklch(from red l c h)) {
+  [data-template='street-food'] {
+    --color-emerald-50: oklch(from var(--brand-color-primary) 0.979 min(c, 0.021) h);
+    --color-emerald-100: oklch(from var(--brand-color-primary) 0.95 min(c, 0.052) h);
+    --color-emerald-200: oklch(from var(--brand-color-primary) 0.905 min(c, 0.093) h);
+    --color-emerald-300: oklch(from var(--brand-color-primary) 0.845 min(c, 0.143) h);
+    --color-emerald-400: oklch(from var(--brand-color-primary) 0.765 min(c, 0.177) h);
+    --color-emerald-500: oklch(from var(--brand-color-primary) 0.696 min(c, 0.17) h);
+    --color-emerald-600: oklch(from var(--brand-color-primary) 0.596 min(c, 0.145) h);
+    --color-emerald-700: oklch(from var(--brand-color-primary) 0.508 min(c, 0.118) h);
+    --color-emerald-800: oklch(from var(--brand-color-primary) 0.432 min(c, 0.095) h);
+    --color-emerald-900: oklch(from var(--brand-color-primary) 0.378 min(c, 0.077) h);
+    --color-emerald-950: oklch(from var(--brand-color-primary) 0.262 min(c, 0.051) h);
+    --color-amber-50: oklch(from var(--brand-color-accent) 0.987 min(c, 0.022) h);
+    --color-amber-100: oklch(from var(--brand-color-accent) 0.962 min(c, 0.059) h);
+    --color-amber-200: oklch(from var(--brand-color-accent) 0.924 min(c, 0.12) h);
+    --color-amber-300: oklch(from var(--brand-color-accent) 0.879 min(c, 0.169) h);
+    --color-amber-400: oklch(from var(--brand-color-accent) 0.828 min(c, 0.189) h);
+    --color-amber-500: oklch(from var(--brand-color-accent) 0.769 min(c, 0.188) h);
+    --color-amber-600: oklch(from var(--brand-color-accent) 0.666 min(c, 0.179) h);
+    --color-amber-700: oklch(from var(--brand-color-accent) 0.555 min(c, 0.163) h);
+    --color-amber-800: oklch(from var(--brand-color-accent) 0.473 min(c, 0.137) h);
+    --color-amber-900: oklch(from var(--brand-color-accent) 0.414 min(c, 0.112) h);
+    --color-amber-950: oklch(from var(--brand-color-accent) 0.279 min(c, 0.077) h);
+    --sf-ink-060a07: oklch(from var(--brand-color-primary) 0.138 min(c, 0.02) h);
+    --sf-ink-070b08: oklch(from var(--brand-color-primary) 0.143 min(c, 0.02) h);
+    --sf-ink-070c08: oklch(from var(--brand-color-primary) 0.147 min(c, 0.02) h);
+    --sf-ink-080d09: oklch(from var(--brand-color-primary) 0.152 min(c, 0.02) h);
+    --sf-ink-0a0f0b: oklch(from var(--brand-color-primary) 0.161 min(c, 0.02) h);
+    --sf-ink-0d120e: oklch(from var(--brand-color-primary) 0.175 min(c, 0.02) h);
+    --sf-ink-0e140f: oklch(from var(--brand-color-primary) 0.183 min(c, 0.02) h);
+    --sf-ink-0e1510: oklch(from var(--brand-color-primary) 0.187 min(c, 0.02) h);
+    --sf-ink-0f1711: oklch(from var(--brand-color-primary) 0.194 min(c, 0.02) h);
+    --sf-ink-0f1712: oklch(from var(--brand-color-primary) 0.195 min(c, 0.02) h);
+    --sf-ink-101712: oklch(from var(--brand-color-primary) 0.195 min(c, 0.02) h);
+    --sf-ink-111913: oklch(from var(--brand-color-primary) 0.203 min(c, 0.02) h);
+    --sf-ink-111a13: oklch(from var(--brand-color-primary) 0.206 min(c, 0.02) h);
+    --sf-ink-111c14: oklch(from var(--brand-color-primary) 0.213 min(c, 0.02) h);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Menu design controls (Design page): text size, spacing, page / card /
+ * price colours, light pages and photo shape.
+ *
+ * Tailwind v4 sizes text from --text-* and every padding, gap and margin
+ * from --spacing, so scaling those two families here resizes the whole
+ * design in proportion without touching a component.
+ * ------------------------------------------------------------------------- */
+[data-template='street-food'] {
+  --spacing: calc(0.25rem * var(--brand-spacing-scale, 1));
+  --text-xs: calc(0.75rem * var(--brand-text-scale, 1));
+  --text-sm: calc(0.875rem * var(--brand-text-scale, 1));
+  --text-base: calc(1rem * var(--brand-text-scale, 1));
+  --text-lg: calc(1.125rem * var(--brand-text-scale, 1));
+  --text-xl: calc(1.25rem * var(--brand-text-scale, 1));
+  --text-2xl: calc(1.5rem * var(--brand-text-scale, 1));
+  --text-3xl: calc(1.875rem * var(--brand-text-scale, 1));
+  --text-4xl: calc(2.25rem * var(--brand-text-scale, 1));
+  --text-5xl: calc(3rem * var(--brand-text-scale, 1));
+  --text-6xl: calc(3.75rem * var(--brand-text-scale, 1));
+}
+
+/* Cards and prices: the owner's colour when set, the design's otherwise. */
+.sf-root[data-custom-card] .sf-card {
+  background-color: var(--brand-menu-card);
+}
+
+/* Doubled class: the owner's price colour must beat the light-page accent
+   rule below, which has the same shape otherwise. */
+.sf-root[data-custom-price] .sf-price.sf-price {
+  color: var(--brand-menu-price);
+}
+
+/* The photo always fills its frame, whatever shape the frame is. A
+   percentage height does not resolve inside the flex card, so the image is
+   positioned to the frame instead. */
+.sf-card-media > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Photo shape on regular cards (large photos keep their wider frame). */
+.sf-root[data-image-shape='square'] .sf-card-media {
+  aspect-ratio: 1 / 1;
+}
+
+.sf-root[data-image-shape='portrait'] .sf-card-media {
+  aspect-ratio: 4 / 5;
+}
+
+/* A wide card sets its photo beside the text: the photo takes the card's
+   height, whatever shape regular cards use. */
+@media (min-width: 640px) {
+  .sf-root .sf-card--wide .sf-card-media {
+    aspect-ratio: auto;
+  }
+}
+
+/* Two dishes across a wide screen: each card is half the page wide, so its
+   photo gets a wider, lower frame instead of filling the screen's height. */
+@media (min-width: 1024px) {
+  .sf-root .sf-pair .sf-card-media {
+    aspect-ratio: 21 / 9;
+  }
+}
+
+/* A section shown as a slider: cards side by side, swiped or scrolled, each
+   stopping at the start edge. */
+.sf-carousel {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.25rem;
+  padding-block-end: 0.5rem;
+  scrollbar-width: none;
+}
+
+.sf-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.sf-carousel > * {
+  flex: 0 0 72%;
+  scroll-snap-align: start;
+}
+
+@media (min-width: 640px) {
+  .sf-carousel {
+    gap: 1.5rem;
+  }
+
+  .sf-carousel > * {
+    flex-basis: 42%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .sf-carousel > * {
+    flex-basis: calc((100% - 3 * 1.5rem) / 3.4);
+  }
+}
+
+@supports (color: oklch(from red l c h)) {
+  /* A dark page colour: every near-black surface follows it, in the same
+     steps the design was drawn with. */
+  [data-template='street-food']:has(.sf-root[data-custom-page][data-menu-tone='dark']),
+  .sf-root[data-custom-page][data-menu-tone='dark'] {
+    --sf-ink-060a07: oklch(from var(--brand-menu-page) calc(l + -0.005) c h);
+    --sf-ink-070b08: oklch(from var(--brand-menu-page) calc(l + 0.0) c h);
+    --sf-ink-070c08: oklch(from var(--brand-menu-page) calc(l + 0.004) c h);
+    --sf-ink-080d09: oklch(from var(--brand-menu-page) calc(l + 0.009) c h);
+    --sf-ink-0a0f0b: oklch(from var(--brand-menu-page) calc(l + 0.018) c h);
+    --sf-ink-0d120e: oklch(from var(--brand-menu-page) calc(l + 0.032) c h);
+    --sf-ink-0e140f: oklch(from var(--brand-menu-page) calc(l + 0.04) c h);
+    --sf-ink-0e1510: oklch(from var(--brand-menu-page) calc(l + 0.044) c h);
+    --sf-ink-0f1711: oklch(from var(--brand-menu-page) calc(l + 0.051) c h);
+    --sf-ink-0f1712: oklch(from var(--brand-menu-page) calc(l + 0.052) c h);
+    --sf-ink-101712: oklch(from var(--brand-menu-page) calc(l + 0.052) c h);
+    --sf-ink-111913: oklch(from var(--brand-menu-page) calc(l + 0.06) c h);
+    --sf-ink-111a13: oklch(from var(--brand-menu-page) calc(l + 0.063) c h);
+    --sf-ink-111c14: oklch(from var(--brand-menu-page) calc(l + 0.07) c h);
+  }
+
+  /* A light page colour: surfaces step slightly darker than the page, and
+     the neutral and brand scales flip so text stays dark on light. */
+  [data-template='street-food']:has(.sf-root[data-menu-tone='light']),
+  .sf-root[data-menu-tone='light'] {
+    --sf-ink-060a07: oklch(from var(--brand-menu-page) calc(l - 0.0) min(c, 0.04) h);
+    --sf-ink-070b08: oklch(from var(--brand-menu-page) calc(l - 0.003) min(c, 0.04) h);
+    --sf-ink-070c08: oklch(from var(--brand-menu-page) calc(l - 0.005) min(c, 0.04) h);
+    --sf-ink-080d09: oklch(from var(--brand-menu-page) calc(l - 0.008) min(c, 0.04) h);
+    --sf-ink-0a0f0b: oklch(from var(--brand-menu-page) calc(l - 0.014) min(c, 0.04) h);
+    --sf-ink-0d120e: oklch(from var(--brand-menu-page) calc(l - 0.022) min(c, 0.04) h);
+    --sf-ink-0e140f: oklch(from var(--brand-menu-page) calc(l - 0.027) min(c, 0.04) h);
+    --sf-ink-0e1510: oklch(from var(--brand-menu-page) calc(l - 0.029) min(c, 0.04) h);
+    --sf-ink-0f1711: oklch(from var(--brand-menu-page) calc(l - 0.034) min(c, 0.04) h);
+    --sf-ink-0f1712: oklch(from var(--brand-menu-page) calc(l - 0.034) min(c, 0.04) h);
+    --sf-ink-101712: oklch(from var(--brand-menu-page) calc(l - 0.034) min(c, 0.04) h);
+    --sf-ink-111913: oklch(from var(--brand-menu-page) calc(l - 0.039) min(c, 0.04) h);
+    --sf-ink-111a13: oklch(from var(--brand-menu-page) calc(l - 0.041) min(c, 0.04) h);
+    --sf-ink-111c14: oklch(from var(--brand-menu-page) calc(l - 0.045) min(c, 0.04) h);
+    --color-white: oklch(0.21 0.006 60);
+    --color-black: oklch(0.99 0 0);
+    --color-stone-50: oklch(0.147 0.006 60);
+    --color-stone-100: oklch(0.216 0.006 60);
+    --color-stone-200: oklch(0.268 0.006 60);
+    --color-stone-300: oklch(0.374 0.006 60);
+    --color-stone-400: oklch(0.444 0.006 60);
+    --color-stone-500: oklch(0.553 0.006 60);
+    --color-stone-600: oklch(0.709 0.006 60);
+    --color-stone-700: oklch(0.869 0.006 60);
+    --color-stone-800: oklch(0.923 0.006 60);
+    --color-stone-900: oklch(0.97 0.006 60);
+    --color-stone-950: oklch(0.985 0.006 60);
+    --color-emerald-50: oklch(from var(--brand-color-primary) 0.262 min(c, 0.051) h);
+    --color-emerald-100: oklch(from var(--brand-color-primary) 0.378 min(c, 0.077) h);
+    --color-emerald-200: oklch(from var(--brand-color-primary) 0.432 min(c, 0.095) h);
+    --color-emerald-300: oklch(from var(--brand-color-primary) 0.508 min(c, 0.118) h);
+    --color-emerald-400: oklch(from var(--brand-color-primary) 0.596 min(c, 0.145) h);
+    --color-emerald-500: oklch(from var(--brand-color-primary) 0.696 min(c, 0.17) h);
+    --color-emerald-600: oklch(from var(--brand-color-primary) 0.765 min(c, 0.177) h);
+    --color-emerald-700: oklch(from var(--brand-color-primary) 0.845 min(c, 0.143) h);
+    --color-emerald-800: oklch(from var(--brand-color-primary) 0.905 min(c, 0.093) h);
+    --color-emerald-900: oklch(from var(--brand-color-primary) 0.95 min(c, 0.052) h);
+    --color-emerald-950: oklch(from var(--brand-color-primary) 0.979 min(c, 0.021) h);
+  }
+}
+
+/* Text drawn on bright fills (accent buttons, badges) stays dark in both
+   tones; the inverted neutral scale would otherwise make it pale. */
+.sf-root[data-menu-tone='light'] .text-stone-950,
+.sf-root[data-menu-tone='light'] .text-stone-900 {
+  color: oklch(0.21 0.006 60);
+}
+
+/* Accent-coloured text on a light page needs the darker end of the accent. */
+.sf-root[data-menu-tone='light']:not([data-custom-price]) .sf-price,
+.sf-root[data-menu-tone='light'] .text-amber-300,
+.sf-root[data-menu-tone='light'] .text-amber-400 {
+  color: oklch(from var(--brand-color-accent) 0.52 min(c, 0.16) h);
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion chosen on the Design page: hero effects, dish photo effects,
+ * background styles. All of it stops for visitors who ask for less motion.
+ * ------------------------------------------------------------------------- */
+
+/* Hero: slow cinematic zoom / pan on the photograph while it is shown. */
+.sf-kb-zoom {
+  animation: sf-kb-zoom 7s ease-out both;
+}
+
+.sf-kb-pan {
+  animation: sf-kb-pan 7s ease-in-out both;
+}
+
+@keyframes sf-kb-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.16); }
+}
+
+@keyframes sf-kb-pan {
+  from { transform: scale(1.18) translateX(4%); }
+  to { transform: scale(1.18) translateX(-4%); }
+}
+
+/* Story bars (hero effect "story"). */
+.sf-story-fill {
+  width: 0;
+  animation-name: sf-story-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes sf-story-fill {
+  to { width: 100%; }
+}
+
+/* Dish photos. "zoom" is the design's own hover zoom and needs nothing here. */
+.sf-root[data-dish-effect='none'] .sf-card-media > img {
+  transform: none !important;
+  transition: none;
+}
+
+.sf-root[data-dish-effect='kenburns'] .sf-card-media > img {
+  animation: sf-dish-breathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes sf-dish-breathe {
+  from { transform: scale(1); }
+  to { transform: scale(1.12) translateY(-2%); }
+}
+
+/* A light sweep across the photo every few seconds. */
+.sf-root[data-dish-effect='shine'] .sf-card-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: sf-dish-shine 4.5s ease-in-out infinite;
+}
+
+@keyframes sf-dish-shine {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+/* The whole card gently floats, each one a little out of step. */
+.sf-root[data-dish-effect='float'] .sf-card {
+  animation: sf-dish-float 5s ease-in-out infinite;
+}
+
+.sf-root[data-dish-effect='float'] .sf-card:nth-child(2n) {
+  animation-delay: -2.5s;
+}
+
+@keyframes sf-dish-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
+
+/* A slow 3D tilt, as if the card turns towards the light. */
+.sf-root[data-dish-effect='tilt'] .sf-card {
+  transform-style: preserve-3d;
+  animation: sf-dish-tilt 7s ease-in-out infinite;
+}
+
+.sf-root[data-dish-effect='tilt'] .sf-card:nth-child(2n) {
+  animation-delay: -3.5s;
+}
+
+@keyframes sf-dish-tilt {
+  0%, 100% { transform: perspective(900px) rotateY(-5deg) rotateX(2deg); }
+  50% { transform: perspective(900px) rotateY(5deg) rotateX(-2deg); }
+}
+
+/* Backgrounds. Drawn on a fixed layer behind the page, from the brand. */
+.sf-root[data-background]:not([data-background='solid']) {
+  position: relative;
+  isolation: isolate;
+}
+
+.sf-root[data-background]:not([data-background='solid'])::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.sf-root[data-background='gradient']::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in oklab, var(--brand-color-primary) 30%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in oklab, var(--brand-color-accent) 18%, transparent), transparent 70%);
+}
+
+.sf-root[data-background='aurora']::before {
+  background:
+    radial-gradient(40% 35% at 20% 25%, color-mix(in oklab, var(--brand-color-primary) 40%, transparent), transparent 70%),
+    radial-gradient(35% 30% at 80% 35%, color-mix(in oklab, var(--brand-color-accent) 28%, transparent), transparent 70%),
+    radial-gradient(45% 40% at 50% 85%, color-mix(in oklab, var(--brand-color-primary) 30%, transparent), transparent 70%);
+  background-size: 180% 180%;
+  animation: sf-aurora 18s ease-in-out infinite alternate;
+}
+
+@keyframes sf-aurora {
+  0% { background-position: 0% 0%, 100% 0%, 50% 100%; }
+  100% { background-position: 100% 60%, 0% 80%, 30% 0%; }
+}
+
+.sf-root[data-background='pattern']::before {
+  background-image: radial-gradient(color-mix(in oklab, var(--brand-color-primary) 35%, transparent) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-kb-zoom,
+  .sf-kb-pan,
+  .sf-story-fill,
+  .sf-root[data-dish-effect] .sf-card,
+  .sf-root[data-dish-effect] .sf-card-media > img,
+  .sf-root[data-dish-effect] .sf-card-media::after,
+  .sf-root[data-background]::before {
+    animation: none !important;
+  }
+}
+
+/* Quick actions under the hero on a phone: a round icon over a short label. */
+.sf-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.25rem;
+  border-radius: 1rem;
+  background: color-mix(in oklab, var(--color-stone-900) 90%, transparent);
+  border: 1px solid var(--color-emerald-950);
+  color: var(--color-emerald-300);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 150ms ease, border-color 150ms ease;
+}
+
+.sf-action:active {
+  transform: scale(0.96);
+}
+
+.sf-action > span {
+  color: var(--color-stone-200);
 }

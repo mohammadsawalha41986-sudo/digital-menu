@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import { currencyUnit, formatAmount } from '../money';
 import { X, Trash2, Plus, Minus, MessageCircle, Phone, ShoppingBag, MapPin, Store, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem, Language, OrderType } from '../types';
 import { useSabah } from '../context';
+import type { MenuItem } from '../data/menuData';
+import { Suggestions, orderableSuggestions } from './Suggestions';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -14,6 +17,8 @@ interface CartDrawerProps {
   onUpdateQuantity: (cartItemId: string, newQty: number) => void;
   onRemoveItem: (cartItemId: string) => void;
   onClearCart: () => void;
+  /** Adds a suggested dish as it is, keeping the cart open. */
+  onQuickAdd?: (dish: MenuItem) => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -24,8 +29,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  onQuickAdd,
 }) => {
-  const { info: RESTAURANT_INFO } = useSabah();
+  const { info: RESTAURANT_INFO, items: MENU_ITEMS } = useSabah();
+
+  // What the restaurant pairs with what is already in the cart; when it pairs
+  // nothing, its new dishes ("try something new"). Never what is already in.
+  const inCart = cart.map((line) => line.item.id);
+  const paired = orderableSuggestions(
+    Array.from(new Set(cart.flatMap((line) => MENU_ITEMS.find((dish) => dish.id === line.item.id)?.pairsWith ?? []))),
+    MENU_ITEMS,
+    inCart,
+  ).slice(0, 3);
+  const fresh = paired.length > 0
+    ? []
+    : orderableSuggestions(MENU_ITEMS.filter((dish) => dish.isNew).map((dish) => dish.id), MENU_ITEMS, inCart).slice(0, 3);
   const [orderType, setOrderType] = useState<OrderType>('takeaway');
   const [tableNumber, setTableNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -51,15 +69,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     const itemsText = cart.map((ci, index) => {
       const optionStr = ci.selectedOption ? ` (${ci.selectedOption.nameAr})` : '';
       const spiceStr = ci.spiceLevel === 'spicy' ? ' [حار]' : ci.spiceLevel === 'normal' ? ' [عادي]' : '';
-      const extras: string[] = [];
-      if (ci.extraCheese) extras.push('جبن إضافي');
-      if (ci.extraGarlic) extras.push('ثومية إضافية');
-      if (ci.extraSpicyGarlic) extras.push('ثومية سبايسي');
-      if (ci.extraHummus) extras.push('حمص صغير');
-      const extrasStr = extras.length > 0 ? ` + ${extras.join(' + ')}` : '';
       const noteStr = ci.notes ? ` (ملاحظة: ${ci.notes})` : '';
+      // One line per choice under the dish, so the kitchen reads them apart.
+      const choiceLines = (ci.choices ?? [])
+        .map((group) => `\n   • ${group.nameAr}: ${group.options.map((option) => option.nameAr).join('، ')}`)
+        .join('');
 
-      return `${index + 1}. ${ci.item.nameAr}${optionStr}${spiceStr}${extrasStr} x ${ci.quantity} = ${ci.totalPrice.toFixed(2)} ر.س${noteStr}`;
+      return `${index + 1}. ${ci.item.nameAr}${optionStr}${spiceStr} x ${ci.quantity} = ${formatAmount(ci.totalPrice, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}${noteStr}${choiceLines}`;
     }).join('\n');
 
     const customerInfo = customerName.trim() ? `\n👤 الاسم: ${customerName}` : '';
@@ -73,7 +89,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 📋 *تفاصيل الطلب:*
 ${itemsText}
 
-💰 *الإجمالي النهائي:* ${subtotal.toFixed(2)} ريال سعودي (شامل الضريبة 15%)
+💰 *الإجمالي النهائي:* ${formatAmount(subtotal, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}
 ${noteInfo}
 شكراً لكم وفي انتظار تأكيدكم!`;
 
@@ -93,7 +109,7 @@ ${noteInfo}
             animate={{ x: 0 }}
             exit={{ x: isAr ? '100%' : '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="w-screen max-w-md bg-[#0f1711] border-l rtl:border-l rtl:border-r-0 ltr:border-r ltr:border-l-0 border-emerald-950 shadow-2xl flex flex-col justify-between"
+            className="w-screen max-w-md bg-[var(--sf-ink-0f1711)] border-l rtl:border-l rtl:border-r-0 ltr:border-r ltr:border-l-0 border-emerald-950 shadow-2xl flex flex-col justify-between"
           >
             
             {/* Header */}
@@ -107,7 +123,9 @@ ${noteInfo}
                     {isAr ? 'طلبك الحالي' : 'Your Order'}
                   </h2>
                   <span className="text-xs text-emerald-400 font-semibold">
-                    {cart.length} {isAr ? 'أصناف محددة' : 'items selected'}
+                    {isAr
+                      ? cart.length === 1 ? 'صنف واحد' : cart.length === 2 ? 'صنفان' : `${cart.length} أصناف`
+                      : `${cart.length} ${cart.length === 1 ? 'item' : 'items'}`}
                   </span>
                 </div>
               </div>
@@ -249,19 +267,17 @@ ${noteInfo}
                             </span>
                           )}
 
+                          {ci.choices?.map((group) => (
+                            <span key={group.group} className="text-[11px] text-amber-300 font-semibold block" data-cart-choice={group.group}>
+                              {isAr ? group.nameAr : group.nameEn}:{' '}
+                              {group.options.map((option) => (isAr ? option.nameAr : option.nameEn)).join(isAr ? '، ' : ', ')}
+                            </span>
+                          ))}
+
                           {ci.spiceLevel && (
                             <span className="text-[10px] text-stone-400 block font-medium">
                               {ci.spiceLevel === 'spicy' ? (isAr ? 'حار (سبايسي)' : 'Spicy') : (isAr ? 'عادي' : 'Normal')}
                             </span>
-                          )}
-
-                          {(ci.extraCheese || ci.extraGarlic || ci.extraSpicyGarlic || ci.extraHummus) && (
-                            <div className="text-[10px] text-emerald-400 flex flex-wrap gap-1 font-semibold">
-                              {ci.extraCheese && <span>+ جبن</span>}
-                              {ci.extraGarlic && <span>+ ثومية</span>}
-                              {ci.extraSpicyGarlic && <span>+ ثومية سبايسي</span>}
-                              {ci.extraHummus && <span>+ حمص</span>}
-                            </div>
                           )}
 
                           {ci.notes && (
@@ -271,7 +287,7 @@ ${noteInfo}
                           )}
 
                           <div className="text-xs font-black text-amber-400 pt-1 tabular-nums">
-                            {ci.totalPrice.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                            {formatAmount(ci.totalPrice, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}
                           </div>
                         </div>
 
@@ -314,6 +330,15 @@ ${noteInfo}
                     placeholder={isAr ? 'أي ملاحظة إضافية للمطعم؟' : 'Any additional instructions?'}
                     className="w-full bg-stone-950 border border-emerald-950 rounded-xl px-3 py-2 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400"
                   />
+
+                  {onQuickAdd ? (
+                    <Suggestions
+                      title={paired.length > 0 ? (isAr ? 'قد يعجبك أيضاً' : 'You may also like') : isAr ? 'جرّب الجديد' : 'Try something new'}
+                      dishes={paired.length > 0 ? paired : fresh}
+                      isAr={isAr}
+                      onAdd={onQuickAdd}
+                    />
+                  ) : null}
                 </>
               )}
             </div>
@@ -326,22 +351,21 @@ ${noteInfo}
                 <div className="space-y-1.5 text-xs text-stone-300">
                   <div className="flex justify-between">
                     <span>{isAr ? 'مجموع الأصناف' : 'Subtotal'}</span>
-                    <span className="tabular-nums font-semibold">{subtotal.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}</span>
-                  </div>
-                  <div className="flex justify-between text-stone-400 text-[11px]">
-                    <span>{isAr ? 'ضريبة القيمة المضافة (15% مدمجة)' : 'VAT 15% Included'}</span>
-                    <span className="text-emerald-400 font-semibold">{isAr ? 'مشمولة بالسعر' : 'Included'}</span>
+                    <span className="tabular-nums font-semibold">{formatAmount(subtotal, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}</span>
                   </div>
                   <div className="flex justify-between text-base font-black text-white pt-1.5 border-t border-emerald-950">
                     <span>{isAr ? 'الإجمالي النهائي' : 'Total Amount'}</span>
                     <span className="text-amber-400 tabular-nums font-black text-lg">
-                      {subtotal.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                      {formatAmount(subtotal, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}
                     </span>
                   </div>
                 </div>
 
                 {/* Send WhatsApp Order Button with Motion */}
+
+                {RESTAURANT_INFO.whatsappNumber ? (
                 <motion.button
+                  data-event="contact_whatsapp"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   type="button"
@@ -351,18 +375,22 @@ ${noteInfo}
                   <MessageCircle className="w-5 h-5 fill-white" />
                   <span>{isAr ? 'إرسال الطلب عبر واتساب الآن' : 'Send Order via WhatsApp'}</span>
                 </motion.button>
+                ) : null}
 
                 {/* Call Cashier Option */}
+
+                {RESTAURANT_INFO.phone ? (
                 <div className="flex items-center justify-center gap-2 text-xs text-stone-400 pt-1">
                   <span>{isAr ? 'أو للطلب المباشر بالهاتف:' : 'Or order by phone directly:'}</span>
-                  <a
+                  <a data-event="contact_phone"
                     href={`tel:${RESTAURANT_INFO.phone}`}
                     className="text-amber-400 font-extrabold hover:underline flex items-center gap-1 tabular-nums"
                   >
                     <Phone className="w-3.5 h-3.5" />
-                    <span>{RESTAURANT_INFO.phoneFormatted}</span>
+                    <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
                   </a>
                 </div>
+                ) : null}
 
               </div>
             )}

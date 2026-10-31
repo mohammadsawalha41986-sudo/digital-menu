@@ -1,10 +1,12 @@
-import type { PublicProfile } from '@/server/profile/types';
+import { minorUnitDigits } from '@/lib/money';
+import type { PublicOffer, PublicProfile } from '@/server/profile/types';
 import type {
   MenuCategory,
   MenuItem,
   RestaurantInfo,
 } from './sabah/data/menuData';
-import type { HeroSlide } from './sabah/context';
+import type { HeroSlide, MenuOffer } from './sabah/context';
+import { isSectionStyle } from './sabah/section-layout';
 
 /**
  * Map the platform's `PublicProfile` shape into the shape the Sabah El Lail
@@ -28,6 +30,7 @@ export function profileToSabah(profile: PublicProfile): {
   menuItems: MenuItem[];
   logoUrl: string | null;
   slides: HeroSlide[];
+  offers: MenuOffer[];
 } {
   const categoriesAll = profile.menus.flatMap((menu) =>
     menu.categories.map((category) => ({
@@ -38,26 +41,53 @@ export function profileToSabah(profile: PublicProfile): {
       image: category.image?.url ?? undefined,
       descriptionAr: category.descriptionAr ?? undefined,
       descriptionEn: category.descriptionEn ?? category.descriptionAr ?? undefined,
+      displayStyle: isSectionStyle(category.displayStyle) ? category.displayStyle : 'auto',
     })),
   );
 
+  // Minor units to a decimal amount in the restaurant's own currency: three
+  // decimals for KWD, BHD and OMR, two elsewhere.
+  const toAmount = (minor: number | null) => (minor ?? 0) / 10 ** minorUnitDigits(profile.currency);
+
   const itemsAll: MenuItem[] = profile.menus.flatMap((menu) =>
     menu.categories.flatMap((category) =>
+      // Unavailable dishes stay on the menu, marked, rather than vanishing
+      // (master spec §83): a regular looking for one learns it is out today.
       category.items
-        .filter((item) => !item.isUnavailable)
         .map((item) => ({
           id: item.code,
           nameAr: item.nameAr,
           nameEn: item.nameEn ?? item.nameAr,
           categoryId: category.key,
-          price: (item.priceMinor ?? 0) / 100,
+          price: toAmount(item.priceMinor),
           calories: item.calories ?? undefined,
           descriptionAr: item.descriptionAr ?? undefined,
           descriptionEn: item.descriptionEn ?? item.descriptionAr ?? undefined,
           image: item.image?.url ?? undefined,
+          imageSrcSet: item.image?.srcSet ?? undefined,
+          imagePosition: item.image?.objectPosition,
           isPopular: item.isFeatured,
           isOffer: item.tags?.includes('offer') ?? false,
           isSpicyOption: item.tags?.includes('spicy') ?? false,
+          isUnavailable: item.isUnavailable,
+          // No price stored: shown without one, never as 0.00 (GOALS I9).
+          noPrice: item.priceMinor === null,
+          pairsWith: item.pairsWith,
+          isNew: item.tags?.includes('new') ?? false,
+          choices: (item.modifiers ?? []).map((group) => ({
+            key: group.key,
+            nameAr: group.nameAr,
+            nameEn: group.nameEn ?? group.nameAr,
+            min: group.minSelect,
+            max: group.maxSelect,
+            options: group.options.map((option) => ({
+              key: option.key,
+              nameAr: option.nameAr,
+              nameEn: option.nameEn ?? option.nameAr,
+              price: toAmount(option.priceDeltaMinor),
+              isDefault: option.isDefault,
+            })),
+          })),
         })),
     ),
   );
@@ -93,11 +123,23 @@ export function profileToSabah(profile: PublicProfile): {
     // to zero so the card can hide its number instead of printing a lie.
     rating: 0,
     reviewCount: 0,
-    googleMapsUrl: profile.contact.googleMapsUrl ?? '',
+    // Without a stored map link, a search for the restaurant's own name and
+    // address is still an honest way to find it.
+    googleMapsUrl:
+      profile.contact.googleMapsUrl ??
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        [nameAr, profile.contact.addressAr].filter(Boolean).join(' '),
+      )}`,
     openingHoursAr: '',
     openingHoursEn: '',
     serviceOptionsAr: [],
     serviceOptionsEn: [],
+    currency: profile.currency,
+    workingHours: profile.contact.workingHours,
+    socials: (['instagram', 'tiktok', 'facebook', 'youtube', 'linkedin', 'website'] as const).flatMap((key) => {
+      const url = profile.contact[key];
+      return url ? [{ key, url }] : [];
+    }),
   };
 
   return {
@@ -105,7 +147,11 @@ export function profileToSabah(profile: PublicProfile): {
     menuCategories,
     menuItems: itemsAll,
     logoUrl: profile.logo?.url ?? null,
-    slides: buildSlides(restaurantInfo, itemsAll),
+    offers: menuOffers(profile.offers, toAmount),
+    slides: [
+      ...offerSlides(profile.offers, toAmount),
+      ...buildSlides(restaurantInfo, itemsAll.filter((item) => !item.isUnavailable)),
+    ].slice(0, 6),
   };
 }
 
@@ -149,5 +195,58 @@ function buildSlides(info: RestaurantInfo, items: MenuItem[]): HeroSlide[] {
     price: item.price,
     calories: item.calories,
     image: item.image ?? '',
+    imageSrcSet: item.imageSrcSet,
+    imagePosition: item.imagePosition,
   }));
+}
+
+/**
+ * The restaurant's own offers lead the hero, ahead of dishes: an offer is what
+ * the owner most wants a visitor to see first. Only offers with a photograph
+ * qualify — the hero is a picture — and expired ones are dropped.
+ */
+function offerSlides(offers: PublicOffer[], toAmount: (minor: number | null) => number): HeroSlide[] {
+  const now = Date.now();
+
+  return offers
+    .filter((offer) => offer.image && (!offer.endsAt || new Date(offer.endsAt).getTime() > now))
+    .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
+    .slice(0, 3)
+    .map((offer) => ({
+      id: `offer:${offer.key}`,
+      tagAr: offer.discountPercent ? `خصم ${offer.discountPercent}%` : 'عرض',
+      tagEn: offer.discountPercent ? `${offer.discountPercent}% off` : 'Offer',
+      headlineAr: offer.titleAr,
+      headlineEn: offer.titleEn ?? offer.titleAr,
+      subtitleAr: offer.descriptionAr ?? '',
+      subtitleEn: offer.descriptionEn ?? offer.descriptionAr ?? '',
+      price: offer.offerPriceMinor === null ? 0 : toAmount(offer.offerPriceMinor),
+      image: offer.image?.url ?? '',
+      imageSrcSet: offer.image?.srcSet ?? undefined,
+      imagePosition: offer.image?.objectPosition,
+    }));
+}
+
+/** Every current offer, photographed or not, for the strip mid-menu. */
+function menuOffers(offers: PublicOffer[], toAmount: (minor: number | null) => number): MenuOffer[] {
+  const now = Date.now();
+
+  return offers
+    .filter((offer) => !offer.endsAt || new Date(offer.endsAt).getTime() > now)
+    .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
+    .map((offer) => ({
+      key: offer.key,
+      titleAr: offer.titleAr,
+      titleEn: offer.titleEn ?? offer.titleAr,
+      descriptionAr: offer.descriptionAr ?? '',
+      descriptionEn: offer.descriptionEn ?? offer.descriptionAr ?? '',
+      image: offer.image?.url,
+      imageSrcSet: offer.image?.srcSet ?? undefined,
+      price: offer.offerPriceMinor === null ? undefined : toAmount(offer.offerPriceMinor),
+      originalPrice: offer.originalPriceMinor === null ? undefined : toAmount(offer.originalPriceMinor),
+      discountPercent: offer.discountPercent ?? undefined,
+      ctaUrl: offer.ctaUrl ?? undefined,
+      ctaLabelAr: offer.ctaLabelAr ?? undefined,
+      ctaLabelEn: offer.ctaLabelEn ?? undefined,
+    }));
 }

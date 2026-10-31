@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { mkdtemp } from 'node:fs/promises';
+import { access, mkdtemp } from 'node:fs/promises';
+import sharp from 'sharp';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -23,6 +24,7 @@ const prisma = new PrismaClient({ adapter });
 const databaseReachable = await resolveDatabase(() => prisma.$queryRaw`SELECT 1`);
 
 const PUBLIC_ID = 'MED001';
+let root = '';
 let businessId = '';
 let user: AuthenticatedUser = { id: '', role: 'STAFF' };
 let outsider: AuthenticatedUser = { id: '', role: 'STAFF' };
@@ -41,7 +43,7 @@ function png(marker = ''): Uint8Array {
 beforeAll(async () => {
   if (!databaseReachable) return;
 
-  const root = await mkdtemp(path.join(tmpdir(), 'dpos-media-'));
+  root = await mkdtemp(path.join(tmpdir(), 'dpos-media-'));
   setStorageForTesting(
     new LocalStorageProvider({ root, publicPrefix: '/uploads', signingSecret: 'test' }),
   );
@@ -363,5 +365,34 @@ describe.skipIf(!databaseReachable)('images added by URL', () => {
     const item = await prisma.menuItem.findFirstOrThrow({ where: { businessId, itemCode: 'MD-001' } });
     expect(item.imageMediaId).toBeNull();
     expect(await prisma.media.findUnique({ where: { id: media.id } })).toBeNull();
+  });
+});
+
+describe.skipIf(!databaseReachable)('real photographs', () => {
+  it('stores a JPEG as WebP with its sizes, and deleting removes every file', async () => {
+    const photo = new Uint8Array(
+      await sharp({ create: { width: 1800, height: 1200, channels: 3, background: { r: 180, g: 90, b: 30 } } })
+        .jpeg()
+        .toBuffer(),
+    );
+
+    const media = await uploadMedia(user, businessId, {
+      kind: 'ITEM_IMAGE',
+      upload: { bytes: photo, declaredContentType: 'image/jpeg', fileName: 'grill.jpg' },
+    });
+
+    expect(media.contentType).toBe('image/webp');
+    expect(media.storageKey.endsWith('.webp')).toBe(true);
+    expect(media.derivativeWidths).toEqual([320, 640, 1024, 1600]);
+
+    const files = [
+      media.storageKey,
+      ...media.derivativeWidths.map((width) => media.storageKey.replace(/\.webp$/, `@${width}.webp`)),
+    ].map((key) => path.join(root, key));
+    for (const file of files) await expect(access(file)).resolves.toBeUndefined();
+
+    await deleteMedia(user, businessId, media.id);
+
+    for (const file of files) await expect(access(file)).rejects.toThrow();
   });
 });

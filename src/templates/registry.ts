@@ -1,184 +1,37 @@
-import { EditorialTemplate } from './editorial/EditorialTemplate';
-import { LuxuryTemplate } from './luxury/LuxuryTemplate';
-import { MinimalTemplate } from './minimal/MinimalTemplate';
-import { ModernTemplate } from './modern/ModernTemplate';
-import { BoldTemplate } from './bold/BoldTemplate';
-import { DarkTemplate } from './dark/DarkTemplate';
-import { HospitalityTemplate } from './hospitality/HospitalityTemplate';
-import { CafeTemplate } from './cafe/CafeTemplate';
-import { CasualTemplate } from './casual/CasualTemplate';
-import { PremiumTemplate } from './premium/PremiumTemplate';
 import { StreetFoodTemplate } from './street-food/StreetFoodTemplate';
 import type { ResolvedTemplate, TemplateDefinition } from './types';
 
 /**
  * Template catalogue (master spec §22, §24).
  *
- * Templates are code, not database rows: each is a React component plus a
- * stylesheet, which no row could describe faithfully. A business stores only
- * `templateKey` + `variantKey`, validated against this registry on write and
- * resolved leniently on read.
+ * The platform ships one menu design. Every restaurant renders it; what an
+ * owner changes is the brand (colours derived from the logo, fonts) and how
+ * dish photos are laid out. A business still stores `templateKey` +
+ * `variantKey` so a future design can be added without a schema change, but
+ * today the variant *is* the photo layout.
  *
- * The ten families differ in *composition*, not palette — recolouring is not a
- * new template (§23). Each entry's `description` states what structurally
- * distinguishes it, which is also the answer to "why is this not just the
- * previous one with different colours".
- *
- * Variants are layout choices *within* a family, applied as a `data-variant`
- * attribute the family's stylesheet reads. A variant may change density,
- * column count or image ratio; if it needs different markup, it is a new
- * family instead.
+ * Earlier families (editorial, luxury, minimal, modern, bold, dark,
+ * hospitality, cafe, casual, premium) were withdrawn. A business row that still
+ * names one resolves leniently to this design — a QR code already printed on a
+ * table never breaks.
  */
-
-const EDITORIAL: TemplateDefinition = {
-  key: 'editorial',
-  label: 'Editorial',
-  description:
-    'Type-led masthead, sticky category index, rule-separated item rows with the price set as a tabular figure. No cards anywhere.',
-  variants: [
-    { key: 'a', label: 'Editorial A', description: 'Single column, generous leading.' },
-    { key: 'b', label: 'Editorial B', description: 'Two-column item list from tablet up.' },
-    { key: 'c', label: 'Editorial C', description: 'Condensed rhythm for long menus.' },
-  ],
-  render: EditorialTemplate,
-};
-
-const LUXURY: TemplateDefinition = {
-  key: 'luxury',
-  label: 'Luxury',
-  description:
-    'Centred ceremonial masthead, no category navigation, items as centred stanzas, at most one photograph per category. Slow fades.',
-  variants: [
-    { key: 'a', label: 'Luxury A', description: 'Wide tracking, uppercase headings.' },
-    { key: 'b', label: 'Luxury B', description: 'Softer case, larger measure.' },
-  ],
-  render: LuxuryTemplate,
-};
-
-const MINIMAL: TemplateDefinition = {
-  key: 'minimal',
-  label: 'Minimal',
-  description:
-    'Text only — renders no photography at all. One line per item with the price at the inline end. No navigation, no motion.',
-  variants: [
-    { key: 'a', label: 'Minimal A', description: 'Standard measure.' },
-    { key: 'b', label: 'Minimal B', description: 'Narrow measure, printed-card proportions.' },
-  ],
-  render: MinimalTemplate,
-};
-
-const MODERN: TemplateDefinition = {
-  key: 'modern',
-  label: 'Modern',
-  description:
-    'Sticky identity bar, pill category chips, horizontal rows with a square thumbnail, and a fixed contact dock on phones.',
-  variants: [
-    { key: 'a', label: 'Modern A', description: 'Single-column rows.' },
-    { key: 'b', label: 'Modern B', description: 'Two-column rows from tablet up.' },
-    { key: 'c', label: 'Modern C', description: 'Larger thumbnails, looser rows.' },
-  ],
-  render: ModernTemplate,
-};
-
-const BOLD: TemplateDefinition = {
-  key: 'bold',
-  label: 'Bold',
-  description:
-    'Full-bleed bands, oversized condensed headings, slab category titles, and price set as large as the item name.',
-  variants: [
-    { key: 'a', label: 'Bold A', description: 'Full-width bands.' },
-    { key: 'b', label: 'Bold B', description: 'Two-up bands on wide screens.' },
-  ],
-  render: BoldTemplate,
-};
-
-const DARK: TemplateDefinition = {
-  key: 'dark',
-  label: 'Dark',
-  description:
-    'Image mosaic on a ground derived from the brand’s own text colour, captions over a scrim, featured items spanning two columns.',
-  variants: [
-    { key: 'a', label: 'Dark A', description: 'Portrait tiles, two columns.' },
-    { key: 'b', label: 'Dark B', description: 'Square tiles, three columns on desktop.' },
-  ],
-  render: DarkTemplate,
-};
-
-const HOSPITALITY: TemplateDefinition = {
-  key: 'hospitality',
-  label: 'Hospitality',
-  description:
-    'Service catalogue: address and hours above the list, collapsible service groups, duration beside price, a booking action after every group.',
-  variants: [
-    { key: 'a', label: 'Hospitality A', description: 'Groups open by default.' },
-    { key: 'b', label: 'Hospitality B', description: 'Compact rows for long service lists.' },
-  ],
-  render: HospitalityTemplate,
-};
-
-const CAFE: TemplateDefinition = {
-  key: 'cafe',
-  label: 'Café',
-  description:
-    'Compact square tiles in a two-up grid, underlined category tabs, size and price stacked. Light lift on press.',
-  variants: [
-    { key: 'a', label: 'Café A', description: 'Two columns on phones, four on desktop.' },
-    { key: 'b', label: 'Café B', description: 'Three columns, smaller tiles.' },
-  ],
-  render: CafeTemplate,
-};
-
-const CASUAL: TemplateDefinition = {
-  key: 'casual',
-  label: 'Casual',
-  description:
-    'Opens with large category picture tiles, then generous photo-left rows with big type. Nothing sticky, nothing to learn.',
-  variants: [
-    { key: 'a', label: 'Casual A', description: 'Four-up category tiles.' },
-    { key: 'b', label: 'Casual B', description: 'Two-up tiles, larger photography.' },
-  ],
-  render: CasualTemplate,
-};
-
-const PREMIUM: TemplateDefinition = {
-  key: 'premium',
-  label: 'Premium',
-  description:
-    'Magazine spread per category: one item at feature size with a standfirst and caption, the rest as a quiet two-column index.',
-  variants: [
-    { key: 'a', label: 'Premium A', description: 'Portrait feature image.' },
-    { key: 'b', label: 'Premium B', description: 'Landscape feature, wider index.' },
-  ],
-  render: PremiumTemplate,
-};
 
 const STREET_FOOD: TemplateDefinition = {
   key: 'street-food',
-  label: 'Street Food',
+  label: 'Restaurant menu',
   description:
-    'Delivery-app composition: a full-bleed photo-led hero card, a horizontally snap-scrolling category chip rail as the only navigation, and items set as a vertical photo-card grid (2 columns on phone, up to 4 on wide screens). Price sits on the card, not aligned to a rule.',
+    'Photo-led hero slides, a category chip rail, search and filters, an item sheet, a cart that hands the order to WhatsApp, location and QR.',
   variants: [
-    { key: 'a', label: 'Street Food A', description: 'Standard — 2/3/4 column grid.' },
-    { key: 'b', label: 'Street Food B', description: 'Compact — denser grid for very long menus.' },
+    { key: 'a', label: 'Photo cards', description: 'Dishes as photo cards in a 2-4 column grid.' },
+    { key: 'b', label: 'List', description: 'Compact rows with a small photo — best for long menus.' },
+    { key: 'c', label: 'Large photos', description: 'One or two big photographs per row — best when the food photography is strong.' },
   ],
   render: StreetFoodTemplate,
 };
 
-const TEMPLATES: readonly TemplateDefinition[] = [
-  EDITORIAL,
-  LUXURY,
-  MINIMAL,
-  MODERN,
-  BOLD,
-  DARK,
-  HOSPITALITY,
-  CAFE,
-  CASUAL,
-  PREMIUM,
-  STREET_FOOD,
-];
+const TEMPLATES: readonly TemplateDefinition[] = [STREET_FOOD];
 
-export const DEFAULT_TEMPLATE_KEY = EDITORIAL.key;
+export const DEFAULT_TEMPLATE_KEY = STREET_FOOD.key;
 export const DEFAULT_VARIANT_KEY = 'a';
 
 export function listTemplates(): readonly TemplateDefinition[] {
@@ -197,16 +50,18 @@ export function isValidTemplateSelection(templateKey: string, variantKey: string
 
 /**
  * Public-render resolution. Deliberately lenient: a business whose stored
- * template key no longer exists (a family renamed or withdrawn) must still
- * render something branded rather than 500 on a visitor who just scanned a QR
- * code. The substitution is reported so admin can surface it.
+ * template key no longer exists (a withdrawn family) must still render
+ * something branded rather than 500 on a visitor who just scanned a QR code.
+ * The substitution is reported so admin can surface it.
  */
 export function resolveTemplate(templateKey: string, variantKey: string): ResolvedTemplate {
-  const definition = findTemplate(templateKey) ?? (TEMPLATES[0] as TemplateDefinition);
+  const definition = findTemplate(templateKey) ?? STREET_FOOD;
   const usedTemplateFallback = definition.key !== templateKey;
 
+  // A withdrawn family's variant letter means nothing here, so it starts on
+  // the default layout rather than inheriting an unrelated choice.
   const variant =
-    definition.variants.find((candidate) => candidate.key === variantKey) ??
+    (usedTemplateFallback ? undefined : definition.variants.find((candidate) => candidate.key === variantKey)) ??
     (definition.variants[0] as ResolvedTemplate['variant']);
 
   return {
@@ -215,23 +70,3 @@ export function resolveTemplate(templateKey: string, variantKey: string): Resolv
     usedFallback: usedTemplateFallback || variant.key !== variantKey,
   };
 }
-
-/**
- * Business types the spec associates with each family (§16). Used to order the
- * admin picker sensibly; it is a suggestion, never a restriction — any
- * business may use any template.
- */
-export const SUGGESTED_TEMPLATES: Record<string, readonly string[]> = {
-  RESTAURANT: ['street-food', 'editorial', 'premium', 'bold', 'casual', 'dark'],
-  CAFE: ['cafe', 'editorial', 'minimal', 'modern'],
-  BAKERY: ['casual', 'cafe', 'editorial', 'premium'],
-  DESSERT: ['cafe', 'casual', 'bold'],
-  SALON: ['hospitality', 'luxury', 'minimal'],
-  BEAUTY_CENTER: ['hospitality', 'luxury', 'premium'],
-  SPA: ['luxury', 'hospitality', 'minimal'],
-  BARBER: ['hospitality', 'bold', 'modern'],
-  GYM: ['bold', 'modern', 'hospitality'],
-  HOTEL: ['hospitality', 'luxury', 'premium'],
-  RETAIL: ['modern', 'minimal', 'premium'],
-  OTHER: ['editorial', 'minimal', 'modern'],
-};

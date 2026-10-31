@@ -17,7 +17,7 @@ import {
 } from '@/server/admin/business-service';
 import { uploadMedia, assignMedia } from '@/server/media/service';
 import { analyseLogo, applyBrandPreset } from '@/server/brand/service';
-import { updateMenuDesign } from '@/server/menu-studio/design';
+import { DEFAULT_TEMPLATE_KEY } from '@/templates/registry';
 import { ValidationError } from '@/server/admin/business-service';
 import type { ActionState } from './actions';
 
@@ -199,26 +199,15 @@ export async function chooseStyleAction(
   const businessId = String(formData.get('businessId') ?? '');
 
   return run(async () => {
-    const templateKey = String(formData.get('templateKey') ?? '');
-    const themeKey = String(formData.get('themeKey') ?? '');
-
-    await updateTemplate(user, businessId, { templateKey, variantKey: 'a' });
-
-    // The menu theme travels with the style so the two never disagree. Menus
-    // that do not exist yet inherit it when they are created.
-    if (themeKey) {
-      const menus = await prisma.menu.findMany({
-        where: { businessId },
-        select: { id: true },
-      });
-
-      for (const menu of menus) {
-        await updateMenuDesign(user, businessId, menu.id, { themeKey, layoutKey: 'a' });
-      }
-    }
+    // One design for every restaurant; the choice left is the photo layout.
+    // `updateTemplate` rejects a layout the design does not offer.
+    await updateTemplate(user, businessId, {
+      templateKey: DEFAULT_TEMPLATE_KEY,
+      variantKey: String(formData.get('variantKey') ?? ''),
+    });
 
     await revalidateBuild(businessId);
-    return 'Style applied';
+    return 'Photo layout saved';
   });
 }
 

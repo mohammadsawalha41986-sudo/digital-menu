@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { currencyUnit, formatAmount } from '../money';
 import { X, Search, Activity, Flame, Info, Check, Filter } from 'lucide-react';
 import { useSabah } from '../context';
 import type { Language } from '../types';
@@ -17,6 +18,7 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
   lang,
 }) => {
   const { items: MENU_ITEMS, categories: MENU_CATEGORIES } = useSabah();
+  const { currency } = useSabah().info;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [calorieFilter, setCalorieFilter] = useState<'all' | 'low' | 'moderate' | 'high'>('all');
@@ -56,12 +58,12 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-4xl bg-[#0f1712] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-4xl bg-[var(--sf-ink-0f1712)] border-2 border-emerald-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-emerald-950 via-[#111c14] to-stone-950 border-b border-emerald-950 flex items-center justify-between gap-4">
+        <div className="p-5 bg-gradient-to-r from-emerald-950 via-[var(--sf-ink-111c14)] to-stone-950 border-b border-emerald-950 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
               <Activity className="w-6 h-6" />
@@ -253,7 +255,7 @@ export const CaloriesTableModal: React.FC<CaloriesTableModalProps> = ({
 
                     {/* Price */}
                     <td className="py-3 px-3 text-left rtl:text-left ltr:text-right font-black text-amber-400 tabular-nums">
-                      {dish.price.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+                      {dish.noPrice ? '—' : `${formatAmount(dish.price, currency)} ${currencyUnit(currency, isAr)}`}
                     </td>
                   </tr>
                 );

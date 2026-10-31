@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SUPPORTED_CURRENCIES } from '@/lib/money';
 import { LOCALES } from '@/i18n/config';
+import { FONT_FACES } from '@/menu-studio/typography';
 
 /**
  * Input schemas for every admin write (master spec §127).
@@ -40,7 +41,18 @@ const urlSchema = z
 const hexColor = z
   .string()
   .trim()
-  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Expected a hex colour such as #1F2421');
+  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Expected a hex colour such as #1F2421')
+  // One canonical form: the browser's colour picker answers in lowercase, the
+  // logo analysis and seeds in uppercase. Same colour, same stored string.
+  .transform((value) => value.toUpperCase());
+
+/** A colour the owner may leave on "automatic": empty becomes null. */
+const optionalHexColor = z
+  .string()
+  .trim()
+  .optional()
+  .transform((value) => (value ? value : null))
+  .pipe(hexColor.nullable());
 
 /**
  * Phone numbers are rendered into `tel:` and `wa.me` links, so anything that
@@ -53,6 +65,17 @@ const phoneSchema = z
   .transform((value) => (value === '' ? null : value))
   .nullable()
   .catch(null);
+
+/**
+ * The platform serves food businesses only. Older records may carry another
+ * type; they keep it and keep working, but no new business — and no edit —
+ * can choose one.
+ */
+export const FOOD_BUSINESS_TYPES = ['RESTAURANT', 'CAFE', 'BAKERY', 'DESSERT'] as const;
+
+export function isFoodBusinessType(type: string): boolean {
+  return (FOOD_BUSINESS_TYPES as readonly string[]).includes(type);
+}
 
 export const businessSchema = z.object({
   nameAr: requiredText(),
@@ -106,6 +129,10 @@ export const branchSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
 });
 
+const FONT_KEYS = FONT_FACES.map((face) => face.key) as [string, ...string[]];
+
+export const MENU_SECTIONS = ['hero', 'menu', 'offers', 'reviews', 'location'] as const;
+
 export const brandSchema = z.object({
   colorPrimary: hexColor,
   colorSecondary: hexColor,
@@ -115,10 +142,32 @@ export const brandSchema = z.object({
   colorText: hexColor,
   colorMuted: hexColor,
   colorBorder: hexColor,
-  fontHeading: z.enum(['system-sans', 'system-serif', 'system-mono']),
-  fontBody: z.enum(['system-sans', 'system-serif', 'system-mono']),
+  // Any face the typography catalogue ships; the editor offers exactly these.
+  fontHeading: z.enum(FONT_KEYS),
+  fontBody: z.enum(FONT_KEYS),
   radiusScale: z.enum(['none', 'sm', 'md', 'lg']),
+  // Empty means "automatic": derived from the brand palette.
+  menuPage: optionalHexColor,
+  menuCard: optionalHexColor,
+  menuPrice: optionalHexColor,
+  textScale: z.enum(['sm', 'md', 'lg']).default('md'),
+  spacing: z.enum(['compact', 'regular', 'airy']).default('regular'),
+  imageShape: z.enum(['landscape', 'square', 'portrait']).default('landscape'),
+  sectionOrder: z
+    .array(z.enum(MENU_SECTIONS))
+    .length(MENU_SECTIONS.length)
+    .refine((order) => new Set(order).size === order.length, 'Each section appears once')
+    .default([...MENU_SECTIONS]),
+  // Sent by the form as 'true' / 'false'; absent means the default (inside).
+  offersInsideMenu: z
+    .union([z.literal('true'), z.literal('false'), z.boolean()])
+    .optional()
+    .transform((value) => value === undefined || value === true || value === 'true'),
+  heroEffect: z.enum(['slide', 'fade', 'zoom', 'pan', 'flip', 'story']).default('slide'),
+  dishEffect: z.enum(['none', 'zoom', 'kenburns', 'shine', 'float', 'tilt']).default('zoom'),
+  backgroundStyle: z.enum(['solid', 'gradient', 'aurora', 'pattern']).default('solid'),
 });
+
 
 export const menuSchema = z.object({
   key: keySchema,

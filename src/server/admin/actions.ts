@@ -7,6 +7,11 @@ import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { workingHoursFromForm } from '@/server/business/hours';
 import {
+  deleteModifierGroup,
+  saveOptionGroup,
+  type OptionGroupForm,
+} from '@/server/menu-studio/modifiers';
+import {
   ValidationError,
   createBranch,
   createBusiness,
@@ -25,6 +30,8 @@ import {
   updateTemplate,
   updateWorkingHours,
   upsertItem,
+  setItemUpsell,
+  setCategoryStyles,
 } from './business-service';
 import {
   branchSchema,
@@ -406,5 +413,86 @@ export async function restoreMenuVersionAction(
     const result = await restoreMenuVersion(user, businessId, menuId, versionId);
     revalidateBusiness(businessId, publicId);
     return `Restored version ${result.restoredFrom}, published as version ${result.version.version}`;
+  });
+}
+
+/** Upsell for one dish: up to three suggested dishes and the "new" mark. */
+export async function setUpsellAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const itemCode = String(formData.get('itemCode') ?? '');
+  const pairsWith = formData
+    .getAll('pairsWith')
+    .map((value) => String(value))
+    .filter(Boolean);
+  const isNew = formData.get('isNew') === 'on';
+
+  return run(async () => {
+    await setItemUpsell(user, businessId, { itemCode, pairsWith, isNew });
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/upsell`);
+    return 'Saved';
+  });
+}
+
+/** Section layouts: every `style:<categoryId>` field on the form, saved at once. */
+export async function setSectionStylesAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const styles = Array.from(formData.entries())
+    .filter(([name]) => name.startsWith('style:'))
+    .map(([name, value]) => ({ categoryId: name.slice('style:'.length), style: String(value) }));
+
+  return run(async () => {
+    const changed = await setCategoryStyles(user, businessId, styles);
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/sections`);
+    return changed === 0 ? 'Nothing changed' : 'Saved';
+  });
+}
+
+/** Options & add-ons: one group with its options and the dishes it is on. */
+export async function saveOptionGroupAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  let form: OptionGroupForm;
+  try {
+    form = JSON.parse(String(formData.get('group') ?? '')) as OptionGroupForm;
+  } catch {
+    return { error: 'The form could not be read; reload the page and try again.' };
+  }
+
+  return run(async () => {
+    await saveOptionGroup(user, businessId, form);
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/options`);
+    return 'Saved';
+  });
+}
+
+export async function deleteOptionGroupAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await deleteModifierGroup(user, businessId, String(formData.get('key') ?? ''));
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/options`);
+    return 'Deleted';
   });
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { updateDesignAction } from '@/server/admin/studio-actions';
-import { fontsForRole } from '@/menu-studio/typography';
 import type { ActionState } from '@/server/admin/actions';
 
 /**
@@ -32,15 +31,6 @@ type Item = {
 type Category = { id: string; key: string; name: string; items: Item[] };
 type ParentCategory = Category & { children: Category[] };
 
-interface ThemeOption {
-  key: string;
-  label: string;
-  description: string;
-  tonePreference: string;
-  recommendedFor: readonly string[];
-  layouts: { key: string; label: string; description: string }[];
-}
-
 const DEVICES = [
   { key: 'mobile', label: 'Mobile', width: 390, height: 780 },
   { key: 'tablet', label: 'Tablet', width: 834, height: 900 },
@@ -56,7 +46,6 @@ export function StudioEditor({
   previewPath,
   publicPath,
   design,
-  themes,
   structure,
   orphans,
   costSummary,
@@ -76,7 +65,6 @@ export function StudioEditor({
     showImages: boolean;
     showCalories: boolean;
   };
-  themes: ThemeOption[];
   structure: ParentCategory[];
   orphans: { id: string; key: string; name: string }[];
   costSummary: { covered: number; total: number; averageRatio: number | null };
@@ -126,7 +114,7 @@ export function StudioEditor({
   // what keeps browsing the library free of consequence: the preview route
   // re-resolves presentation for that one response and writes nothing, so no
   // MenuDesign row, menu version or QR destination moves until Apply.
-  const [previewChoice, setPreviewChoice] = useState<{ themeKey: string; layoutKey: string } | null>(
+  const [previewChoice] = useState<{ themeKey: string; layoutKey: string } | null>(
     null,
   );
   const viewing = previewChoice ?? { themeKey, layoutKey };
@@ -135,7 +123,6 @@ export function StudioEditor({
 
   const frameId = useId();
   const active = DEVICES.find((entry) => entry.key === device)!;
-  const theme = themes.find((entry) => entry.key === viewing.themeKey) ?? themes[0]!;
 
   const queueSave = (formData: FormData) => {
     const revision = ++revisionRef.current;
@@ -207,14 +194,6 @@ export function StudioEditor({
     setTimeout(scheduleAutosave, 0);
   };
 
-  /** Commit the theme being previewed. Goes through history and the same
-   *  serialized queue as every other design edit, so it is undoable. */
-  const applyPreviewedTheme = () => {
-    if (!previewChoice) return;
-    rememberDesign({ ...choice, themeKey: previewChoice.themeKey, layoutKey: previewChoice.layoutKey });
-    setPreviewChoice(null);
-    setTimeout(scheduleAutosave, 0);
-  };
 
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -371,199 +350,17 @@ export function StudioEditor({
         <input type="hidden" name="themeKey" value={themeKey} />
         <input type="hidden" name="layoutKey" value={layoutKey} />
 
-        <fieldset className="theme-library">
-          <legend className="admin__label">Theme Library</legend>
-          <p className="admin__hint">
-            Every card is your own menu, with your own dishes and prices, drawn by the page a
-            customer gets. Looking through them changes nothing — press Apply to keep one.
-          </p>
-          <div className="theme-library__grid" role="radiogroup" aria-label="Theme">
-            {themes.map((entry) => {
-              const isViewing = entry.key === viewing.themeKey;
-              const isApplied = entry.key === themeKey;
-              const cardLayout =
-                (isViewing ? entry.layouts.find((l) => l.key === viewing.layoutKey) : null) ??
-                entry.layouts[0]!;
-              const cardSrc = `${previewPath}${previewSeparator}lang=${locale}&theme=${encodeURIComponent(entry.key)}&layout=${encodeURIComponent(cardLayout.key)}`;
-
-              return (
-                <label
-                  className="theme-card"
-                  data-theme={entry.key}
-                  data-selected={isViewing ? '' : undefined}
-                  data-applied={isApplied ? '' : undefined}
-                  key={entry.key}
-                >
-                  <input
-                    className="admin__visually-hidden"
-                    type="radio"
-                    name="themePreview"
-                    value={entry.key}
-                    // Without this the radio's accessible name is the whole
-                    // card — heading, tone, description and variant count read
-                    // out as one run-on string.
-                    aria-label={`Preview the ${entry.label} theme`}
-                    checked={isViewing}
-                    onChange={(event) => {
-                      // Never let a preview reach the autosave listener on the
-                      // form: choosing a card must not write anything.
-                      event.stopPropagation();
-                      setPreviewChoice(
-                        entry.key === themeKey
-                          ? null
-                          : { themeKey: entry.key, layoutKey: entry.layouts[0]!.key },
-                      );
-                    }}
-                  />
-                  <span className="theme-card__preview" aria-hidden="true">
-                    <iframe src={cardSrc} title="" loading="lazy" tabIndex={-1} />
-                  </span>
-                  <span className="theme-card__head">
-                    <strong>{entry.label}</strong>
-                    <span className="theme-card__tone">{entry.tonePreference}</span>
-                  </span>
-                  <span className="theme-card__description">{entry.description}</span>
-                  <span className="theme-card__meta">
-                    {entry.recommendedFor.length > 0
-                      ? `Best for ${entry.recommendedFor.join(', ')}`
-                      : 'Flexible style'}{' '}
-                    · {entry.layouts.length} variants
-                  </span>
-                  <span className="theme-card__action">
-                    {isApplied && !previewingUnapplied
-                      ? 'Applied'
-                      : isViewing
-                        ? 'Previewing'
-                        : 'Preview'}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-
-          {previewingUnapplied ? (
-            <div className="theme-library__apply" role="group" aria-label="Previewed theme">
-              <p className="admin__hint" role="status" aria-live="polite">
-                Previewing {theme.label}. Nothing has been saved.
-              </p>
-              <button type="button" className="admin__button" onClick={applyPreviewedTheme}>
-                Apply {theme.label}
-              </button>
-              <button
-                type="button"
-                className="admin__button admin__button--secondary"
-                onClick={() => setPreviewChoice(null)}
-              >
-                Keep current theme
-              </button>
-            </div>
-          ) : null}
-        </fieldset>
-
-        <div className="admin__field">
-          <label className="admin__label" htmlFor="studio-layout">
-            Layout
-          </label>
-          <select
-            id="studio-layout"
-            className="admin__select"
-            value={viewing.layoutKey}
-            onChange={(event) => {
-              // While a theme is only being previewed the variant is part of
-              // that preview, not an edit to the applied design.
-              if (previewChoice) {
-                event.stopPropagation();
-                setPreviewChoice({ ...previewChoice, layoutKey: event.target.value });
-                return;
-              }
-              rememberDesign({ ...choice, layoutKey: event.target.value });
-            }}
-            key={viewing.themeKey}
-          >
-            {theme.layouts.map((layout) => (
-              <option key={layout.key} value={layout.key}>
-                {layout.label} — {layout.description}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <fieldset className="admin__fieldset">
-          <legend className="admin__label">Typography</legend>
-          {(
-            [
-              ['fontHeading', 'Heading', 'heading', choice.fontHeading],
-              ['fontBody', 'Body', 'body', choice.fontBody],
-              ['fontPrice', 'Price', 'price', choice.fontPrice],
-              ['fontAccent', 'Accent', 'accent', choice.fontAccent],
-            ] as const
-          ).map(([name, label, role, current]) => (
-            <div className="admin__field" key={name}>
-              <label className="admin__label" htmlFor={`studio-${name}`}>
-                {label}
-              </label>
-              <select
-                id={`studio-${name}`}
-                name={name}
-                className="admin__select"
-                value={current}
-                onChange={(event) => rememberDesign({ ...choice, [name]: event.target.value })}
-              >
-                <option value="">Theme default</option>
-                {fontsForRole(role).map((face) => (
-                  <option key={face.key} value={face.key}>
-                    {face.label}
-                    {face.scripts.includes('arabic') ? '' : ' — Latin only'}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
-          <p className="admin__hint">
-            A Latin-only face renders Arabic in a fallback. Arabic is the primary language, so
-            prefer a face that covers it.
-          </p>
-        </fieldset>
-
-        <div className="admin__field">
-          <label className="admin__label" htmlFor="studio-image-style">
-            Photography
-          </label>
-          <select
-            id="studio-image-style"
-            name="imageStyle"
-            className="admin__select"
-            value={choice.imageStyle}
-            onChange={(event) => rememberDesign({ ...choice, imageStyle: event.target.value })}
-          >
-            <option value="">Theme default</option>
-            {['none', 'thumbnail', 'rounded', 'circle', 'editorial', 'full-bleed', 'polaroid', 'floating', 'grid'].map(
-              (style) => (
-                <option key={style} value={style}>
-                  {style}
-                </option>
-              ),
-            )}
-          </select>
-        </div>
-
-        <div className="admin__field">
-          <label className="admin__label" htmlFor="studio-density">
-            Density
-          </label>
-          <select
-            id="studio-density"
-            name="density"
-            className="admin__select"
-            value={choice.density}
-            onChange={(event) => rememberDesign({ ...choice, density: event.target.value })}
-          >
-            <option value="">Theme default</option>
-            <option value="compact">Compact</option>
-            <option value="regular">Regular</option>
-            <option value="airy">Airy</option>
-          </select>
-        </div>
+        {/* Colours, fonts and photo layout are set once per restaurant on the
+            Design page; the menu design ignores per-menu themes. The stored
+            values are carried through unchanged so saving here never wipes them. */}
+        <p className="admin__hint">
+          The look of the menu — colours, fonts and photo layout — is set on the{' '}
+          <a href={`/admin/businesses/${businessId}/design`}>Design page</a>. Here you choose what
+          this menu shows.
+        </p>
+        {(['fontHeading', 'fontBody', 'fontPrice', 'fontAccent', 'imageStyle', 'density'] as const).map((name) => (
+          <input key={name} type="hidden" name={name} value={choice[name]} />
+        ))}
 
         <fieldset className="admin__fieldset">
           <legend className="admin__label">Show</legend>

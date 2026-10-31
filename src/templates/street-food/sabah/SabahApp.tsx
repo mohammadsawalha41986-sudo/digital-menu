@@ -9,21 +9,27 @@
  */
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useSyncExternalStore } from 'react';
+import { useRouter } from 'next/navigation';
+import { currencyUnit, formatAmount } from './money';
+import { hoursLine } from './hours';
+import { cartStorageKey, getCart, getServerCart, setCart as writeCart, subscribeToCart } from './cart-store';
 import {
   MENU_CATEGORIES as DEFAULT_CATEGORIES,
   MENU_ITEMS as DEFAULT_ITEMS,
   RESTAURANT_INFO as DEFAULT_INFO,
 } from './data/menuData';
 import type { MenuItem, MenuCategory, RestaurantInfo } from './data/menuData';
-import { SabahDataProvider, type HeroSlide } from './context';
+import { SabahDataProvider, type HeroSlide, type MenuOffer } from './context';
 import type { CartItem, Language } from './types';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { CategoryNav } from './components/CategoryNav';
 import { MenuSearchAndFilter } from './components/MenuSearchAndFilter';
-import { MenuItemCard } from './components/MenuItemCard';
-import { MenuItemRow } from './components/MenuItemRow';
+import { SectionDishes } from './components/SectionDishes';
+import { resolveSectionLayout } from './section-layout';
+import { selectionKey, stillValid } from './choices';
+import { OffersStrip } from './components/OffersStrip';
 import { CustomerReviewsSection } from './components/CustomerReviewsSection';
 import { GoogleLocationSection } from './components/GoogleLocationSection';
 import { CaloriesTableModal } from './components/CaloriesTableModal';
@@ -42,6 +48,25 @@ export interface SabahAppProps {
   logoUrl?: string | null;
   slides?: HeroSlide[];
   qrDataUri?: string | null;
+  /** How dishes are laid out by default; the visitor can still switch. */
+  imageLayout?: 'grid' | 'list' | 'large';
+  /** Light when the owner chose a light page colour; dark by default. */
+  tone?: 'light' | 'dark';
+  /** Photo frame shape on dish cards. */
+  imageShape?: 'landscape' | 'square' | 'portrait';
+  /** Which menu colours the owner set by hand (the rest follow the brand). */
+  customColors?: { page: boolean; card: boolean; price: boolean };
+  /** The restaurant's permanent id; it scopes the visitor's cart. */
+  publicId?: string;
+  /** Current offers, for the strip in the middle of the menu. */
+  offers?: MenuOffer[];
+  /** Order of the page's sections. */
+  sectionOrder?: string[];
+  /** Offers inside the menu (after the second category) or in their own place. */
+  offersInsideMenu?: boolean;
+  heroEffect?: string;
+  dishEffect?: string;
+  backgroundStyle?: string;
 }
 
 export default function App({
@@ -52,8 +77,40 @@ export default function App({
   logoUrl = null,
   slides = [],
   qrDataUri = null,
+  imageLayout = 'grid',
+  publicId = 'reference',
+  offers = [],
+  sectionOrder = ['hero', 'menu', 'offers', 'reviews', 'location'],
+  offersInsideMenu = true,
+  heroEffect = 'slide',
+  dishEffect = 'zoom',
+  backgroundStyle = 'solid',
+  tone = 'dark',
+  imageShape = 'landscape',
+  customColors = { page: false, card: false, price: false },
 }: SabahAppProps = {}) {
-  const RESTAURANT_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
+  const BASE_INFO: RestaurantInfo = restaurantInfo ?? DEFAULT_INFO;
+
+  // The admin's photo layout cards open the menu at the dishes. Scrolling this
+  // window only — a #fragment would also scroll the admin page around it.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('focus') !== 'dishes') return;
+    const dishes = document.getElementById('menu-items-container');
+    if (dishes) window.scrollTo(0, dishes.getBoundingClientRect().top + window.scrollY - 120);
+  }, []);
+
+  // Opening hours depend on the visitor's "now", so they are worked out in
+  // the browser (and refreshed each minute); the server render carries no
+  // time-sensitive claim.
+  const minute = useSyncExternalStore(subscribeToMinutes, currentMinute, noMinuteOnServer);
+  const hours = useMemo(
+    () => (minute === null || !BASE_INFO.workingHours ? null : hoursLine(BASE_INFO.workingHours, new Date(minute * 60_000))),
+    [minute, BASE_INFO.workingHours],
+  );
+
+  const RESTAURANT_INFO: RestaurantInfo = hours
+    ? { ...BASE_INFO, openingHoursAr: hours.ar, openingHoursEn: hours.en }
+    : BASE_INFO;
   const MENU_CATEGORIES: MenuCategory[] = menuCategories ?? DEFAULT_CATEGORIES;
   const MENU_ITEMS: MenuItem[] = menuItems ?? DEFAULT_ITEMS;
 
@@ -61,7 +118,10 @@ export default function App({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'popular' | 'offers' | 'spicy'>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // The visitor's own grid/list switch; until they touch it every section
+  // follows the layout the restaurant chose for it.
+  const [visitorView, setVisitorView] = useState<'grid' | 'list' | null>(null);
+  const viewMode = visitorView ?? (imageLayout === 'list' ? 'list' : 'grid');
   
   // Modals & Drawers
   const [activeItemForCustomization, setActiveItemForCustomization] = useState<MenuItem | null>(null);
@@ -71,23 +131,29 @@ export default function App({
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Cart state
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('sabah_el_lail_cart');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // One cart per restaurant, read without disturbing hydration.
+  const cartKey = cartStorageKey(publicId);
+  const storedCart = useSyncExternalStore(subscribeToCart, () => getCart(cartKey), getServerCart);
+  const setCart = (update: CartItem[] | ((previous: CartItem[]) => CartItem[])) =>
+    writeCart(cartKey, typeof update === 'function' ? update : () => update);
 
-  // Sync cart to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('sabah_el_lail_cart', JSON.stringify(cart));
-    } catch {
-      // ignore
-    }
-  }, [cart]);
+  // A stored cart can outlive the menu it came from: a dish removed, marked
+  // unavailable or repriced since. Those lines are dropped rather than sent
+  // to the restaurant at a price it no longer charges.
+  const cart = useMemo(
+    () =>
+      storedCart.filter((line) => {
+        const current = MENU_ITEMS.find((dish) => dish.id === line.item?.id);
+        return Boolean(
+          current &&
+            !current.isUnavailable &&
+            !current.noPrice &&
+            current.price === line.item.price &&
+            stillValid(current.choices ?? [], line.choices),
+        );
+      }),
+    [storedCart, MENU_ITEMS],
+  );
 
   // In Next.js the <html> `lang` and `dir` attributes are owned by the
   // layout and this app renders inside a profile root that already carries
@@ -103,17 +169,53 @@ export default function App({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Switching language re-renders the page in that language on the server
+  // (`?lang=`), so the page root's lang/dir, the metadata and analytics all
+  // agree with what is on screen. The permanent path — what the QR encodes —
+  // never changes; only the query does.
+  const router = useRouter();
   const toggleLanguage = () => {
-    setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));
+    const next: Language = lang === 'ar' ? 'en' : 'ar';
+    setLang(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', next);
+    router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false });
   };
 
   // Cart Operations
+  // A suggested dish added from the dish sheet or the cart: one, plain, and
+  // the cart stays where it is.
+  const quickAdd = (dish: MenuItem) => {
+    // A dish with a choice to make (a size, a rice) opens its sheet instead:
+    // it cannot go to the kitchen half-ordered.
+    if ((dish.choices ?? []).some((group) => group.min > 0)) {
+      setIsCartOpen(false);
+      setActiveItemForCustomization(dish);
+      return;
+    }
+    setCart((prev) => {
+      const existing = prev.find(
+        (line) => line.item.id === dish.id && !line.selectedOption && !line.choices?.length && !line.notes && !line.spiceLevel,
+      );
+      if (existing) {
+        return prev.map((line) =>
+          line === existing ? { ...line, quantity: line.quantity + 1, totalPrice: line.unitPrice * (line.quantity + 1) } : line,
+        );
+      }
+      return [
+        ...prev,
+        { cartItemId: `${dish.id}-${Date.now()}`, item: dish, quantity: 1, unitPrice: dish.price, totalPrice: dish.price },
+      ];
+    });
+  };
+
   const handleAddToCart = (newItem: CartItem) => {
     setCart((prev) => {
       const existingIndex = prev.findIndex(
         (ci) =>
           ci.item.id === newItem.item.id &&
           ci.selectedOption?.nameAr === newItem.selectedOption?.nameAr &&
+          selectionKey(ci.choices) === selectionKey(newItem.choices) &&
           ci.spiceLevel === newItem.spiceLevel &&
           ci.extraCheese === newItem.extraCheese &&
           ci.extraGarlic === newItem.extraGarlic &&
@@ -203,33 +305,26 @@ export default function App({
 
   const isAr = lang === 'ar';
 
-  return (
-    <SabahDataProvider
-      value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri }}
-    >
-    <div className="min-h-screen bg-[#070b08] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950">
-      
-      {/* 1. Navbar */}
-      <Navbar
-        lang={lang}
-        onToggleLang={toggleLanguage}
-        cartCount={totalCartCount}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenQr={() => setIsQrOpen(true)}
-        onOpenCalories={() => setIsCaloriesOpen(true)}
-      />
 
-      <main className="flex-1">
-        
+  // The page's sections, in the order the restaurant chose on the Design page.
+  // Reordered in the DOM, not with CSS, so reading and focus order follow the
+  // order on screen.
+  const sections: Record<string, React.ReactNode> = {
+    hero: (
+      <>
         {/* 2. Full-Width Panoramic Hero Section with Gourmet Platter Presentation */}
         <HeroSection 
           lang={lang} 
+          effect={heroEffect}
           onOpenCalories={() => setIsCaloriesOpen(true)}
           onSelectFeaturedItem={(item) => setActiveItemForCustomization(item)}
         />
-
+      </>
+    ),
+    menu: (
+      <>
         {/* 3. Menu Category Sticky Bar */}
-        <div id="menu-section" className="scroll-mt-18">
+        <div id="menu-section" className="scroll-mt-14 sm:scroll-mt-18">
           <CategoryNav
             lang={lang}
             selectedCategory={selectedCategory}
@@ -251,8 +346,9 @@ export default function App({
             onFilterChange={setActiveFilter}
             resultCount={filteredItems.length}
             viewMode={viewMode}
-            onToggleViewMode={setViewMode}
+            onToggleViewMode={setVisitorView}
             onOpenCaloriesModal={() => setIsCaloriesOpen(true)}
+            showSearch={MENU_ITEMS.length >= MENU_SEARCH_THRESHOLD}
           />
 
           {/* 5. Menu Items Display with framer-motion Scroll Reveal Entrance */}
@@ -260,16 +356,25 @@ export default function App({
             {categoriesToDisplay.map((cat: MenuCategory, catIndex: number) => {
               const itemsInThisCat = filteredItems.filter((i) => i.categoryId === cat.id);
               if (itemsInThisCat.length === 0) return null;
+              // The offers strip sits after the second category of the full
+              // menu, where a visitor scrolling the dishes meets it.
+              const showOffersAfter =
+                offersInsideMenu &&
+                catIndex === Math.min(1, categoriesToDisplay.length - 1) &&
+                selectedCategory === 'all' &&
+                activeFilter === 'all' &&
+                searchQuery.trim() === '';
 
               return (
+                <React.Fragment key={cat.id}>
                 <motion.section 
-                  key={cat.id} 
                   id={cat.id}
+                  data-category={cat.id}
                   initial={{ opacity: 0, y: 35 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{ duration: 0.55, delay: catIndex * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                  className="space-y-6 scroll-mt-36"
+                  className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36"
                 >
                   {/* Category Header with Scroll Reveal */}
                   <div className="flex items-end justify-between gap-2 pb-3.5 border-b border-emerald-950/80">
@@ -291,44 +396,23 @@ export default function App({
                     </div>
                   </div>
 
-                  {/* Items Display: Grid vs List Mode with Animated Stagger */}
-                  {viewMode === 'grid' ? (
-                    <motion.div 
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true }}
-                      variants={{
-                        hidden: {},
-                        visible: {
-                          transition: {
-                            staggerChildren: 0.06
-                          }
-                        }
-                      }}
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6"
-                    >
-                      {itemsInThisCat.map((dish) => (
-                        <MenuItemCard
-                          key={dish.id}
-                          item={dish}
-                          lang={lang}
-                          onSelect={(item) => setActiveItemForCustomization(item)}
-                        />
-                      ))}
-                    </motion.div>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                      {itemsInThisCat.map((dish) => (
-                        <MenuItemRow
-                          key={dish.id}
-                          item={dish}
-                          lang={lang}
-                          onSelect={(item) => setActiveItemForCustomization(item)}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <SectionDishes
+                    layout={
+                      visitorView === 'list'
+                        ? { kind: 'list' }
+                        : resolveSectionLayout(
+                            cat.displayStyle ?? 'auto',
+                            visitorView === 'grid' && imageLayout === 'list' ? 'grid' : imageLayout,
+                            itemsInThisCat.length,
+                          )
+                    }
+                    dishes={itemsInThisCat}
+                    lang={lang}
+                    onSelect={(item) => setActiveItemForCustomization(item)}
+                  />
                 </motion.section>
+                {showOffersAfter ? <OffersStrip lang={lang} /> : null}
+                </React.Fragment>
               );
             })}
 
@@ -363,13 +447,61 @@ export default function App({
             )}
           </div>
         </div>
-
+      </>
+    ),
+    offers: offersInsideMenu ? null : (
+      <div className="max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+        <OffersStrip lang={lang} />
+      </div>
+    ),
+    reviews: (
+      <>
         {/* 6. Customer Reviews Section with Scroll Reveal */}
         <CustomerReviewsSection lang={lang} />
-
+      </>
+    ),
+    location: (
+      <>
         {/* 7. Google Maps & Location Section (Positioned at bottom before footer) */}
         <GoogleLocationSection lang={lang} />
+      </>
+    ),
+  };
 
+  return (
+    <SabahDataProvider
+      value={{ info: RESTAURANT_INFO, categories: MENU_CATEGORIES, items: MENU_ITEMS, logoUrl, slides, qrDataUri, offers }}
+    >
+    <div
+      className="sf-root min-h-screen pb-24 md:pb-0 bg-[var(--sf-ink-070b08)] text-stone-100 flex flex-col font-sans selection:bg-amber-500 selection:text-stone-950"
+      data-menu-tone={tone}
+      data-image-shape={imageShape}
+      data-dish-effect={dishEffect}
+      data-background={backgroundStyle}
+      data-custom-page={customColors.page ? '' : undefined}
+      data-custom-card={customColors.card ? '' : undefined}
+      data-custom-price={customColors.price ? '' : undefined}
+    >
+      {/* Entrance animations start hidden and are revealed by script. With
+          scripting off, reveal everything at once so the menu is still read. */}
+      <noscript>
+        <style>{'[data-profile-root] [style*="opacity:0"]{opacity:1!important;transform:none!important}'}</style>
+      </noscript>
+      
+      {/* 1. Navbar */}
+      <Navbar
+        lang={lang}
+        onToggleLang={toggleLanguage}
+        cartCount={totalCartCount}
+        onOpenCart={() => setIsCartOpen(true)}
+        onOpenQr={() => setIsQrOpen(true)}
+        onOpenCalories={() => setIsCaloriesOpen(true)}
+      />
+
+      <main className="flex-1">
+        {sectionOrder.map((key) => (
+          <React.Fragment key={key}>{sections[key] ?? null}</React.Fragment>
+        ))}
       </main>
 
       {/* 8. Footer */}
@@ -379,12 +511,15 @@ export default function App({
       />
 
       {/* Floating Bottom Quick Bar on Mobile */}
-      <div className="fixed bottom-4 inset-x-4 z-30 md:hidden flex items-center gap-2">
+      <div
+        className="fixed inset-x-3 z-30 md:hidden flex items-center gap-1.5 p-1.5 rounded-[1.25rem] bg-black/55 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60"
+        style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
         {totalCartCount > 0 ? (
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsCartOpen(true)}
-            className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 font-black text-sm shadow-xl shadow-amber-500/30 border border-amber-300 flex items-center justify-between"
+            className="flex-1 h-12 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 font-black text-sm border border-amber-300 flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
@@ -394,31 +529,36 @@ export default function App({
               </span>
             </div>
             <span className="tabular-nums">
-              {totalCartPrice.toFixed(2)} {isAr ? 'ر.س' : 'SAR'}
+              {formatAmount(totalCartPrice, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}
             </span>
           </motion.button>
-        ) : (
-          <motion.a
+        ) : RESTAURANT_INFO.whatsappNumber ? (
+          <motion.a data-event="contact_whatsapp"
             whileTap={{ scale: 0.95 }}
             href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}?text=${encodeURIComponent(
               `السلام عليكم، أود الطلب من ${RESTAURANT_INFO.nameAr}`
             )}`}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm shadow-xl shadow-emerald-700/40 border border-emerald-400/40 flex items-center justify-center gap-2 transition-all"
+            className="flex-1 h-12 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm border border-emerald-400/40 flex items-center justify-center gap-2 transition-all"
           >
             <MessageCircle className="w-4 h-4 fill-white" />
             <span>{isAr ? 'اطلب سريعاً عبر واتساب' : 'Order via WhatsApp'}</span>
           </motion.a>
+        ) : (
+          <span className="flex-1" />
         )}
 
-        <a
+        {RESTAURANT_INFO.phone ? (
+        <a data-event="contact_phone"
           href={`tel:${RESTAURANT_INFO.phone}`}
-          className="w-12 h-12 rounded-2xl bg-stone-900 border border-emerald-500/40 text-amber-400 flex items-center justify-center shadow-lg shrink-0"
+          aria-label={isAr ? 'اتصال' : 'Call'}
+            className="w-12 h-12 rounded-2xl bg-stone-900 border border-emerald-500/40 text-amber-400 flex items-center justify-center shrink-0"
           title="اتصال هاتفي"
         >
           <Phone className="w-5 h-5" />
         </a>
+        ) : null}
       </div>
 
       {/* Scroll to Top floating button on desktop */}
@@ -447,10 +587,13 @@ export default function App({
       />
 
       <ItemCustomizeModal
+        // A fresh sheet per dish: choices made on one never carry to the next.
+        key={activeItemForCustomization?.id ?? 'none'}
         item={activeItemForCustomization}
         lang={lang}
         onClose={() => setActiveItemForCustomization(null)}
         onAddToCart={handleAddToCart}
+        onQuickAdd={quickAdd}
       />
 
       <CartDrawer
@@ -461,6 +604,7 @@ export default function App({
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
+        onQuickAdd={quickAdd}
       />
 
       <QrCodeModal
@@ -472,4 +616,20 @@ export default function App({
     </div>
     </SabahDataProvider>
   );
+}
+
+/** The same threshold the platform used before: below it, scrolling wins. */
+const MENU_SEARCH_THRESHOLD = 6;
+
+function subscribeToMinutes(onChange: () => void) {
+  const id = setInterval(onChange, 60_000);
+  return () => clearInterval(id);
+}
+
+function currentMinute(): number | null {
+  return Math.floor(Date.now() / 60_000);
+}
+
+function noMinuteOnServer(): number | null {
+  return null;
 }

@@ -13,7 +13,7 @@ function profileFixture(): PublicProfile {
     nameEn: 'Demo restaurant',
     descriptionAr: null,
     descriptionEn: null,
-    templateKey: 'modern',
+    templateKey: 'street-food',
     variantKey: 'a',
     showPlatformFooter: false,
     logo: null,
@@ -43,6 +43,7 @@ function profileFixture(): PublicProfile {
         descriptionEn: null,
         image: null,
         isFeatured: false,
+        displayStyle: 'auto',
         items: [],
       }],
       design: {

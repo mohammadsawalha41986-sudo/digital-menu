@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { currencyUnit, formatAmount } from '../money';
+import { useSabah } from '../context';
 import { Plus, Flame, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
@@ -17,23 +19,33 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
   lang,
   onSelect,
 }) => {
+  const { currency } = useSabah().info;
   const isAr = lang === 'ar';
 
   return (
     <motion.div
+      // Stable hooks for tests and analytics: the item code, price and
+      // calories as rendered.
+      data-item={item.id}
+      data-unavailable={item.isUnavailable ? '' : undefined}
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ x: isAr ? -4 : 4 }}
-      className="p-3.5 sm:p-4 rounded-2xl bg-stone-950/80 border border-emerald-950/90 hover:border-emerald-500/50 flex items-center justify-between gap-3 sm:gap-4 transition-all shadow-sm group"
+      className="sf-card sf-card--row p-3.5 sm:p-4 rounded-2xl bg-stone-950/80 border border-emerald-950/90 hover:border-emerald-500/50 flex items-center justify-between gap-3 sm:gap-4 transition-all shadow-sm group"
     >
       {/* Thumbnail */}
       {item.image && (
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-stone-900 shrink-0 border border-emerald-950 group-hover:border-amber-400/40 transition-colors">
           <img
             src={item.image}
+            srcSet={item.imageSrcSet}
+            sizes="80px"
+            style={{ objectPosition: item.imagePosition }}
+            loading="lazy"
+            decoding="async"
             alt=""
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
             referrerPolicy="no-referrer"
           />
         </div>
@@ -45,6 +57,11 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
           <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-amber-300 transition-colors truncate">
             {isAr ? item.nameAr : item.nameEn}
           </h3>
+          {item.isNew ? (
+            <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-400 text-stone-950" data-new>
+              {isAr ? 'جديد' : 'New'}
+            </span>
+          ) : null}
           {item.isOffer && (
             <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-stone-950 shrink-0">
               {isAr ? 'عرض' : 'Offer'}
@@ -63,45 +80,54 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
           </p>
         )}
 
+        {item.calories || (item.options && item.options.length > 0) ? (
         <div className="flex items-center gap-2 text-[11px] text-stone-400">
-          {item.calories && (
-            <>
-              <span className="font-mono text-emerald-400 font-medium">{item.calories} {isAr ? 'سعرة' : 'cal'}</span>
-              <span>·</span>
-            </>
-          )}
+          {item.calories ? (
+            <span className="font-mono text-emerald-400 font-medium" data-calories>{item.calories} {isAr ? 'سعرة' : 'kcal'}</span>
+          ) : null}
+          {item.calories && item.options && item.options.length > 0 ? <span aria-hidden="true">·</span> : null}
           {item.options && item.options.length > 0 ? (
             <span className="text-amber-300 font-medium">
               {dishOptionsSummary(item, isAr)}
             </span>
-          ) : (
-            <span className="text-stone-400">{isAr ? 'تحضير طازج' : 'Freshly made'}</span>
-          )}
+          ) : null}
         </div>
+        ) : null}
       </div>
 
       {/* Price & Add */}
       <div className="flex items-center gap-3 shrink-0">
+{item.noPrice ? (
+  <span />
+) : (
         <div className="text-right rtl:text-right ltr:text-left">
-          <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums">
-            {item.price.toFixed(2)}
+          <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums sf-price" data-price>
+            {formatAmount(item.price, currency)}
           </span>
           <span className="text-xs font-bold text-emerald-400 mr-1 ml-1">
-            {isAr ? 'ر.س' : 'SAR'}
+            {currencyUnit(currency, isAr)}
           </span>
         </div>
+)}
 
+        {item.noPrice && !item.isUnavailable ? null : item.isUnavailable ? (
+          <span className="shrink-0 px-2.5 py-1.5 rounded-xl bg-stone-800 border border-stone-700 text-stone-300 text-[11px] sm:text-xs font-bold whitespace-nowrap">
+            {isAr ? 'غير متوفر حالياً' : 'Currently unavailable'}
+          </span>
+        ) : (
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => onSelect(item)}
+          aria-label={item.options || item.choices?.length ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
           className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-emerald-950 cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span className="hidden sm:inline">
-            {item.options ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
+            {item.options || item.choices?.length ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
           </span>
         </motion.button>
+        )}
       </div>
     </motion.div>
   );

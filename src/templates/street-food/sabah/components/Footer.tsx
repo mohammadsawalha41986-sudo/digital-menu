@@ -3,6 +3,7 @@
 import React from 'react';
 import { MapPin, Phone, MessageCircle, Clock, ExternalLink } from 'lucide-react';
 import { useSabah } from '../context';
+import { SocialLinks } from './SocialLinks';
 import type { Language } from '../types';
 
 interface FooterProps {
@@ -15,7 +16,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
   const isAr = lang === 'ar';
 
   return (
-    <footer className="bg-[#060a07] border-t border-emerald-950/80 pt-12 pb-8 text-stone-400 text-xs">
+    <footer className="bg-[var(--sf-ink-060a07)] border-t border-emerald-950/80 pt-12 pb-8 text-stone-400 text-xs">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -41,10 +42,12 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
                 ? RESTAURANT_INFO.sloganAr
                 : RESTAURANT_INFO.sloganEn}
             </p>
+            {RESTAURANT_INFO.openingHoursAr || RESTAURANT_INFO.openingHoursEn ? (
             <div className="flex items-center gap-1.5 text-emerald-400 font-bold pt-1">
               <Clock className="w-3.5 h-3.5" />
               <span>{isAr ? RESTAURANT_INFO.openingHoursAr : RESTAURANT_INFO.openingHoursEn}</span>
             </div>
+            ) : null}
           </div>
 
           {/* Quick Navigation */}
@@ -76,7 +79,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
               <p className="text-stone-400 text-[11px] pr-6">
                 {isAr ? RESTAURANT_INFO.landmarkAr : RESTAURANT_INFO.landmarkEn}
               </p>
-              <a
+              <a data-event="contact_maps"
                 href={RESTAURANT_INFO.googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -93,16 +96,20 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
             <h4 className="text-amber-300 font-extrabold text-xs uppercase tracking-wider">
               {isAr ? 'الطلب والتواصل المباشر' : 'Order & Contact'}
             </h4>
+            <SocialLinks socials={RESTAURANT_INFO.socials ?? []} isAr={isAr} />
             <div className="space-y-2.5">
-              <a
+              {RESTAURANT_INFO.phone ? (
+              <a data-event="contact_phone"
                 href={`tel:${RESTAURANT_INFO.phone}`}
                 className="flex items-center gap-2 text-white hover:text-amber-400 transition-colors font-black text-sm tabular-nums"
               >
                 <Phone className="w-4 h-4 text-emerald-400" />
-                <span>{RESTAURANT_INFO.phoneFormatted}</span>
+                <span dir="ltr">{RESTAURANT_INFO.phoneFormatted}</span>
               </a>
+              ) : null}
 
-              <a
+              {RESTAURANT_INFO.whatsappNumber ? (
+              <a data-event="contact_whatsapp"
                 href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}`}
                 target="_blank"
                 rel="noreferrer"
@@ -111,6 +118,7 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
                 <MessageCircle className="w-4 h-4" />
                 <span>{isAr ? 'محادثة واتساب للطلبات' : 'Chat on WhatsApp'}</span>
               </a>
+              ) : null}
 
               <div className="flex items-center gap-3 pt-1">
                 <button

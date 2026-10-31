@@ -23,7 +23,7 @@ test('the interaction script reports a tapped contact action', async ({ page }) 
   });
 
   await page.goto('/m/DEM001?lang=en');
-  await page.getByRole('link', { name: 'WhatsApp' }).click({ noWaitAfter: true });
+  await page.locator('a[data-event="contact_whatsapp"]').first().click({ noWaitAfter: true });
 
   // Poll for *this* beacon, not for any beacon. The profile also reports
   // offer and category views from an IntersectionObserver as soon as the page

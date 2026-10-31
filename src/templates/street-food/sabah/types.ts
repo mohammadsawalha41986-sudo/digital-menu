@@ -1,4 +1,5 @@
 import type { MenuItem } from './data/menuData';
+import type { ChosenGroup } from './choices';
 
 export type Language = 'ar' | 'en';
 
@@ -10,6 +11,8 @@ export interface CartItem {
     nameEn: string;
     price: number;
   };
+  /** The restaurant's choices as the customer made them. */
+  choices?: ChosenGroup[];
   spiceLevel?: 'normal' | 'spicy';
   extraCheese?: boolean;
   extraGarlic?: boolean;

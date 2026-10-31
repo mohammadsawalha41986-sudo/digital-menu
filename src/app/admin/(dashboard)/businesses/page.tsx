@@ -85,7 +85,10 @@ export default async function BusinessesPage() {
                 <Link
                   href={`/admin/businesses/${business.id}`}
                   className="business-card__cover"
-                  aria-label={`Manage ${business.nameEn ?? business.nameAr}`}
+                  // The name below is the same link; this one is the picture,
+                  // so it is kept out of the tab order and the reading order.
+                  tabIndex={-1}
+                  aria-hidden="true"
                 >
                   {logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -112,7 +115,7 @@ export default async function BusinessesPage() {
                   </header>
 
                   <p className="business-card__meta">
-                    {business.type.toLowerCase()} · {business.templateKey} ·{' '}
+                    {business.type.toLowerCase()} ·{' '}
                     <code>{business.publicId}</code>
                   </p>
 
@@ -147,10 +150,10 @@ export default async function BusinessesPage() {
                       Manage
                     </Link>
                     <Link
-                      href={`/admin/businesses/${business.id}/brand`}
+                      href={`/admin/businesses/${business.id}/design`}
                       className="admin__button admin__button--small admin__button--secondary"
                     >
-                      Brand
+                      Design
                     </Link>
                     <Link
                       href={`/m/${business.publicId}`}
@@ -158,7 +161,7 @@ export default async function BusinessesPage() {
                       rel="noreferrer"
                       className="admin__button admin__button--small admin__button--secondary"
                     >
-                      View ↗
+                      /m/{business.publicId}
                     </Link>
                   </footer>
                 </div>

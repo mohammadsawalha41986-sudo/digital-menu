@@ -2237,11 +2237,11 @@
 }
 
 .business-stats__tile[data-tone='ok'] .business-stats__value {
-  color: #2e7d32;
+  color: var(--admin-ok);
 }
 
 .business-stats__tile[data-tone='warn'] .business-stats__value {
-  color: #c77c00;
+  color: var(--admin-warning);
 }
 
 /* --- Card grid ---------------------------------------------------------- */
@@ -2560,4 +2560,690 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Restaurant hub — the business page, grouped by what an owner wants to do.
+   --------------------------------------------------------------------------- */
+
+.hub {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  gap: var(--sys-space-4);
+}
+
+.hub__group {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  padding: var(--sys-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  min-inline-size: 0;
+}
+
+.hub__title {
+  font-size: var(--sys-font-size-md, 1.0625rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.hub__links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+  gap: var(--sys-space-2);
+}
+
+.hub__tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sys-space-3);
+  min-block-size: var(--sys-tap-target, 44px);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-bg);
+  color: var(--admin-ink);
+  text-decoration: none;
+}
+
+.hub__tile:hover,
+.hub__tile:focus-visible {
+  border-color: var(--admin-accent);
+}
+
+.hub__tile[data-primary] {
+  background: var(--admin-accent);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent-ink);
+}
+
+.hub__tile-label {
+  font-weight: 700;
+}
+
+.hub__tile-sub {
+  font-size: var(--sys-font-size-sm);
+  opacity: 0.8;
+}
+
+.hub__advanced {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  padding: var(--sys-space-3) var(--sys-space-4);
+}
+
+.hub__advanced > summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-block-size: var(--sys-tap-target, 44px);
+  display: flex;
+  align-items: center;
+}
+
+.hub__advanced[open] > .hub__links {
+  margin-block-start: var(--sys-space-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Design page — controls on the inline start, the real menu on the inline end.
+   --------------------------------------------------------------------------- */
+
+.design__layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sys-space-4);
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .design__layout {
+    grid-template-columns: minmax(0, 1fr) 410px;
+  }
+
+  .design__preview {
+    position: sticky;
+    inset-block-start: var(--sys-space-4);
+  }
+}
+
+.design__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-4);
+  min-inline-size: 0;
+}
+
+.design__preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  min-inline-size: 0;
+}
+
+.design__preview iframe {
+  inline-size: 100%;
+  max-inline-size: 390px;
+  block-size: 760px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: #0d120e;
+}
+
+.design__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-4);
+  flex-wrap: wrap;
+}
+
+.design__logo-image,
+.design__logo-empty {
+  inline-size: 96px;
+  block-size: 96px;
+  border-radius: var(--sys-radius-md-md);
+  border: 1px solid var(--admin-border);
+  object-fit: contain;
+  background: var(--admin-bg);
+  display: grid;
+  place-items: center;
+  font-size: var(--sys-font-size-sm);
+  color: var(--admin-muted);
+  text-align: center;
+}
+
+.design__brand {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sys-space-4);
+}
+
+@media (min-width: 720px) {
+  .design__brand {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    align-items: start;
+  }
+}
+
+.design__brand-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-4);
+  min-inline-size: 0;
+}
+
+/* A dish card drawn with the chosen colours, type and spacing. */
+.design__sample {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid var(--admin-border);
+  align-self: start;
+}
+
+.design__sample-card {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+}
+
+.design__sample-photo {
+  inline-size: 100%;
+}
+
+.design__sample-badge {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: #111;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.design__sample-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.design__sample-button {
+  padding: 6px 14px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.design__group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+  gap: var(--sys-space-3);
+}
+
+.design__group > legend {
+  grid-column: 1 / -1;
+}
+
+.design__auto {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  font-size: var(--sys-font-size-sm);
+}
+
+/* --- Photos step: library with delete, dishes with remove ---------------- */
+
+.photo-library {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(9.5rem, 100%), 1fr));
+  gap: var(--sys-space-3);
+}
+
+.photo-library__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-2);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-bg);
+}
+
+.photo-library__item img {
+  inline-size: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--sys-radius-md-sm);
+}
+
+.photo-library__facts {
+  font-size: var(--sys-font-size-sm);
+  color: var(--admin-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.photo-dishes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.photo-dishes__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-2);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+}
+
+.photo-dishes__item img {
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  object-fit: cover;
+  border-radius: var(--sys-radius-md-sm);
+  flex: none;
+}
+
+.photo-dishes__name {
+  flex: 1;
+  min-inline-size: 0;
+  font-weight: 600;
+}
+
+/* --- Upsell page ---------------------------------------------------------- */
+
+.upsell {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.upsell__form {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  gap: var(--sys-space-2) var(--sys-space-3);
+  align-items: center;
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+}
+
+.upsell__name {
+  font-weight: 700;
+}
+
+.upsell__new {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  font-size: var(--sys-font-size-sm);
+}
+
+.upsell__picks {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+  gap: var(--sys-space-2);
+}
+
+.design__order-field {
+  grid-column: 1 / -1;
+}
+
+.design__order {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.design__order-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-bg);
+}
+
+.design__order-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.design__order-name small {
+  font-weight: 400;
+  color: var(--admin-muted);
+}
+
+/* Background templates on the Design page. */
+.design__themes-field {
+  grid-column: 1 / -1;
+}
+
+.design__themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--sys-space-2);
+}
+
+.design__theme {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 2px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+  background: var(--admin-surface);
+  cursor: pointer;
+  text-align: start;
+}
+
+.design__theme[aria-checked='true'] {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--admin-accent) 25%, transparent);
+}
+
+.design__theme-swatch {
+  display: grid;
+  place-items: center;
+  block-size: 3.5rem;
+  border-radius: 8px;
+  border: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.design__theme-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.design__theme-card i {
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: 999px;
+}
+
+.design__theme-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* --- Section layouts ------------------------------------------------------ */
+
+.sections__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.sections__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sys-space-2) var(--sys-space-4);
+  align-items: center;
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+}
+
+@media (min-width: 720px) {
+  .sections__row {
+    grid-template-columns: minmax(9rem, 1fr) minmax(14rem, 1.4fr) 9rem;
+  }
+}
+
+.sections__name,
+.sections__pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.sections__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-3);
+  margin-top: var(--sys-space-4);
+}
+
+/* The thumbnail: grey boxes for dishes, laid out as the menu will lay them. */
+.sections__sketch {
+  width: 9rem;
+  min-height: 4.5rem;
+  padding: 0.4rem;
+  border-radius: 0.5rem;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: hidden;
+}
+
+.sections__sketch span {
+  display: block;
+  border-radius: 0.2rem;
+  background: color-mix(in oklab, var(--admin-accent) 45%, var(--admin-surface));
+}
+
+.sections__run {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.sections__run span {
+  height: 1.1rem;
+}
+
+.sections__run--large span {
+  height: 1.8rem;
+}
+
+.sections__run--list {
+  grid-template-columns: 1fr 1fr;
+}
+
+.sections__run--list span {
+  height: 0.55rem;
+}
+
+.sections__run--carousel {
+  display: flex;
+}
+
+.sections__run--carousel span {
+  flex: 0 0 38%;
+  height: 2.6rem;
+}
+
+.sections__sketch span.sections__wide {
+  height: 1.8rem;
+  background: linear-gradient(
+    to left,
+    color-mix(in oklab, var(--admin-accent) 70%, var(--admin-surface)) 50%,
+    color-mix(in oklab, var(--admin-accent) 25%, var(--admin-surface)) 50%
+  );
+}
+
+/* --- Options & add-ons ---------------------------------------------------- */
+
+.options__presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr));
+  gap: var(--sys-space-2);
+}
+
+.options__preset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: var(--sys-space-3);
+  text-align: start;
+  font: inherit;
+  color: var(--admin-ink);
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-accent);
+  border-radius: var(--sys-radius-md-md);
+  cursor: pointer;
+}
+
+.options__preset span {
+  font-size: var(--sys-font-size-sm);
+  color: var(--admin-muted);
+}
+
+.options__preset:hover {
+  background: color-mix(in oklab, var(--admin-accent) 8%, var(--admin-surface));
+}
+
+.options__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.options__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+}
+
+.options__group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sys-space-2);
+}
+
+.options__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.options__chip {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  font-size: var(--sys-font-size-sm);
+}
+
+.options__group-actions,
+.options__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sys-space-2);
+}
+
+.options__editor {
+  border: 2px solid var(--admin-accent);
+}
+
+.options__editor form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-4);
+}
+
+.options__names {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  gap: var(--sys-space-3);
+}
+
+.options__rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.options__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+  min-height: 2.25rem;
+}
+
+.options__max {
+  width: 4.5rem;
+}
+
+.options__rows,
+.options__dishes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  margin: 0;
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md-md);
+}
+
+.options__rows legend,
+.options__dishes legend {
+  font-weight: 700;
+  padding-inline: 0.3rem;
+}
+
+.options__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sys-space-2);
+  align-items: center;
+  padding-block-end: var(--sys-space-2);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+@media (min-width: 900px) {
+  .options__row {
+    grid-template-columns: 1.3fr 1.3fr 6rem auto auto;
+    border-bottom: 0;
+    padding-block-end: 0;
+  }
+}
+
+.options__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.options__dish-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
+  gap: 0 var(--sys-space-3);
+  padding-inline-start: var(--sys-space-4);
 }

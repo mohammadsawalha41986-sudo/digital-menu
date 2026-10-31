@@ -16,7 +16,7 @@ export interface BuildStep {
 
 export const BUILD_STEPS: readonly BuildStep[] = [
   { key: 'brand', number: 2, title: 'Logo & brand', summary: 'Your logo builds the palette', required: false },
-  { key: 'style', number: 3, title: 'Menu style', summary: 'Pick the look', required: false },
+  { key: 'style', number: 3, title: 'Photo layout', summary: 'How dishes are shown', required: false },
   { key: 'details', number: 4, title: 'Menu information', summary: 'Description and contact', required: false },
   { key: 'menu', number: 5, title: 'Your menu', summary: 'Import or type it', required: true },
   { key: 'images', number: 6, title: 'Photos', summary: 'Dishes and hero images', required: false },

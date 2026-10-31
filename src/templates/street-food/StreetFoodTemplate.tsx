@@ -1,9 +1,13 @@
 import SabahApp from './sabah/SabahApp';
 import { profileToSabah } from './profile-to-sabah';
 import { renderQr } from '@/server/qr/service';
+import { menuTone } from '@/design/brand';
 import type { PublicProfile } from '@/server/profile/types';
 import type { Locale } from '@/i18n/config';
 import type { TemplateRenderProps } from '../types';
+
+/** The template's variants are its dish photo layouts. */
+const IMAGE_LAYOUTS: Record<string, 'grid' | 'list' | 'large'> = { a: 'grid', b: 'list', c: 'large' };
 
 /**
  * STREET FOOD — the Sabah El Lail reference app, hoisted into the templates
@@ -23,7 +27,7 @@ export function StreetFoodTemplate({ profile, locale }: TemplateRenderProps) {
 }
 
 async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; locale: Locale }) {
-  const { restaurantInfo, menuCategories, menuItems, logoUrl, slides } = profileToSabah(profile);
+  const { restaurantInfo, menuCategories, menuItems, logoUrl, slides, offers } = profileToSabah(profile);
 
   // The QR encodes the permanent `/m/{publicId}` destination — the same one
   // printed on the restaurant's tables. A failure here must not take the menu
@@ -40,7 +44,22 @@ async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; l
       logoUrl={logoUrl}
       slides={slides}
       qrDataUri={qrDataUri}
+      imageLayout={IMAGE_LAYOUTS[profile.variantKey] ?? 'grid'}
       initialLang={locale}
+      publicId={profile.publicId}
+      offers={offers}
+      sectionOrder={profile.brand.sectionOrder}
+      offersInsideMenu={profile.brand.offersInsideMenu ?? true}
+      heroEffect={profile.brand.heroEffect}
+      dishEffect={profile.brand.dishEffect}
+      backgroundStyle={profile.brand.backgroundStyle}
+      tone={menuTone(profile.brand)}
+      imageShape={(['landscape', 'square', 'portrait'] as const).find((shape) => shape === profile.brand.imageShape) ?? 'landscape'}
+      customColors={{
+        page: Boolean(profile.brand.menuPage),
+        card: Boolean(profile.brand.menuCard),
+        price: Boolean(profile.brand.menuPrice),
+      }}
     />
   );
 }

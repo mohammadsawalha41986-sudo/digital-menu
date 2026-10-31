@@ -11,6 +11,8 @@ import {
   type AuthenticatedUser,
 } from '@/server/tenancy/context';
 import { isValidTemplateSelection } from '@/templates/registry';
+import { isFoodBusinessType } from './validation';
+import { isSectionStyle } from '@/templates/street-food/sabah/section-layout';
 import { parseSnapshot, summarise } from '@/server/menus/snapshot';
 import {
   applySnapshot,
@@ -52,7 +54,21 @@ export class ValidationError extends Error {
 
 type BusinessInput = z.infer<typeof businessSchema>;
 type BranchInput = z.infer<typeof branchSchema>;
-type BrandInput = z.infer<typeof brandSchema>;
+type BrandOutput = z.infer<typeof brandSchema>;
+type MenuDesignKey =
+  | 'menuPage'
+  | 'menuCard'
+  | 'menuPrice'
+  | 'textScale'
+  | 'spacing'
+  | 'imageShape'
+  | 'sectionOrder'
+  | 'offersInsideMenu'
+  | 'heroEffect'
+  | 'dishEffect'
+  | 'backgroundStyle';
+/** Callers that only set the palette leave the menu design settings as they are. */
+type BrandInput = Omit<BrandOutput, MenuDesignKey> & Partial<Pick<BrandOutput, MenuDesignKey>>;
 type MenuInput = z.infer<typeof menuSchema>;
 type CategoryInput = z.infer<typeof categorySchema>;
 type ItemInput = z.infer<typeof itemSchema>;
@@ -69,6 +85,9 @@ type TemplateInput = z.infer<typeof templateSelectionSchema>;
  */
 export async function createBusiness(user: AuthenticatedUser, input: BusinessInput) {
   if (user.role !== 'SUPER_ADMIN') throw new TenantAccessError('Only platform staff may create a business');
+  if (!isFoodBusinessType(input.type)) {
+    throw new ValidationError('Only restaurants, cafés, bakeries and dessert shops can be created');
+  }
 
   const publicId = await allocatePublicId();
 
@@ -129,6 +148,11 @@ export async function updateBusiness(
   const context = await requireTenantContext(user, businessId, 'MANAGER');
 
   const before = await prisma.business.findUniqueOrThrow({ where: { id: context.businessId } });
+
+  // A legacy non-food type may be kept as it is, but never newly chosen.
+  if (input.type !== before.type && !isFoodBusinessType(input.type)) {
+    throw new ValidationError('Choose restaurant, café, bakery or dessert shop');
+  }
 
   // The public id is never in the update payload — it is the printed QR.
   const updated = await prisma.business.update({
@@ -918,4 +942,124 @@ export async function getHoursForAdmin(user: AuthenticatedUser, businessId: stri
       workingHours: parseWorkingHours(branch.workingHours),
     })),
   };
+}
+
+/** At most this many dishes are suggested with any one dish. */
+export const MAX_PAIRINGS = 3;
+
+/** The tag that marks a dish as new on the menu ("جديد"). */
+export const NEW_TAG = 'new';
+
+/**
+ * Upsell for one dish: the dishes suggested with it ("complete your meal")
+ * and whether it is shown as new.
+ *
+ * Suggestions are item codes of the same business, validated here: an
+ * unknown code, the dish itself, a duplicate or more than MAX_PAIRINGS is
+ * refused rather than silently dropped, so the owner sees what happened.
+ */
+export async function setItemUpsell(
+  user: AuthenticatedUser,
+  businessId: string,
+  input: { itemCode: string; pairsWith: string[]; isNew: boolean },
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const itemCode = input.itemCode.trim().toUpperCase();
+  const pairsWith = input.pairsWith.map((code) => code.trim().toUpperCase()).filter(Boolean);
+
+  const item = await prisma.menuItem.findFirst({
+    where: { businessId: context.businessId, itemCode },
+    select: { id: true, tags: true, pairsWith: true },
+  });
+  if (!item) throw new ValidationError(`No dish with code ${itemCode}`);
+
+  if (pairsWith.length > MAX_PAIRINGS) {
+    throw new ValidationError(`Suggest at most ${MAX_PAIRINGS} dishes`);
+  }
+  if (new Set(pairsWith).size !== pairsWith.length) {
+    throw new ValidationError('A dish is suggested twice');
+  }
+  if (pairsWith.includes(itemCode)) {
+    throw new ValidationError('A dish cannot be suggested with itself');
+  }
+
+  if (pairsWith.length > 0) {
+    const found = await prisma.menuItem.findMany({
+      where: { businessId: context.businessId, itemCode: { in: pairsWith } },
+      select: { itemCode: true },
+    });
+    const missing = pairsWith.filter((code) => !found.some((entry) => entry.itemCode === code));
+    if (missing.length > 0) throw new ValidationError(`No dish with code ${missing.join(', ')}`);
+  }
+
+  const tags = input.isNew
+    ? Array.from(new Set([...item.tags, NEW_TAG]))
+    : item.tags.filter((tag) => tag !== NEW_TAG);
+
+  const updated = await prisma.menuItem.update({
+    where: { id: item.id },
+    data: { pairsWith, tags },
+    select: { itemCode: true, pairsWith: true, tags: true },
+  });
+
+  await recordAudit({
+    action: 'item.upsell_updated',
+    entity: 'menu_item',
+    entityId: item.id,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { before: { pairsWith: item.pairsWith, tags: item.tags }, after: { pairsWith, tags } },
+  });
+
+  return updated;
+}
+
+/**
+ * Section layouts on the public menu, one style per category. Only the
+ * restaurant's own categories are touched; an unknown style is refused.
+ */
+export async function setCategoryStyles(
+  user: AuthenticatedUser,
+  businessId: string,
+  styles: { categoryId: string; style: string }[],
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const bad = styles.find((entry) => !isSectionStyle(entry.style));
+  if (bad) throw new ValidationError(`Unknown section style: ${bad.style}`);
+
+  const categories = await prisma.menuCategory.findMany({
+    where: { businessId: context.businessId, id: { in: styles.map((entry) => entry.categoryId) } },
+    select: { id: true, displayStyle: true },
+  });
+  if (categories.length !== new Set(styles.map((entry) => entry.categoryId)).size) {
+    throw new ValidationError('A section does not belong to this restaurant');
+  }
+
+  const changed = styles.filter(
+    (entry) => categories.find((category) => category.id === entry.categoryId)?.displayStyle !== entry.style,
+  );
+  if (changed.length === 0) return 0;
+
+  await prisma.$transaction(
+    changed.map((entry) =>
+      prisma.menuCategory.update({ where: { id: entry.categoryId }, data: { displayStyle: entry.style } }),
+    ),
+  );
+
+  await recordAudit({
+    action: 'category.display_style_updated',
+    entity: 'business',
+    entityId: context.businessId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: {
+      changes: changed.map((entry) => ({
+        categoryId: entry.categoryId,
+        before: categories.find((category) => category.id === entry.categoryId)?.displayStyle,
+        after: entry.style,
+      })),
+    },
+  });
+
+  return changed.length;
 }
