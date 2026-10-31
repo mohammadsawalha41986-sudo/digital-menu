@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RULES, clearAll, clientIdentity, consume, reset } from '@/server/security/rate-limit';
 
 const RULE = { namespace: 'test', windowMs: 60_000, max: 3 } as const;
@@ -48,16 +48,20 @@ describe('rate limiting', () => {
   });
 
   it('starts a fresh window once the old one has elapsed', () => {
-    const brief = { namespace: 'brief', windowMs: 1, max: 1 } as const;
-    expect(consume(brief, 'g').limited).toBe(false);
-    expect(consume(brief, 'g').limited).toBe(true);
+    // The clock is held still: with a real one, a busy machine let the
+    // window lapse between the first two calls and the test failed at random.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+      const brief = { namespace: 'brief', windowMs: 1_000, max: 1 } as const;
+      expect(consume(brief, 'g').limited).toBe(false);
+      expect(consume(brief, 'g').limited).toBe(true);
 
-    const later = Date.now() + 5;
-    while (Date.now() < later) {
-      /* spin briefly rather than mock the clock */
+      vi.setSystemTime(new Date('2026-01-01T00:00:01.001Z'));
+      expect(consume(brief, 'g').limited).toBe(false);
+    } finally {
+      vi.useRealTimers();
     }
-
-    expect(consume(brief, 'g').limited).toBe(false);
   });
 
   describe('client identity', () => {
