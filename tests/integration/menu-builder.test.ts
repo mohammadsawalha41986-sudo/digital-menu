@@ -5,11 +5,14 @@ import {
   createBusiness,
   createCategory,
   deleteCategory,
+  deleteItem,
+  itemIdByCode,
   newItemCode,
   renameCategory,
   upsertItem,
 } from '@/server/admin/business-service';
 import { categoryCreateSchema, itemSchema } from '@/server/admin/validation';
+import { duplicateItem } from '@/server/admin/structure-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { resetEnvCache } from '@/lib/env';
 import { isValidKey } from '@/lib/keys';
@@ -203,6 +206,22 @@ describe.skipIf(!databaseReachable)('menu builder', () => {
     const empty = await prisma.menuCategory.findFirstOrThrow({ where: { menuId, key: 'grilled-chicken-2' } });
     await deleteCategory(user, businessId, empty.id);
     expect(await prisma.menuCategory.count({ where: { id: empty.id } })).toBe(0);
+  });
+
+  it('gives a copied dish an upper-case code that can be found, edited and deleted', async () => {
+    const source = await prisma.menuItem.findUniqueOrThrow({
+      where: { businessId_itemCode: { businessId, itemCode: 'B-1' } },
+    });
+    const copy = await duplicateItem(user, businessId, source.id);
+    expect(copy.itemCode).toBe(copy.itemCode.toUpperCase());
+
+    // Saving the copy by its code updates it rather than making a third dish.
+    const before = await prisma.menuItem.count({ where: { businessId } });
+    await upsertItem(user, businessId, { ...dish({ itemCode: copy.itemCode, categoryKey: 'grilled-chicken', price: '25' }), menuId });
+    expect(await prisma.menuItem.count({ where: { businessId } })).toBe(before);
+
+    await deleteItem(user, businessId, await itemIdByCode(user, businessId, copy.itemCode));
+    expect(await prisma.menuItem.count({ where: { id: copy.id } })).toBe(0);
   });
 
   it('refuses another tenant everywhere', async () => {

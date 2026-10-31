@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ActionState } from '@/server/admin/actions';
+import { DishImagePicker, type LibraryPhoto } from './dish-image-picker';
 
 /**
  * Step 7 — the builder.
@@ -25,6 +26,9 @@ export interface BuilderItem {
   categoryKey: string;
   availability: string;
   imageUrl: string | null;
+  imageId: string | null;
+  focalX: number | null;
+  focalY: number | null;
 }
 
 export interface BuilderCategory {
@@ -46,6 +50,9 @@ const BLANK: BuilderItem = {
   categoryKey: '',
   availability: 'AVAILABLE',
   imageUrl: null,
+  imageId: null,
+  focalX: null,
+  focalY: null,
 };
 
 type Action = (previous: ActionState, formData: FormData) => Promise<ActionState>;
@@ -58,16 +65,22 @@ export interface BuilderActions {
   deleteCategory: Action;
   deleteItem: Action;
   duplicateItem: Action;
+  uploadPhoto: Action;
+  assignPhoto: Action;
+  photoFocal: Action;
 }
 
 export function BuilderStep({
   categories,
   currency,
   actions,
+  library,
 }: {
   categories: BuilderCategory[];
   currency: string;
   actions: BuilderActions;
+  /** The restaurant's photos, for the dish image picker. */
+  library: LibraryPhoto[];
 }) {
   const [itemState, submitItem] = useActionState<ActionState, FormData>(actions.saveItem, {});
   const [categoryState, submitCategory] = useActionState<ActionState, FormData>(actions.addCategory, {});
@@ -82,7 +95,12 @@ export function BuilderStep({
   // rename that saves closes its form and a deleted dish leaves the editor
   // without an effect writing state back.
   const [pick, setPick] = useState<{ item: BuilderItem; since: ActionState } | null>(null);
-  const selected = pick && !(dishDeleteState.ok && dishDeleteState !== pick.since) ? pick.item : null;
+  // Read through to the latest data by code, so a photo or price saved a
+  // moment ago shows here without re-opening the dish.
+  const picked = pick && !(dishDeleteState.ok && dishDeleteState !== pick.since) ? pick.item : null;
+  const selected = picked
+    ? (categories.flatMap((category) => category.items).find((item) => item.code === picked.code) ?? picked)
+    : null;
   const setSelected = (item: BuilderItem | null) => setPick(item ? { item, since: dishDeleteState } : null);
   const [renameOpen, setRenameOpen] = useState<{ id: string; since: ActionState } | null>(null);
   const renaming =
@@ -293,7 +311,23 @@ export function BuilderStep({
           <>
             {/* The code is the stable key the spreadsheet matches on. It is
                 generated for a new dish and never shown as something to edit. */}
-            {editing.code ? <input type="hidden" name="itemCode" value={editing.code} key={editing.code} /> : null}
+            {/* Always present, empty for a new dish. Rendered conditionally, a
+                deleted dish's code was left behind in the form after the
+                delete, and the next "new" dish was saved under it. */}
+            <input type="hidden" name="itemCode" value={editing.code} readOnly />
+
+            <DishImagePicker
+              key={editing.code || 'new'}
+              itemCode={editing.code || null}
+              dishName={editing.nameAr}
+              current={
+                editing.imageId && editing.imageUrl
+                  ? { id: editing.imageId, url: editing.imageUrl, focalX: editing.focalX, focalY: editing.focalY }
+                  : null
+              }
+              library={library}
+              actions={{ upload: actions.uploadPhoto, assign: actions.assignPhoto, focal: actions.photoFocal }}
+            />
 
             <div className="admin__field">
               <label className="admin__label" htmlFor="item-name-ar">

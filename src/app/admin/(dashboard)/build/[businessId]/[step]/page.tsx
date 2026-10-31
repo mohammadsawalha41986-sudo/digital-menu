@@ -25,7 +25,9 @@ import {
   assignMediaAction,
   deleteMediaFormAction,
   uploadDishPhotoAction,
+  setDishFocalAction,
 } from '@/server/admin/media-actions';
+import { derivativeUrl } from '@/server/media/derivatives';
 import { BUILD_STEPS, nextStep, previousStep, stepAt } from '../steps';
 import { PreviewPane } from '../preview-pane';
 import { BrandStep } from './steps/brand-step';
@@ -304,8 +306,23 @@ async function renderStep(context: StepContext) {
             categoryKey: category.key,
             availability: item.availability,
             imageUrl: urlOf(item.imageMediaId),
+            imageId: item.imageMediaId,
+            focalX: media.find((image) => image.id === item.imageMediaId)?.focalX ?? null,
+            focalY: media.find((image) => image.id === item.imageMediaId)?.focalY ?? null,
           })),
         })) ?? [];
+
+      // Every photo with the dishes using it, so the picker can say which
+      // are free and which already show on the menu.
+      const library = media
+        .filter((image) => image.kind !== 'DOCUMENT' && image.contentType?.startsWith('image/') !== false)
+        .map((image) => ({
+          id: image.id,
+          url: image.url,
+          thumb: image.derivativeWidths.includes(320) ? derivativeUrl(image.url, 320) : image.url,
+          name: image.originalName ?? image.altAr ?? image.altEn ?? 'photo',
+          usedBy: context.items.filter((item) => item.imageMediaId === image.id).map((item) => item.nameAr),
+        }));
 
       if (!menu) {
         return (
@@ -331,7 +348,11 @@ async function renderStep(context: StepContext) {
             deleteCategory: deleteSectionAction.bind(null, business.id, business.publicId),
             deleteItem: deleteDishAction.bind(null, business.id, business.publicId),
             duplicateItem: duplicateDishAction.bind(null, business.id, business.publicId),
+            uploadPhoto: uploadDishPhotoAction.bind(null, business.id, business.publicId),
+            assignPhoto: assignMediaAction.bind(null, business.id, business.publicId),
+            photoFocal: setDishFocalAction.bind(null, business.id, business.publicId),
           }}
+          library={library}
         />
       );
     }

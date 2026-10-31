@@ -338,3 +338,30 @@ export async function uploadDishPhotoAction(
     throw error;
   }
 }
+
+/**
+ * The dish editor's "position" control: where the photo is cropped around.
+ * The photo itself is never changed; every frame shape crops around this
+ * point. It belongs to the photo, so a photo shared by two dishes shares it.
+ */
+export async function setDishFocalAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const mediaId = String(formData.get('mediaId') ?? '');
+  const focal = formData.get('reset') ? null : normaliseFocal(formData.get('focalX'), formData.get('focalY'));
+
+  try {
+    await setFocalPoint(user, businessId, mediaId, focal);
+    revalidatePath(`/admin/build/${businessId}`, 'layout');
+    revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
+    return { ok: true, message: focal ? 'Position saved' : 'Position reset to the centre' };
+  } catch (error) {
+    if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
+    throw error;
+  }
+}

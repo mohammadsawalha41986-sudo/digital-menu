@@ -226,6 +226,43 @@ test.describe('a new restaurant, start to finish', () => {
     await expect(page.getByRole('button', { name: /أرز برياني/ })).toBeVisible();
   });
 
+  test('step 7: a dish photo is uploaded, kept after a reload, reused from the library and removed', async ({ page }) => {
+    await signIn(page);
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.goto(`/admin/build/${businessId}/builder`);
+
+    await page.getByRole('button', { name: /Hummus/ }).click();
+    const picker = page.getByRole('region', { name: 'Dish image' });
+    await expect(picker).toBeVisible();
+    await picker.getByLabel(/Upload photo/).setInputFiles({
+      name: 'hummus-plate.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(LOGO),
+    });
+    await expect(picker.locator('[data-dish-photo-message]')).toContainText('Photo uploaded');
+    await expect(picker.locator('[data-dish-photo-current]')).toBeVisible();
+
+    // Still there after a reload.
+    await page.reload();
+    await page.getByRole('button', { name: /Hummus/ }).click();
+    await expect(page.getByRole('region', { name: 'Dish image' }).locator('[data-dish-photo-current]')).toBeVisible();
+
+    // The same stored photo on a second dish, picked from the library.
+    await page.getByRole('button', { name: /Mixed grill/ }).click();
+    const second = page.getByRole('region', { name: 'Dish image' });
+    await second.getByRole('button', { name: /From library/ }).click();
+    await second.getByPlaceholder(/Search by file or dish/).fill('Hummus');
+    await second.locator('[data-library-photo]').first().click();
+    await expect(second.locator('[data-dish-photo-message]')).toContainText('Photo set');
+    await expect(second.locator('[data-dish-photo-current]')).toBeVisible();
+
+    // Removing it from one dish leaves the other dish and the library alone.
+    await second.getByRole('button', { name: /Remove/ }).click();
+    await expect(second.locator('[data-dish-photo-current]')).toHaveCount(0);
+    await page.getByRole('button', { name: /Hummus/ }).click();
+    await expect(page.getByRole('region', { name: 'Dish image' }).locator('[data-dish-photo-current]')).toBeVisible();
+  });
+
   test('step 8: the address exists before publishing, and never moves', async ({ page }) => {
     await signIn(page);
     await page.goto(`/admin/build/${businessId}/qr`);

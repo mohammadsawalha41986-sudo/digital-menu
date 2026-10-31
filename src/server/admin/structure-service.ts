@@ -30,8 +30,12 @@ import { ValidationError } from './business-service';
 async function uniqueKey(
   base: string,
   taken: (candidate: string) => Promise<boolean>,
+  // Menu and section keys are lower case; item codes are upper case, and a
+  // copy's code must be too, or every code lookup (which upper-cases) misses
+  // it: the copy could not be deleted, and saving it created another dish.
+  suffix: 'copy' | 'COPY' = 'copy',
 ): Promise<string> {
-  const root = `${base}-copy`.slice(0, 48);
+  const root = `${base}-${suffix}`.slice(0, 48);
 
   if (!(await taken(root))) return root;
 
@@ -362,6 +366,7 @@ export async function duplicateItem(user: AuthenticatedUser, businessId: string,
         select: { id: true },
       }),
     ),
+    'COPY',
   );
 
   const copy = await prisma.menuItem.create({

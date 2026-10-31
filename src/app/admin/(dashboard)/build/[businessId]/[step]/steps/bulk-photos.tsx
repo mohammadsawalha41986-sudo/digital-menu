@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ActionState } from '@/server/admin/actions';
 import { matchPhoto } from '@/lib/photo-match';
+import { shrink } from '@/lib/shrink-image';
 
 /**
  * All the dish photos at once.
@@ -34,31 +35,7 @@ interface Row {
   error?: string;
 }
 
-const MAX_SIDE = 2000;
 const PARALLEL = 2;
-
-/** A smaller WebP (JPEG where the browser cannot write WebP), or the original if it cannot be read. */
-async function shrink(file: File): Promise<File> {
-  try {
-    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    const encode = (type: string) =>
-      new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.85));
-    let blob = await encode('image/webp');
-    // A browser that cannot write WebP hands back PNG, which is larger.
-    if (!blob || blob.type !== 'image/webp') blob = await encode('image/jpeg');
-    if (!blob || blob.size >= file.size) return file;
-    const extension = blob.type === 'image/webp' ? 'webp' : 'jpg';
-    return new File([blob], file.name.replace(/\.[^.]+$/, '') + `.${extension}`, { type: blob.type });
-  } catch {
-    return file;
-  }
-}
 
 export function BulkPhotos({
   dishes,
