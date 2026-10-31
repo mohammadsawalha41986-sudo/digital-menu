@@ -41,6 +41,13 @@ export interface HeroSlide {
   image: string;
   imageSrcSet?: string;
   imagePosition?: string;
+  /** Phone crop of the same photo; imagePosition is the wide-screen one. */
+  imageMobilePosition?: string;
+  /** 0-60: darkening behind the text, for a restaurant's own banner. */
+  overlay?: number;
+  ctaLabelAr?: string;
+  ctaLabelEn?: string;
+  ctaUrl?: string;
 }
 
 /**

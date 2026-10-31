@@ -39,6 +39,13 @@ import {
 } from './business-service';
 import { duplicateItem, move } from './structure-service';
 import {
+  addHeroBanner,
+  deleteHeroBanner,
+  moveHeroBanner,
+  setHeroInterval,
+  updateHeroBanner,
+} from './hero-banners';
+import {
   branchSchema,
   brandSchema,
   businessSchema,
@@ -610,5 +617,100 @@ export async function duplicateDishAction(
     );
     revalidateBusiness(businessId, publicId);
     return `Copied as “${copy.nameAr}” — hidden until you show it`;
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Step 6, hero banners                                                        */
+/* -------------------------------------------------------------------------- */
+
+const num = (value: FormDataEntryValue | null) => {
+  const text = String(value ?? '').trim();
+  return text === '' ? null : Number(text);
+};
+
+export async function addHeroBannerAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await addHeroBanner(user, businessId, String(formData.get('mediaId') ?? ''));
+    revalidateBusiness(businessId, publicId);
+    return 'Banner added';
+  });
+}
+
+export async function saveHeroBannerAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const text = (name: string) => String(formData.get(name) ?? '');
+  return run(async () => {
+    await updateHeroBanner(user, businessId, text('id'), {
+      headingAr: text('headingAr'),
+      headingEn: text('headingEn'),
+      subheadingAr: text('subheadingAr'),
+      subheadingEn: text('subheadingEn'),
+      ctaLabelAr: text('ctaLabelAr'),
+      ctaLabelEn: text('ctaLabelEn'),
+      ctaUrl: text('ctaUrl'),
+      overlay: Number(text('overlay') || 0),
+      isVisible: formData.get('isVisible') === 'on',
+      focalX: num(formData.get('focalX')),
+      focalY: num(formData.get('focalY')),
+      mobileFocalX: num(formData.get('mobileFocalX')),
+      mobileFocalY: num(formData.get('mobileFocalY')),
+    });
+    revalidateBusiness(businessId, publicId);
+    return 'Banner saved';
+  });
+}
+
+export async function moveHeroBannerAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const to = String(formData.get('to'));
+  return run(async () => {
+    await moveHeroBanner(user, businessId, String(formData.get('id') ?? ''), to === 'first' ? 'first' : to === 'up' ? 'up' : 'down');
+    revalidateBusiness(businessId, publicId);
+    return to === 'first' ? 'Now the main banner' : 'Order updated';
+  });
+}
+
+export async function deleteHeroBannerAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await deleteHeroBanner(user, businessId, String(formData.get('id') ?? ''));
+    revalidateBusiness(businessId, publicId);
+    return 'Banner removed (the photo stays in the library)';
+  });
+}
+
+export async function setHeroIntervalAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await setHeroInterval(user, businessId, Number(formData.get('seconds')));
+    revalidateBusiness(businessId, publicId);
+    return 'Saved';
   });
 }

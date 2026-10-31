@@ -65,6 +65,8 @@ export interface SabahAppProps {
   /** Offers inside the menu (after the second category) or in their own place. */
   offersInsideMenu?: boolean;
   heroEffect?: string;
+  /** Milliseconds each hero slide stays; the effect's own pace when absent. */
+  heroIntervalMs?: number;
   dishEffect?: string;
   backgroundStyle?: string;
 }
@@ -83,6 +85,7 @@ export default function App({
   sectionOrder = ['hero', 'menu', 'offers', 'reviews', 'location'],
   offersInsideMenu = true,
   heroEffect = 'slide',
+  heroIntervalMs,
   dishEffect = 'zoom',
   backgroundStyle = 'solid',
   tone = 'dark',
@@ -316,6 +319,7 @@ export default function App({
         <HeroSection 
           lang={lang} 
           effect={heroEffect}
+          intervalMs={heroIntervalMs}
           onOpenCalories={() => setIsCaloriesOpen(true)}
           onSelectFeaturedItem={(item) => setActiveItemForCustomization(item)}
         />

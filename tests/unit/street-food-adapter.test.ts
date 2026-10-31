@@ -66,6 +66,8 @@ function profile(items: PublicItem[]): PublicProfile {
       googleMapsUrl: 'https://maps.example/other',
     } as PublicProfile['contact'],
     offers: [],
+    heroBanners: [],
+    heroIntervalSec: 6,
     downloads: [],
     seo: {} as PublicProfile['seo'],
     menus: [

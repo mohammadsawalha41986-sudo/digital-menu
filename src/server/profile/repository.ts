@@ -131,6 +131,27 @@ async function loadProfile(
       descriptionEn: true,
       templateKey: true,
       variantKey: true,
+      heroIntervalSec: true,
+      heroBanners: {
+        where: { isVisible: true },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+        select: {
+          id: true,
+          headingAr: true,
+          headingEn: true,
+          subheadingAr: true,
+          subheadingEn: true,
+          ctaLabelAr: true,
+          ctaLabelEn: true,
+          ctaUrl: true,
+          overlay: true,
+          focalX: true,
+          focalY: true,
+          mobileFocalX: true,
+          mobileFocalY: true,
+          media: { select: MEDIA_SELECT },
+        },
+      },
       showPlatformFooter: true,
       phone: true,
       whatsapp: true,
@@ -409,6 +430,28 @@ async function loadProfile(
       // is not reachable by naming it in the URL either.
       .filter((menu) => !activeMenuKey || menu.key === activeMenuKey)
       .map((menu): PublicMenu => toMenu(menu, overrides, business.currency)),
+    heroIntervalSec: business.heroIntervalSec,
+    heroBanners: business.heroBanners.flatMap((banner) => {
+      const image = toImage(banner.media);
+      if (!image) return [];
+      const at = (x: number | null, y: number | null) => (x !== null && y !== null ? objectPosition({ x, y }) : null);
+      const desktop = at(banner.focalX, banner.focalY) ?? image.objectPosition;
+      return [
+        {
+          id: banner.id,
+          headingAr: banner.headingAr,
+          headingEn: banner.headingEn,
+          subheadingAr: banner.subheadingAr,
+          subheadingEn: banner.subheadingEn,
+          ctaLabelAr: banner.ctaLabelAr,
+          ctaLabelEn: banner.ctaLabelEn,
+          ctaUrl: banner.ctaUrl,
+          overlay: banner.overlay,
+          image: { ...image, objectPosition: desktop },
+          mobilePosition: at(banner.mobileFocalX, banner.mobileFocalY) ?? desktop,
+        },
+      ];
+    }),
     offers: business.offers.map((offer) => ({
       key: offer.key,
       titleAr: offer.titleAr,

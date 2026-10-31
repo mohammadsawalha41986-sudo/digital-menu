@@ -121,6 +121,9 @@ model Business {
   /// Layout variant within the template family.
   variantKey  String @default("a")
 
+  /// Seconds each hero slide stays before the next (3-15).
+  heroIntervalSec Int @default(6)
+
   /// --- Contact (master spec §20, §44). Empty fields hide their action. ---
   phone         String?
   whatsapp      String?
@@ -171,6 +174,7 @@ model Business {
   auditLogs       AuditLog[]
   publicFiles     PublicFile[]
   offers          Offer[]
+  heroBanners     HeroBanner[]
   importBatches   ImportBatch[]
   priceHistory    PriceHistory[]
   analyticsEvents AnalyticsEvent[]
@@ -446,9 +450,49 @@ model Media {
   itemImageOf     MenuItem[]
   itemGallery     MenuItemImage[]
   menuCoverOf     Menu[]          @relation("MenuCover")
+  heroBannerOf    HeroBanner[]
 
   @@index([businessId, kind])
   @@map("media")
+}
+
+/// A picture the restaurant chose for the top of its menu (Step 6). When a
+/// restaurant has visible banners the hero shows them in this order;
+/// otherwise it is built from its offers and photographed dishes.
+model HeroBanner {
+  id         String @id @default(cuid())
+  businessId String
+  mediaId    String
+
+  sortOrder Int     @default(0)
+  isVisible Boolean @default(true)
+
+  headingAr    String?
+  headingEn    String?
+  subheadingAr String?
+  subheadingEn String?
+  ctaLabelAr   String?
+  ctaLabelEn   String?
+  /// https://, tel:, or #section: where the banner's button goes.
+  ctaUrl       String?
+
+  /// Darkening behind the text, 0-60 (%). 0 shows the photo as it is.
+  overlay Int @default(0)
+
+  /// Crop points, 0-1, for wide screens and for phones; one photo, two crops.
+  focalX       Float?
+  focalY       Float?
+  mobileFocalX Float?
+  mobileFocalY Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  media    Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, sortOrder])
+  @@map("hero_banners")
 }
 
 /// A physical location. Branches may override price and availability without

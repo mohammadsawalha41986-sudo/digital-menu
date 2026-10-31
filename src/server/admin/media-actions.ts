@@ -19,6 +19,8 @@ import {
 import { FOCAL_PRESETS, normaliseFocal } from '@/server/media/derivatives';
 import { formDataToObject } from './validation';
 import type { ActionState } from './actions';
+import { addHeroBanner } from './hero-banners';
+import { ValidationError } from './business-service';
 
 const uploadSchema = z.object({
   kind: z.enum(['LOGO', 'ITEM_IMAGE', 'CATEGORY_IMAGE', 'OFFER_IMAGE', 'GALLERY', 'OG_IMAGE']),
@@ -361,6 +363,43 @@ export async function setDishFocalAction(
     invalidateProfile(publicId);
     return { ok: true, message: focal ? 'Position saved' : 'Position reset to the centre' };
   } catch (error) {
+    if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
+    throw error;
+  }
+}
+
+/** A new photo, uploaded straight into the hero banners (and the library). */
+export async function uploadHeroBannerAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const file = formData.get('file');
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image' };
+
+  try {
+    const media = await uploadMedia(user, businessId, {
+      kind: 'GALLERY',
+      altAr: null,
+      altEn: null,
+      width: null,
+      height: null,
+      upload: {
+        fileName: file.name,
+        declaredContentType: file.type || 'application/octet-stream',
+        bytes: new Uint8Array(await file.arrayBuffer()),
+      },
+    });
+    await addHeroBanner(user, businessId, media.id);
+    revalidatePath(`/admin/build/${businessId}`, 'layout');
+    revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
+    return { ok: true, message: 'Banner added' };
+  } catch (error) {
+    if (error instanceof FileValidationError) return { error: error.message };
+    if (error instanceof ValidationError) return { error: error.message };
     if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
     throw error;
   }

@@ -23,6 +23,8 @@ function profileFixture(): PublicProfile {
     activeMenuKey: 'main',
     contact: {} as PublicProfile['contact'],
     offers: [],
+    heroBanners: [],
+    heroIntervalSec: 6,
     downloads: [],
     seo: {} as PublicProfile['seo'],
     menus: [{

@@ -28,6 +28,8 @@ export type HeroEffect = 'slide' | 'fade' | 'zoom' | 'pan' | 'flip' | 'story';
 interface HeroSectionProps {
   lang: Language;
   effect?: string;
+  /** Milliseconds each slide stays, as the restaurant chose. */
+  intervalMs?: number;
   onOpenCalories: () => void;
   onSelectFeaturedItem: (item: MenuItem) => void;
 }
@@ -36,6 +38,7 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ 
   lang, 
   effect: requestedEffect = 'slide',
+  intervalMs,
   onOpenCalories,
   onSelectFeaturedItem 
 }) => {
@@ -45,7 +48,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     (name) => name === requestedEffect,
   ) ?? 'slide';
   // Stories move faster, like the apps they borrow from.
-  const interval = effect === 'story' ? 5000 : 6500;
+  const interval = intervalMs ?? (effect === 'story' ? 5000 : 6500);
   const [[currentSlide, direction], setSlideState] = useState<[number, number]>([0, 0]);
 
   // Auto-play slide motion every 6 seconds
@@ -174,14 +177,24 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               src={slide.image}
               srcSet={slide.imageSrcSet}
               sizes="100vw"
-              style={{ objectPosition: slide.imagePosition }}
+              // One photo, two crops: the phone one below `sm`, the wide one above.
+              style={
+                {
+                  '--sf-pos': slide.imagePosition ?? '50% 50%',
+                  '--sf-pos-m': slide.imageMobilePosition ?? slide.imagePosition ?? '50% 50%',
+                } as React.CSSProperties
+              }
               alt={isAr ? slide.headlineAr : slide.headlineEn}
-              className={`w-full h-full object-cover object-center ${
+              className={`sf-hero-img w-full h-full object-cover ${
                 effect === 'zoom' || effect === 'story' ? 'sf-kb-zoom' : effect === 'pan' ? 'sf-kb-pan' : ''
               }`}
               referrerPolicy="no-referrer"
             /> : <div className="w-full h-full bg-gradient-to-br from-emerald-950 via-stone-950 to-black" />}
-            {/* No scrim and no glow: the restaurant's photo is shown as it is. */}
+            {/* No scrim by default: the photo is shown as it is, unless the
+                restaurant chose an overlay for its own banner. */}
+            {slide.overlay ? (
+              <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: slide.overlay / 100 }} aria-hidden="true" />
+            ) : null}
           </motion.div>
         </AnimatePresence>
 
@@ -306,6 +319,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* CTAs */}
             <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 sm:gap-3 pt-1 sm:pt-2">
+              {slide.ctaUrl ? (
+                <a
+                  href={slide.ctaUrl}
+                  data-banner-cta=""
+                  {...(slide.ctaUrl.startsWith('https://') ? { target: '_blank', rel: 'noreferrer' } : {})}
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 h-12 sm:h-auto px-5 sm:px-7 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-black text-sm border border-amber-200 transition-all"
+                >
+                  {(isAr ? slide.ctaLabelAr : slide.ctaLabelEn) || (isAr ? 'اكتشف' : 'Discover')}
+                </a>
+              ) : null}
               {slideItem ? (
               <motion.button
                 whileHover={{ scale: 1.03 }}

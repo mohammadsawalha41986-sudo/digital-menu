@@ -14,6 +14,11 @@ import { formatMinorAsDecimal } from '@/lib/money';
 import {
   createCategoryAction,
   saveDishAction,
+  addHeroBannerAction,
+  saveHeroBannerAction,
+  moveHeroBannerAction,
+  deleteHeroBannerAction,
+  setHeroIntervalAction,
   renameSectionAction,
   moveSectionAction,
   deleteSectionAction,
@@ -26,7 +31,9 @@ import {
   deleteMediaFormAction,
   uploadDishPhotoAction,
   setDishFocalAction,
+  uploadHeroBannerAction,
 } from '@/server/admin/media-actions';
+import { listHeroBanners, MAX_BANNERS } from '@/server/admin/hero-banners';
 import { derivativeUrl } from '@/server/media/derivatives';
 import { aiConfigured } from '@/server/ai/menu-ai';
 import { aiCaloriesAction, aiDescribeAction, aiTranslateAction } from '@/server/admin/ai-actions';
@@ -283,6 +290,42 @@ async function renderStep(context: StepContext) {
             hasPhoto: Boolean(item.imageMediaId),
           }))}
           uploadDishPhoto={uploadDishPhotoAction.bind(null, business.id, business.publicId)}
+          hero={{
+            banners: (await listHeroBanners(user, business.id)).map((banner) => ({
+              id: banner.id,
+              url: urlOf(banner.mediaId) ?? '',
+              isVisible: banner.isVisible,
+              headingAr: banner.headingAr ?? '',
+              headingEn: banner.headingEn ?? '',
+              subheadingAr: banner.subheadingAr ?? '',
+              subheadingEn: banner.subheadingEn ?? '',
+              ctaLabelAr: banner.ctaLabelAr ?? '',
+              ctaLabelEn: banner.ctaLabelEn ?? '',
+              ctaUrl: banner.ctaUrl ?? '',
+              overlay: banner.overlay,
+              focalX: banner.focalX,
+              focalY: banner.focalY,
+              mobileFocalX: banner.mobileFocalX,
+              mobileFocalY: banner.mobileFocalY,
+            })),
+            library: media
+              .filter((image) => image.contentType?.startsWith('image/'))
+              .map((image) => ({
+                id: image.id,
+                thumb: image.derivativeWidths.includes(320) ? derivativeUrl(image.url, 320) : image.url,
+                name: image.originalName ?? image.altAr ?? 'photo',
+              })),
+            intervalSec: business.heroIntervalSec,
+            max: MAX_BANNERS,
+            actions: {
+              add: addHeroBannerAction.bind(null, business.id, business.publicId),
+              upload: uploadHeroBannerAction.bind(null, business.id, business.publicId),
+              save: saveHeroBannerAction.bind(null, business.id, business.publicId),
+              move: moveHeroBannerAction.bind(null, business.id, business.publicId),
+              remove: deleteHeroBannerAction.bind(null, business.id, business.publicId),
+              interval: setHeroIntervalAction.bind(null, business.id, business.publicId),
+            },
+          }}
         />
       );
 

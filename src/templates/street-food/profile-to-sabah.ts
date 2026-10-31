@@ -1,5 +1,5 @@
 import { minorUnitDigits } from '@/lib/money';
-import type { PublicOffer, PublicProfile } from '@/server/profile/types';
+import type { PublicHeroBanner, PublicOffer, PublicProfile } from '@/server/profile/types';
 import type {
   MenuCategory,
   MenuItem,
@@ -30,6 +30,8 @@ export function profileToSabah(profile: PublicProfile): {
   menuItems: MenuItem[];
   logoUrl: string | null;
   slides: HeroSlide[];
+  /** How long each hero slide stays, chosen by the restaurant. */
+  heroIntervalMs: number;
   offers: MenuOffer[];
 } {
   const categoriesAll = profile.menus.flatMap((menu) =>
@@ -148,10 +150,16 @@ export function profileToSabah(profile: PublicProfile): {
     menuItems: itemsAll,
     logoUrl: profile.logo?.url ?? null,
     offers: menuOffers(profile.offers, toAmount),
-    slides: [
-      ...offerSlides(profile.offers, toAmount),
-      ...buildSlides(restaurantInfo, itemsAll.filter((item) => !item.isUnavailable)),
-    ].slice(0, 6),
+    // The restaurant's own banners, when it has chosen any, are the hero;
+    // otherwise it is built from its offers and photographed dishes.
+    slides:
+      (profile.heroBanners ?? []).length > 0
+        ? bannerSlides(profile.heroBanners)
+        : [
+            ...offerSlides(profile.offers, toAmount),
+            ...buildSlides(restaurantInfo, itemsAll.filter((item) => !item.isUnavailable)),
+          ].slice(0, 6),
+    heroIntervalMs: Math.min(15, Math.max(3, profile.heroIntervalSec ?? 6)) * 1000,
   };
 }
 
@@ -225,6 +233,27 @@ function offerSlides(offers: PublicOffer[], toAmount: (minor: number | null) => 
       imageSrcSet: offer.image?.srcSet ?? undefined,
       imagePosition: offer.image?.objectPosition,
     }));
+}
+
+function bannerSlides(banners: PublicHeroBanner[]): HeroSlide[] {
+  return banners.map((banner) => ({
+    id: `banner:${banner.id}`,
+    tagAr: '',
+    tagEn: '',
+    headlineAr: banner.headingAr ?? '',
+    headlineEn: banner.headingEn ?? banner.headingAr ?? '',
+    subtitleAr: banner.subheadingAr ?? '',
+    subtitleEn: banner.subheadingEn ?? banner.subheadingAr ?? '',
+    price: 0,
+    image: banner.image.url,
+    imageSrcSet: banner.image.srcSet ?? undefined,
+    imagePosition: banner.image.objectPosition,
+    imageMobilePosition: banner.mobilePosition,
+    overlay: banner.overlay,
+    ctaLabelAr: banner.ctaLabelAr ?? undefined,
+    ctaLabelEn: banner.ctaLabelEn ?? banner.ctaLabelAr ?? undefined,
+    ctaUrl: banner.ctaUrl ?? undefined,
+  }));
 }
 
 /** Every current offer, photographed or not, for the strip mid-menu. */

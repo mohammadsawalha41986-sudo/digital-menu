@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ActionState } from '@/server/admin/actions';
 import { BulkPhotos, type BulkDish } from './bulk-photos';
+import { HeroBanners } from './hero-banners';
 
 /**
  * Step 6 — photographs.
@@ -45,7 +46,10 @@ export function ImagesStep({
   deleteMedia,
   bulkDishes,
   uploadDishPhoto,
+  hero,
 }: {
+  /** Step 6's hero banner manager. */
+  hero: React.ComponentProps<typeof HeroBanners>;
   images: LibraryImage[];
   items: ImageTarget[];
   /** The dishes the bulk uploader matches photos to. */
@@ -64,6 +68,8 @@ export function ImagesStep({
 
   return (
     <div className="build__stack">
+      <HeroBanners {...hero} />
+
       <BulkPhotos dishes={bulkDishes} action={uploadDishPhoto} />
 
       <form action={upload} className="build__card" encType="multipart/form-data">

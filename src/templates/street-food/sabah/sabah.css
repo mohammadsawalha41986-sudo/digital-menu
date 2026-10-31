@@ -512,3 +512,15 @@
 .sf-action > span {
   color: var(--color-stone-200);
 }
+
+/* Hero photo crop: the phone crop below `sm`, the wide one above. Both come
+   from the same stored photo; only the point it is cropped around differs. */
+.sf-hero-img {
+  object-position: var(--sf-pos-m, 50% 50%);
+}
+
+@media (min-width: 640px) {
+  .sf-hero-img {
+    object-position: var(--sf-pos, 50% 50%);
+  }
+}

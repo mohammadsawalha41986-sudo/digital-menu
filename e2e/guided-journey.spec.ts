@@ -289,6 +289,28 @@ test.describe('a new restaurant, start to finish', () => {
     await expect(page.getByLabel('Price (SAR)')).toHaveValue('21');
   });
 
+  test('step 6: a hero banner is uploaded, captioned, kept after a reload, and leads the menu', async ({ page }) => {
+    await signIn(page);
+    await page.goto(`/admin/build/${businessId}/images`);
+    const hero = page.getByRole('region', { name: 'Hero banners' });
+    await hero.getByLabel(/Upload hero banner/).setInputFiles({ name: 'lunch.png', mimeType: 'image/png', buffer: Buffer.from(LOGO) });
+    await expect(hero.locator('[data-banner]')).toHaveCount(1);
+
+    const banner = hero.locator('[data-banner]').first();
+    await banner.getByLabel('العنوان · Heading (AR)').fill('عرض الغداء');
+    await banner.getByLabel('نص الزر · Button (AR)').fill('شاهد المنيو');
+    await banner.getByLabel('رابط الزر · Button link').fill('#menu-section');
+    await banner.getByRole('button', { name: /Save banner/ }).click();
+    await expect(banner.getByRole('status')).toContainText('Banner saved');
+
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Hero banners' }).getByLabel('العنوان · Heading (AR)')).toHaveValue('عرض الغداء');
+
+    await page.goto(`/admin/preview/${businessId}?lang=ar`);
+    await expect(page.locator('h2, h1').filter({ hasText: 'عرض الغداء' }).first()).toBeVisible();
+    await expect(page.locator('[data-banner-cta]').first()).toHaveAttribute('href', '#menu-section');
+  });
+
   test('step 8: the address exists before publishing, and never moves', async ({ page }) => {
     await signIn(page);
     await page.goto(`/admin/build/${businessId}/qr`);

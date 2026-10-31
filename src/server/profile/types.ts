@@ -218,7 +218,28 @@ export interface PublicProfile {
 
   menus: PublicMenu[];
   offers: PublicOffer[];
+  /** Pictures the restaurant chose for the hero, in its order; empty when none. */
+  heroBanners: PublicHeroBanner[];
+  /** Seconds each hero slide stays. */
+  heroIntervalSec: number;
   downloads: PublicDownload[];
+}
+
+export interface PublicHeroBanner {
+  id: string;
+  headingAr: string | null;
+  headingEn: string | null;
+  subheadingAr: string | null;
+  subheadingEn: string | null;
+  ctaLabelAr: string | null;
+  ctaLabelEn: string | null;
+  ctaUrl: string | null;
+  /** 0-60: how much the photo is darkened behind the text. */
+  overlay: number;
+  /** objectPosition is the wide-screen crop. */
+  image: PublicImage;
+  /** The phone crop of the same photo. */
+  mobilePosition: string;
 }
 
 export interface PublicOffer {
