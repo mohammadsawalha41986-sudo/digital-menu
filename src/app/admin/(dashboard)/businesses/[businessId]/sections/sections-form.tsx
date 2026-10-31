@@ -20,7 +20,21 @@ interface Section {
   dishes: number;
   active: boolean;
   style: SectionStyle;
+  /** The role chosen for this section, '' to read it from the names. */
+  role: string;
+  /** The role the names give, shown when the restaurant leaves it to the names. */
+  readRole: string;
 }
+
+/** What each role means for suggestions, in the restaurant's words. */
+const ROLE_LABELS: { value: string; ar: string; en: string }[] = [
+  { value: '', ar: 'حسب الاسم', en: 'From the name' },
+  { value: 'MAIN', ar: 'رئيسي', en: 'Main dish' },
+  { value: 'SIDE', ar: 'جانبي / سلطات', en: 'Side / salads' },
+  { value: 'DRINK', ar: 'مشروبات', en: 'Drinks' },
+  { value: 'DESSERT', ar: 'حلويات', en: 'Desserts' },
+  { value: 'OTHER', ar: 'أخرى', en: 'Other' },
+];
 
 export function SectionsForm({
   sections,
@@ -58,6 +72,22 @@ export function SectionsForm({
                   {section.active ? '' : ' · مخفي · hidden'}
                 </span>
               </div>
+              <label className="sections__pick">
+                <span className="admin__hint">نوع القسم للاقتراحات · Section type for suggestions</span>
+                <select
+                  name={`role:${section.id}`}
+                  defaultValue={section.role}
+                  className="admin__select"
+                  aria-label={`${section.name} — نوع القسم · section type`}
+                >
+                  {ROLE_LABELS.map((option) => (
+                    <option key={option.value || 'name'} value={option.value}>
+                      {option.ar} · {option.en}
+                      {option.value === '' ? ` (${ROLE_LABELS.find((entry) => entry.value === section.readRole)?.en ?? section.readRole})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="sections__show">
                 <input type="checkbox" name={`show:${section.id}`} defaultChecked={section.active} />
                 إظهار في المنيو · Show on menu

@@ -15,6 +15,7 @@ import { isValidTemplateSelection } from '@/templates/registry';
 import { isFoodBusinessType } from './validation';
 import { sectionKeyFor, uniqueKey } from '@/lib/keys';
 import { isSectionStyle } from '@/templates/street-food/sabah/section-layout';
+import { isSectionRole } from '@/lib/upsell';
 import { parseSnapshot, summarise } from '@/server/menus/snapshot';
 import {
   applySnapshot,
@@ -1075,6 +1076,74 @@ export async function setItemUpsell(
  * Section layouts on the public menu, one style per category. Only the
  * restaurant's own categories are touched; an unknown style is refused.
  */
+/** Turns automatic suggestions on or off for the whole menu. */
+export async function setAutoUpsell(user: AuthenticatedUser, businessId: string, enabled: boolean) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const before = await prisma.business.findUniqueOrThrow({
+    where: { id: context.businessId },
+    select: { autoUpsell: true },
+  });
+  if (before.autoUpsell === enabled) return false;
+  await prisma.business.update({ where: { id: context.businessId }, data: { autoUpsell: enabled } });
+  await recordAudit({
+    action: 'item.upsell_updated',
+    entity: 'business',
+    entityId: context.businessId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { autoUpsell: { before: before.autoUpsell, after: enabled } },
+  });
+  return true;
+}
+
+/**
+ * Sets a section's role for suggestions. An empty role returns the section to
+ * reading its role from its names.
+ */
+export async function setCategoryRoles(
+  user: AuthenticatedUser,
+  businessId: string,
+  roles: { categoryId: string; role: string | null }[],
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const bad = roles.find((entry) => entry.role !== null && !isSectionRole(entry.role));
+  if (bad) throw new ValidationError(`Unknown section role: ${bad.role}`);
+
+  const categories = await prisma.menuCategory.findMany({
+    where: { businessId: context.businessId, id: { in: roles.map((entry) => entry.categoryId) } },
+    select: { id: true, role: true },
+  });
+  if (categories.length !== new Set(roles.map((entry) => entry.categoryId)).size) {
+    throw new ValidationError('A section does not belong to this restaurant');
+  }
+
+  const changed = roles.filter(
+    (entry) => (categories.find((category) => category.id === entry.categoryId)?.role ?? null) !== entry.role,
+  );
+  if (changed.length === 0) return 0;
+
+  await prisma.$transaction(
+    changed.map((entry) =>
+      prisma.menuCategory.update({ where: { id: entry.categoryId }, data: { role: entry.role } }),
+    ),
+  );
+  await recordAudit({
+    action: 'category.display_style_updated',
+    entity: 'business',
+    entityId: context.businessId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: {
+      roles: changed.map((entry) => ({
+        categoryId: entry.categoryId,
+        before: categories.find((category) => category.id === entry.categoryId)?.role ?? null,
+        after: entry.role,
+      })),
+    },
+  });
+  return changed.length;
+}
+
 export async function setCategoryStyles(
   user: AuthenticatedUser,
   businessId: string,

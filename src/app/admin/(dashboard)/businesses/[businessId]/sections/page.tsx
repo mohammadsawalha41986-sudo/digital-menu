@@ -5,6 +5,7 @@ import { getBusinessForAdmin } from '@/server/admin/business-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { setSectionStylesAction } from '@/server/admin/actions';
 import { isSectionStyle } from '@/templates/street-food/sabah/section-layout';
+import { effectiveRole } from '@/lib/upsell';
 import { SectionsForm } from './sections-form';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,9 @@ export default async function SectionsPage({ params }: { params: Promise<{ busin
       dishes: category.items.filter((item) => item.availability !== 'HIDDEN').length,
       active: category.isActive,
       style: isSectionStyle(category.displayStyle) ? category.displayStyle : 'auto',
+      // The stored role ('' reads it from the names), and what the names give.
+      role: category.role ?? '',
+      readRole: effectiveRole(category.role, category.key, category.nameAr, category.nameEn),
     })),
   );
 

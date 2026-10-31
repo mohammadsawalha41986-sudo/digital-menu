@@ -41,6 +41,8 @@ import {
   upsertItem,
   setItemUpsell,
   setCategoryStyles,
+  setCategoryRoles,
+  setAutoUpsell,
   renameCategory,
   itemFormValues,
   itemIdByCode,
@@ -478,8 +480,14 @@ export async function setSectionStylesAction(
       return { categoryId, style: String(value), visible: formData.has(`show:${categoryId}`) };
     });
 
+  // A section's role for suggestions, when the form sends one: blank returns it to its names.
+  const roles = Array.from(formData.entries())
+    .filter(([name]) => name.startsWith('role:'))
+    .map(([name, value]) => ({ categoryId: name.slice('role:'.length), role: String(value) || null }));
+
   return run(async () => {
     const changed = await setCategoryStyles(user, businessId, styles);
+    if (roles.length > 0) await setCategoryRoles(user, businessId, roles);
     revalidateBusiness(businessId, publicId);
     revalidatePath(`/admin/businesses/${businessId}/sections`);
     return changed === 0 ? 'Nothing changed' : 'Saved';
@@ -834,5 +842,21 @@ export async function setHeroIntervalAction(
     await setHeroInterval(user, businessId, Number(formData.get('seconds')));
     revalidateBusiness(businessId, publicId);
     return 'Saved';
+  });
+}
+
+/** Turns automatic suggestions on or off for the menu. */
+export async function setAutoUpsellAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    const changed = await setAutoUpsell(user, businessId, formData.get('autoUpsell') === 'on');
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/upsell`);
+    return changed ? 'Saved' : 'Nothing changed';
   });
 }

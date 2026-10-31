@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma/client';
-import { createBusiness, publishMenu, setCategoryStyles } from '@/server/admin/business-service';
+import { createBusiness, publishMenu, setCategoryRoles, setCategoryStyles } from '@/server/admin/business-service';
 import { getPublicProfile } from '@/server/profile/repository';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { resetEnvCache } from '@/lib/env';
@@ -185,5 +185,25 @@ describe.skipIf(!databaseReachable)('section styles', () => {
     ).rejects.toBeInstanceOf(TenantAccessError);
     const still = await prisma.menuCategory.findUniqueOrThrow({ where: { id: drinksId } });
     expect(still.isActive).toBe(true);
+  });
+
+  it('saves a section type for suggestions, and blank returns it to reading the name', async () => {
+    const set = await setCategoryRoles(user, businessId, [{ categoryId: drinksId, role: 'SIDE' }]);
+    expect(set).toBe(1);
+    expect((await prisma.menuCategory.findUniqueOrThrow({ where: { id: drinksId } })).role).toBe('SIDE');
+
+    const cleared = await setCategoryRoles(user, businessId, [{ categoryId: drinksId, role: null }]);
+    expect(cleared).toBe(1);
+    expect((await prisma.menuCategory.findUniqueOrThrow({ where: { id: drinksId } })).role).toBeNull();
+  });
+
+  it('refuses an unknown section type, and another restaurant’s section', async () => {
+    await expect(setCategoryRoles(user, businessId, [{ categoryId: drinksId, role: 'SNACK' }])).rejects.toThrow(/SNACK/);
+    await expect(setCategoryRoles(user, businessId, [{ categoryId: otherCategoryId, role: 'MAIN' }])).rejects.toThrow(
+      /does not belong/,
+    );
+    await expect(setCategoryRoles(outsider, businessId, [{ categoryId: drinksId, role: 'MAIN' }])).rejects.toBeInstanceOf(
+      TenantAccessError,
+    );
   });
 });

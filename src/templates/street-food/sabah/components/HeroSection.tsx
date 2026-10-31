@@ -132,7 +132,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <div
         className="relative w-full sm:h-[620px] lg:h-[700px] overflow-hidden bg-[var(--sf-ink-070c08)]"
         data-hero-effect={effect}
-        style={effect === 'flip' ? { perspective: '1400px' } : undefined}
+        // The phone photo takes the shape of the first banner's photo, kept
+        // between a tall and a wide frame, so no band of empty colour shows.
+        style={{
+          ...(effect === 'flip' ? { perspective: '1400px' } : {}),
+          ...(FULL_WIDTH_SLIDES[0]?.aspect
+            ? { '--sf-hero-ratio': String(Math.min(2.1, Math.max(1.2, FULL_WIDTH_SLIDES[0].aspect))) }
+            : {}),
+        } as React.CSSProperties}
       >
         {/* Story bars: one per slide, the current one filling as it plays. */}
         {effect === 'story' && slideCount > 1 ? (
@@ -160,7 +167,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             exit="exit"
             // On a phone the photo has its own frame and the text sits below
             // it; from tablet up the text floats on a small card beside it.
-            className="absolute inset-x-0 top-0 aspect-[4/3] sm:aspect-auto sm:inset-0 w-full sm:h-full"
+            className="sf-hero-photo absolute inset-x-0 top-0 sm:inset-0 w-full sm:h-full"
             // Swipe between slides with a finger; the next slide follows the
             // reading direction (leftwards in Arabic).
             drag={slideCount > 1 ? 'x' : false}
@@ -199,7 +206,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </AnimatePresence>
 
         {/* Holds the photo's place on a phone, where the text follows it. */}
-        <div className="sm:hidden aspect-[4/3]" aria-hidden="true" />
+        <div className="sm:hidden sf-hero-photo" aria-hidden="true" />
 
         {/* Animated Rising Steam across the banner */}
         <div className="hidden absolute top-1/4 right-1/4 lg:right-1/3 items-center gap-3 pointer-events-none z-20 opacity-75">
@@ -276,17 +283,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
                 ) : null}
 
-                {/* Headline */}
+                {/* Headline: only when the slide has one. A banner that is only a
+                    photo leaves no empty rows under it. */}
+                {(isAr ? slide.headlineAr : slide.headlineEn) ? (
                 <h2 className="text-[1.75rem] leading-tight sm:text-5xl lg:text-6xl font-black text-white tracking-tight sm:leading-[1.12] drop-shadow-lg [text-wrap:balance]">
                   {isAr ? slide.headlineAr : slide.headlineEn}
                 </h2>
+                ) : null}
 
                 {/* Subtitle */}
+                {(isAr ? slide.subtitleAr : slide.subtitleEn) ? (
                 <p className="text-[13px] sm:text-lg text-stone-200 leading-relaxed drop-shadow max-w-xl line-clamp-2 sm:line-clamp-none">
                   {isAr ? slide.subtitleAr : slide.subtitleEn}
                 </p>
+                ) : null}
 
                 {/* Live Price Tag & Metrics */}
+                {slide.price > 0 || slide.calories || slide.prepTimeAr ? (
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-0.5 sm:pt-1">
                   {slide.price > 0 ? (
                   <div className="flex items-baseline gap-1.5 bg-black/80 backdrop-blur-md border border-amber-400/50 rounded-xl sm:rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2 shadow-2xl">
@@ -313,6 +326,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </div>
                   ) : null}
                 </div>
+                ) : null}
 
               </motion.div>
             </AnimatePresence>

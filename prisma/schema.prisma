@@ -123,6 +123,8 @@ model Business {
 
   /// Seconds each hero slide stays before the next (3-15).
   heroIntervalSec Int @default(6)
+  /// Suggest dishes automatically (by section role) where a dish has no picks.
+  autoUpsell      Boolean @default(true)
   /// How the automatic "offers & savings" section orders discounted dishes:
   /// PERCENT (default), SAVING, NEWEST, ENDING or MANUAL.
   offersSort              String  @default("PERCENT")
@@ -556,6 +558,9 @@ model MenuCategory {
   sortOrder    Int     @default(0)
   isActive     Boolean @default(true)
   isFeatured   Boolean @default(false)
+  /// The section's role for suggestions: MAIN, SIDE, DRINK, DESSERT or OTHER.
+  /// Null reads the role from the section's names (src/lib/upsell.ts).
+  role         String?
 
   /// Subcategory support (Menu Studio §11). One level only: a category may
   /// have children, a child may not. Deeper nesting reads as a site map, not a

@@ -28,6 +28,8 @@ export interface MenuOffer {
 }
 
 export interface HeroSlide {
+  /** Width over height of the photo, when the photo's size is known. */
+  aspect?: number;
   id: string;
   tagAr: string;
   tagEn: string;

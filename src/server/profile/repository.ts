@@ -134,6 +134,7 @@ async function loadProfile(
       variantKey: true,
       heroIntervalSec: true,
       offersSort: true,
+      autoUpsell: true,
       discountIncludesOptions: true,
       heroBanners: {
         where: { isVisible: true },
@@ -279,6 +280,7 @@ async function loadProfile(
               descriptionEn: true,
               isFeatured: true,
               displayStyle: true,
+              role: true,
               image: { select: MEDIA_SELECT },
               items: {
                 // HIDDEN items never reach the public profile (§83).
@@ -453,6 +455,7 @@ async function loadProfile(
       .map((menu): PublicMenu => toMenu(menu, overrides, business.currency, sale)),
     heroIntervalSec: business.heroIntervalSec,
     offersSort: isOfferSort(business.offersSort) ? business.offersSort : 'PERCENT',
+    autoUpsell: business.autoUpsell,
     offersRefreshAt: await nextDiscountChange(business.id, sale.now),
     heroBanners: business.heroBanners.flatMap((banner) => {
       const image = toImage(banner.media);
@@ -665,6 +668,7 @@ interface CategoryRow {
   descriptionEn: string | null;
   isFeatured: boolean;
   displayStyle: string;
+  role: string | null;
   image: MediaRow | null;
   items: ItemRow[];
 }
@@ -795,6 +799,7 @@ function toCategory(category: CategoryRow, overrides: OverrideMap | null, sale: 
     image: toImage(category.image),
     isFeatured: category.isFeatured,
     displayStyle: category.displayStyle,
+    role: category.role,
     items: category.items
       .map((item) => toItem(item, overrides, sale))
       .filter((item): item is PublicItem => item !== null),

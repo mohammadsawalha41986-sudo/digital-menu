@@ -1,4 +1,5 @@
 import type { OfferSort } from '@/lib/discount';
+import { effectiveRole, suggestionsFor } from '@/lib/upsell';
 import { minorUnitDigits } from '@/lib/money';
 import type { PublicHeroBanner, PublicOffer, PublicProfile } from '@/server/profile/types';
 import type {
@@ -114,6 +115,33 @@ export function profileToSabah(profile: PublicProfile): {
     ),
   );
 
+  // Automatic suggestions: a dish with no picks of its own is offered the
+  // dishes its section's role calls for (src/lib/upsell.ts). Manual picks win.
+  const roleOfSection = new Map(
+    profile.menus.flatMap((menu) =>
+      menu.categories.map(
+        (category) =>
+          [category.key, effectiveRole(category.role, category.key, category.nameAr, category.nameEn)] as const,
+      ),
+    ),
+  );
+  const autoOn = profile.autoUpsell ?? true;
+  const pool = itemsAll.map((item, index) => ({
+    id: item.id,
+    role: roleOfSection.get(item.categoryId) ?? 'OTHER',
+    featured: Boolean(item.isPopular),
+    order: index,
+    orderable: !item.isUnavailable && !item.noPrice,
+  }));
+  const menuItems: MenuItem[] = itemsAll.map((item) =>
+    (item.pairsWith?.length ?? 0) > 0 || !autoOn
+      ? item
+      : {
+          ...item,
+          pairsWith: suggestionsFor({ id: item.id, role: roleOfSection.get(item.categoryId) ?? 'OTHER' }, pool),
+        },
+  );
+
   // Keep only categories that actually have items — the app hides empty
   // sections anyway, but a chip rail chip pointing at no items reads broken.
   const nonEmptyCategoryKeys = new Set(itemsAll.map((item) => item.categoryId));
@@ -167,7 +195,7 @@ export function profileToSabah(profile: PublicProfile): {
   return {
     restaurantInfo,
     menuCategories,
-    menuItems: itemsAll,
+    menuItems,
     logoUrl: profile.logo?.url ?? null,
     offers: menuOffers(profile.offers, toAmount),
     // The restaurant's own banners, when it has chosen any, are the hero;
@@ -259,6 +287,8 @@ function offerSlides(offers: PublicOffer[], toAmount: (minor: number | null) => 
 
 function bannerSlides(banners: PublicHeroBanner[]): HeroSlide[] {
   return banners.map((banner) => ({
+    aspect:
+      banner.image?.width && banner.image?.height ? banner.image.width / banner.image.height : undefined,
     id: `banner:${banner.id}`,
     tagAr: '',
     tagEn: '',

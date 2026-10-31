@@ -11,6 +11,7 @@ export function UpsellRow({
   options,
   max,
   action,
+  automatic,
 }: {
   code: string;
   name: string;
@@ -19,6 +20,8 @@ export function UpsellRow({
   options: { code: string; name: string }[];
   max: number;
   action: (previous: ActionState, formData: FormData) => Promise<ActionState>;
+  /** What the menu suggests on its own for this dish, when it has no picks. */
+  automatic: string[];
 }) {
   const [state, submit, isPending] = useActionState<ActionState, FormData>(action, {});
 
@@ -60,6 +63,12 @@ export function UpsellRow({
             </select>
           ))}
         </div>
+
+        {automatic.length > 0 && pairsWith.length === 0 ? (
+          <span className="admin__hint upsell__auto-hint" data-automatic={code}>
+            يقترح المنيو تلقائياً: {automatic.join('، ')} · Automatic: {automatic.join(', ')}
+          </span>
+        ) : null}
 
         <Save pending={isPending} />
         {state.error ? (

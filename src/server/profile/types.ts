@@ -119,6 +119,8 @@ export interface PublicCategory {
   isFeatured: boolean;
   /** The section's layout on the menu (`auto` and the rest, see section-layout). */
   displayStyle: string;
+  /** The section's stored role for suggestions; null reads it from the names. */
+  role: string | null;
   items: PublicItem[];
 }
 
@@ -248,6 +250,8 @@ export interface PublicProfile {
   heroIntervalSec: number;
   /** How the automatic offers section orders discounted dishes. */
   offersSort?: 'PERCENT' | 'SAVING' | 'NEWEST' | 'ENDING' | 'MANUAL';
+  /** Suggest dishes automatically where a dish has no picks of its own. */
+  autoUpsell?: boolean;
   /** The next instant a discount starts or ends (ISO), so an open page can refresh. */
   offersRefreshAt?: string | null;
   downloads: PublicDownload[];

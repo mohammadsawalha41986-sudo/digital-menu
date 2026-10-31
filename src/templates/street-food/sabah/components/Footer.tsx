@@ -55,10 +55,14 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
             <h4 className="text-amber-300 font-extrabold text-xs uppercase tracking-wider">
               {isAr ? 'أقسام القائمة' : 'Menu Sections'}
             </h4>
-            <ul className="space-y-2 font-medium">
-              {MENU_CATEGORIES.slice(0, 5).map((cat) => (
+            {/* Sections as chips in rows, not one under another. */}
+            <ul className="flex flex-wrap gap-2 font-medium">
+              {MENU_CATEGORIES.slice(0, 8).map((cat) => (
                 <li key={cat.id}>
-                  <a href={`#${cat.id}`} className="hover:text-amber-400 transition-colors">
+                  <a
+                    href={`#${cat.id}`}
+                    className="inline-block rounded-full border border-emerald-950 bg-stone-900/60 px-3 py-1.5 text-xs font-bold text-stone-200 transition-colors hover:border-amber-500/60 hover:text-amber-400"
+                  >
                     {isAr ? cat.nameAr : cat.nameEn}
                   </a>
                 </li>

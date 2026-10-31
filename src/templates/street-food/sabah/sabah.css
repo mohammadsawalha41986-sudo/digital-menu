@@ -548,3 +548,16 @@
 .sf-root {
   overflow-x: clip;
 }
+
+/* The phone hero photo: the shape of the banner's own photo, so the frame
+   matches the screen with no band of empty colour. Wide screens use the full
+   banner height instead. */
+.sf-hero-photo {
+  aspect-ratio: var(--sf-hero-ratio, 4 / 3);
+}
+
+@media (min-width: 640px) {
+  .sf-hero-photo {
+    aspect-ratio: auto;
+  }
+}

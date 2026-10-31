@@ -16,7 +16,8 @@ test('each section of the menu takes the layout the restaurant chose for it', as
   const rows = page.locator('[data-section-row]');
   await expect(rows).toHaveCount(2);
   const first = rows.first();
-  const select = first.locator('select');
+  // The layout dropdown (the section-type one sits beside it on the same row).
+  const select = first.locator('select[name^="style:"]');
   await expect(select).toHaveValue('auto');
 
   // A two-dish section on auto fills its row two-up instead of leaving a gap.
