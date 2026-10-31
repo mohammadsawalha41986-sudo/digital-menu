@@ -15,7 +15,12 @@ import {
   createCategoryAction,
   upsertItemAction,
 } from '@/server/admin/actions';
-import { uploadMediaAction, assignMediaAction, deleteMediaFormAction } from '@/server/admin/media-actions';
+import {
+  uploadMediaAction,
+  assignMediaAction,
+  deleteMediaFormAction,
+  uploadDishPhotoAction,
+} from '@/server/admin/media-actions';
 import { BUILD_STEPS, nextStep, previousStep, stepAt } from '../steps';
 import { PreviewPane } from '../preview-pane';
 import { BrandStep } from './steps/brand-step';
@@ -260,6 +265,13 @@ async function renderStep(context: StepContext) {
           uploadMedia={uploadMediaAction.bind(null, business.id, business.publicId)}
           assignMedia={assignMediaAction.bind(null, business.id, business.publicId)}
           deleteMedia={deleteMediaFormAction.bind(null, business.id, business.publicId)}
+          bulkDishes={context.items.map((item) => ({
+            code: item.itemCode,
+            nameAr: item.nameAr,
+            nameEn: item.nameEn,
+            hasPhoto: Boolean(item.imageMediaId),
+          }))}
+          uploadDishPhoto={uploadDishPhotoAction.bind(null, business.id, business.publicId)}
         />
       );
 

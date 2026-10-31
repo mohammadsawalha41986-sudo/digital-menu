@@ -114,6 +114,16 @@ const config: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
 
+  experimental: {
+    serverActions: {
+      // Uploads (photos, logos, Excel, image ZIPs) go through Server Actions,
+      // whose default 1MB cap refused an ordinary phone photo with a 413 the
+      // form never showed. Big enough for a ZIP of photos, small enough that
+      // an anonymous POST cannot make the server buffer much.
+      bodySizeLimit: '25mb',
+    },
+  },
+
   async headers() {
     return [
       {

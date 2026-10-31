@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ActionState } from '@/server/admin/actions';
+import { BulkPhotos, type BulkDish } from './bulk-photos';
 
 /**
  * Step 6 — photographs.
@@ -42,9 +43,14 @@ export function ImagesStep({
   uploadMedia,
   assignMedia,
   deleteMedia,
+  bulkDishes,
+  uploadDishPhoto,
 }: {
   images: LibraryImage[];
   items: ImageTarget[];
+  /** The dishes the bulk uploader matches photos to. */
+  bulkDishes: BulkDish[];
+  uploadDishPhoto: (previous: ActionState, formData: FormData) => Promise<ActionState>;
   /** The existing media actions, already bound to this business by the page. */
   uploadMedia: (previous: ActionState, formData: FormData) => Promise<ActionState>;
   assignMedia: (previous: ActionState, formData: FormData) => Promise<ActionState>;
@@ -58,8 +64,10 @@ export function ImagesStep({
 
   return (
     <div className="build__stack">
+      <BulkPhotos dishes={bulkDishes} action={uploadDishPhoto} />
+
       <form action={upload} className="build__card" encType="multipart/form-data">
-        <h2 className="build__step-title">Add your photos</h2>
+        <h2 className="build__step-title">صورة واحدة · One photo</h2>
 
         {uploadState.error ? (
           <p className="admin__message admin__message--error" role="alert">

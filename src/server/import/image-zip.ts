@@ -1,7 +1,9 @@
 import { inflateRawSync } from 'node:zlib';
 import { ALLOWED_IMAGE_TYPES, validateUpload } from '@/server/files/validation';
 
-const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
+// Below the 25MB Server Action body limit (next.config.ts), with room for
+// the multipart overhead.
+const MAX_ARCHIVE_BYTES = 24 * 1024 * 1024;
 const MAX_ENTRIES = 500;
 const MAX_TOTAL_UNCOMPRESSED_BYTES = 80 * 1024 * 1024;
 const MAX_COMPRESSION_RATIO = 100;
@@ -35,7 +37,7 @@ export interface ImageZipEntry {
 export function parseImageZip(bytes: Uint8Array): ImageZipEntry[] {
   if (bytes.byteLength === 0) throw new ImageZipError('The ZIP file is empty');
   if (bytes.byteLength > MAX_ARCHIVE_BYTES) {
-    throw new ImageZipError('The ZIP file is larger than the 100MB limit');
+    throw new ImageZipError('The ZIP file is larger than the 24MB limit');
   }
 
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);

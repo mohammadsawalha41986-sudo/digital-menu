@@ -44,7 +44,7 @@ export function ImageZipImporter({
             required
           />
           <span className="admin__hint">
-            JPG, PNG and WebP only. Maximum archive 100MB, maximum 500 entries. Unsafe paths,
+            JPG, PNG and WebP only. Maximum archive 24MB, maximum 500 entries. Unsafe paths,
             encrypted entries and suspicious compression are rejected.
           </span>
         </div>

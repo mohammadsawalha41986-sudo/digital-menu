@@ -294,3 +294,47 @@ export async function backfillDerivativesAction(
     return { error: 'Something went wrong' };
   }
 }
+
+/**
+ * One photo from the bulk uploader: stored (as WebP, with phone-sized copies)
+ * and, when a dish is given, set as that dish's photo. The uploader calls
+ * this once per file so a slow connection never sends one huge request.
+ */
+export async function uploadDishPhotoAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const file = formData.get('file');
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image' };
+  const itemCode = String(formData.get('itemCode') ?? '').trim().toUpperCase();
+  const altAr = String(formData.get('altAr') ?? '').trim().slice(0, 300) || null;
+
+  try {
+    const media = await uploadMedia(user, businessId, {
+      kind: 'ITEM_IMAGE',
+      altAr,
+      altEn: null,
+      width: null,
+      height: null,
+      upload: {
+        fileName: file.name,
+        declaredContentType: file.type || 'application/octet-stream',
+        bytes: new Uint8Array(await file.arrayBuffer()),
+      },
+    });
+    if (itemCode) await assignMedia(user, businessId, media.id, { type: 'item', itemCode });
+
+    revalidatePath(`/admin/businesses/${businessId}/media`);
+    revalidatePath(`/admin/build/${businessId}`, 'layout');
+    revalidatePath(`/m/${publicId}`);
+    invalidateProfile(publicId);
+    return { ok: true, message: itemCode ? 'Photo set' : 'Photo added to the library' };
+  } catch (error) {
+    if (error instanceof FileValidationError) return { error: error.message };
+    if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
+    throw error;
+  }
+}
