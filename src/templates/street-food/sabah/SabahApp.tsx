@@ -27,7 +27,7 @@ import { HeroSection } from './components/HeroSection';
 import { CategoryNav } from './components/CategoryNav';
 import { MenuSearchAndFilter } from './components/MenuSearchAndFilter';
 import { SectionDishes } from './components/SectionDishes';
-import { resolveSectionLayout } from './section-layout';
+import { resolveSectionLayout, type SectionLayout } from './section-layout';
 import { selectionKey, stillValid } from './choices';
 import { useMinute } from './clock';
 import { DEALS_ID, dealsOf } from './deals';
@@ -146,6 +146,28 @@ export default function App({
   // The visitor's own grid/list switch; until they touch it every section
   // follows the layout the restaurant chose for it.
   const [visitorView, setVisitorView] = useState<'grid' | 'list' | null>(null);
+  // A visitor's own choice for one section (cards or list). It wins over the
+  // restaurant-wide view and the section's layout, and a change to the
+  // restaurant-wide view clears it.
+  const [sectionViews, setSectionViews] = useState<Record<string, 'cards' | 'list'>>({});
+  const changeViewForAll = (mode: 'grid' | 'list') => {
+    setVisitorView(mode);
+    setSectionViews({});
+  };
+
+  // What a section is drawn as: the visitor's choice, else the restaurant-wide
+  // view, else the layout the restaurant chose for the section.
+  const sectionLayout = (cat: MenuCategory, count: number): SectionLayout => {
+    const choice = sectionViews[cat.id];
+    if (choice === 'list') return { kind: 'list' };
+    if (choice === 'cards') return resolveSectionLayout('grid', imageLayout === 'list' ? 'grid' : imageLayout, count);
+    if (visitorView === 'list') return { kind: 'list' };
+    return resolveSectionLayout(
+      cat.displayStyle ?? 'auto',
+      visitorView === 'grid' && imageLayout === 'list' ? 'grid' : imageLayout,
+      count,
+    );
+  };
   const viewMode = visitorView ?? (imageLayout === 'list' ? 'list' : 'grid');
   
   // Modals & Drawers
@@ -372,7 +394,7 @@ export default function App({
             onFilterChange={setActiveFilter}
             resultCount={filteredItems.length}
             viewMode={viewMode}
-            onToggleViewMode={setVisitorView}
+            onToggleViewMode={changeViewForAll}
             onOpenCaloriesModal={() => setIsCaloriesOpen(true)}
             showSearch={MENU_ITEMS.length >= MENU_SEARCH_THRESHOLD}
             offerCount={MENU_ITEMS.filter((item) => item.isOffer && !item.isUnavailable).length}
@@ -443,18 +465,17 @@ export default function App({
                         </p>
                       )}
                     </div>
+                    {itemsInThisCat.length > 1 ? (
+                      <SectionViewSwitch
+                        isAr={isAr}
+                        listed={sectionViews[cat.id] ? sectionViews[cat.id] === 'list' : visitorView === 'list' || cat.displayStyle === 'list'}
+                        onChange={(next) => setSectionViews((current) => ({ ...current, [cat.id]: next }))}
+                      />
+                    ) : null}
                   </div>
 
                   <SectionDishes
-                    layout={
-                      visitorView === 'list'
-                        ? { kind: 'list' }
-                        : resolveSectionLayout(
-                            cat.displayStyle ?? 'auto',
-                            visitorView === 'grid' && imageLayout === 'list' ? 'grid' : imageLayout,
-                            itemsInThisCat.length,
-                          )
-                    }
+                    layout={sectionLayout(cat, itemsInThisCat.length)}
                     dishes={itemsInThisCat}
                     lang={lang}
                     onSelect={(item) => setActiveItemForCustomization(item)}
@@ -669,3 +690,32 @@ export default function App({
 
 /** The same threshold the platform used before: below it, scrolling wins. */
 const MENU_SEARCH_THRESHOLD = 6;
+
+/**
+ * A visitor's switch between photo cards and a list for one section. Both
+ * states are labelled, and the active one says so to a screen reader too.
+ */
+function SectionViewSwitch({
+  isAr,
+  listed,
+  onChange,
+}: {
+  isAr: boolean;
+  listed: boolean;
+  onChange: (next: 'cards' | 'list') => void;
+}) {
+  const button = (active: boolean) =>
+    `px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-colors cursor-pointer ${
+      active ? 'bg-emerald-500 text-stone-950' : 'text-stone-300 hover:text-white'
+    }`;
+  return (
+    <div role="group" aria-label={isAr ? 'طريقة عرض القسم' : 'How this section is shown'} className="flex shrink-0 gap-0.5 rounded-xl border border-emerald-950 bg-stone-900/80 p-0.5">
+      <button type="button" aria-pressed={!listed} className={button(!listed)} onClick={() => onChange('cards')} data-section-view="cards">
+        {isAr ? 'بطاقات' : 'Cards'}
+      </button>
+      <button type="button" aria-pressed={listed} className={button(listed)} onClick={() => onChange('list')} data-section-view="list">
+        {isAr ? 'قائمة' : 'List'}
+      </button>
+    </div>
+  );
+}

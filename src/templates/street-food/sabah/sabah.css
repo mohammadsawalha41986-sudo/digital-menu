@@ -542,3 +542,9 @@
 [data-sale-was] {
   text-decoration-thickness: 1.5px;
 }
+
+/* Phones: decorative glows and slides that sit past the edge must not widen
+   the page. `clip` (not `hidden`) keeps sticky headers working. */
+.sf-root {
+  overflow-x: clip;
+}

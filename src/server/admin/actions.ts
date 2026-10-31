@@ -18,6 +18,7 @@ import {
   saveOptionGroup,
   duplicateOptionGroup,
   type OptionGroupForm,
+  setItemModifiers,
 } from '@/server/menu-studio/modifiers';
 import {
   ValidationError,
@@ -468,9 +469,14 @@ export async function setSectionStylesAction(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireUser();
+  // Every section row posts its layout; the "show" box is ticked only when the
+  // section should be on the menu, so an absent box means hidden.
   const styles = Array.from(formData.entries())
     .filter(([name]) => name.startsWith('style:'))
-    .map(([name, value]) => ({ categoryId: name.slice('style:'.length), style: String(value) }));
+    .map(([name, value]) => {
+      const categoryId = name.slice('style:'.length);
+      return { categoryId, style: String(value), visible: formData.has(`show:${categoryId}`) };
+    });
 
   return run(async () => {
     const changed = await setCategoryStyles(user, businessId, styles);
@@ -564,6 +570,10 @@ export async function saveDishAction(
   return run(async () => {
     const itemCode = isNew ? await newItemCode(user, businessId) : parsed.data.itemCode;
     await upsertItem(user, businessId, { ...parsed.data, itemCode });
+    // The option groups the form ticked. An empty tick list clears the dish's groups.
+    if (formData.has('modifiersPresent')) {
+      await setItemModifiers(user, businessId, itemCode, formData.getAll('modifierKeys').map(String));
+    }
     if (discountRequested) {
       try {
         await saveDiscount(user, businessId, discountFromForm(formData, itemCode));

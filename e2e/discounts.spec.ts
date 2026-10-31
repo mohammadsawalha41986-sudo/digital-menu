@@ -99,3 +99,38 @@ test('a discount set on the dish card itself saves with the dish, shows the fina
   await page.goto('/m/SBH001?lang=ar');
   await expect(page.locator('[data-deals-section]')).toHaveCount(0);
 });
+
+// A percentage typed on the dish card (the dish has no photo, so its badge
+// sits in the title row). It shares this file, so it never runs beside the
+// tests above that look at the offers section.
+const PERCENT_DISH = 'BEV-001';
+const PERCENT_DISH_NAME_EN = 'Kinza';
+
+test('a percentage typed on the dish card shows the badge on the dish', async ({ page }) => {
+  await signIn(page);
+  const href = await discountsPage(page);
+  const businessId = href.split('/').pop() ?? '';
+
+  await page.goto(`/admin/build/${businessId}/builder`);
+  await page.getByRole('button', { name: new RegExp('^' + PERCENT_DISH_NAME_EN + '\\b') }).click();
+  const card = page.locator('form[aria-label="Edit dish"]');
+  await card.getByLabel('تفعيل خصم · Enable discount').check();
+  await card.getByLabel('نوع الخصم · Type').selectOption('PERCENT');
+  await card.getByLabel('النسبة % · Percent').fill('20');
+  await card.getByRole('button', { name: 'Save dish' }).click();
+  await expect(card.getByRole('status').first()).toContainText('Dish saved');
+  await expect(page.getByText('discount was not saved')).toHaveCount(0);
+
+  await page.goto('/m/SBH001?lang=ar');
+  const dish = page.locator(`[data-item="${PERCENT_DISH}"]`).first();
+  await dish.scrollIntoViewIfNeeded();
+  await expect(dish.locator('[data-sale-badge="20"]')).toBeVisible();
+
+  // Clean up: switch it off again.
+  await page.goto(`/admin/build/${businessId}/builder`);
+  await page.getByRole('button', { name: new RegExp('^' + PERCENT_DISH_NAME_EN + '\\b') }).click();
+  const off = page.locator('form[aria-label="Edit dish"]');
+  await off.getByLabel('تفعيل خصم · Enable discount').uncheck();
+  await off.getByRole('button', { name: 'Save dish' }).click();
+  await expect(off.getByRole('status').first()).toContainText('Dish saved');
+});

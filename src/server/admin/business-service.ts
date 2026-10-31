@@ -1078,7 +1078,7 @@ export async function setItemUpsell(
 export async function setCategoryStyles(
   user: AuthenticatedUser,
   businessId: string,
-  styles: { categoryId: string; style: string }[],
+  styles: { categoryId: string; style: string; visible?: boolean }[],
 ) {
   const context = await requireTenantContext(user, businessId, 'EDITOR');
   const bad = styles.find((entry) => !isSectionStyle(entry.style));
@@ -1086,20 +1086,30 @@ export async function setCategoryStyles(
 
   const categories = await prisma.menuCategory.findMany({
     where: { businessId: context.businessId, id: { in: styles.map((entry) => entry.categoryId) } },
-    select: { id: true, displayStyle: true },
+    select: { id: true, displayStyle: true, isActive: true },
   });
   if (categories.length !== new Set(styles.map((entry) => entry.categoryId)).size) {
     throw new ValidationError('A section does not belong to this restaurant');
   }
 
-  const changed = styles.filter(
-    (entry) => categories.find((category) => category.id === entry.categoryId)?.displayStyle !== entry.style,
-  );
+  const current = (categoryId: string) => categories.find((category) => category.id === categoryId);
+  // A section the restaurant hides keeps its dishes and its layout; the menu
+  // simply does not draw it until it is shown again.
+  const changed = styles.filter((entry) => {
+    const before = current(entry.categoryId);
+    return before?.displayStyle !== entry.style || (entry.visible !== undefined && before?.isActive !== entry.visible);
+  });
   if (changed.length === 0) return 0;
 
   await prisma.$transaction(
     changed.map((entry) =>
-      prisma.menuCategory.update({ where: { id: entry.categoryId }, data: { displayStyle: entry.style } }),
+      prisma.menuCategory.update({
+        where: { id: entry.categoryId },
+        data: {
+          displayStyle: entry.style,
+          ...(entry.visible === undefined ? {} : { isActive: entry.visible }),
+        },
+      }),
     ),
   );
 
@@ -1112,8 +1122,10 @@ export async function setCategoryStyles(
     metadata: {
       changes: changed.map((entry) => ({
         categoryId: entry.categoryId,
-        before: categories.find((category) => category.id === entry.categoryId)?.displayStyle,
+        before: current(entry.categoryId)?.displayStyle,
         after: entry.style,
+        visibleBefore: current(entry.categoryId)?.isActive,
+        visibleAfter: entry.visible,
       })),
     },
   });

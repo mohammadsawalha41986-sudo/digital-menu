@@ -111,6 +111,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             <h3 className={`${compact ? 'text-[15px] line-clamp-2 sm:line-clamp-none' : wide ? 'text-xl sm:text-3xl' : 'text-base'} ${wide ? '' : 'sm:text-lg'} font-bold text-white group-hover:text-amber-300 transition-colors leading-snug`}>
               {isAr ? item.nameAr : item.nameEn}
             </h3>
+            {/* A dish without a photo has no image corner for the badge: it sits here instead. */}
+            {!item.image && item.sale ? <SaleBadge item={item} isAr={isAr} /> : null}
             <SaleUrgency item={item} isAr={isAr} />
           </div>
 

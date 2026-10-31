@@ -58,6 +58,10 @@ export function SectionsForm({
                   {section.active ? '' : ' · مخفي · hidden'}
                 </span>
               </div>
+              <label className="sections__show">
+                <input type="checkbox" name={`show:${section.id}`} defaultChecked={section.active} />
+                إظهار في المنيو · Show on menu
+              </label>
               <label className="sections__pick">
                 <span className="admin__visually-hidden">شكل العرض · Layout</span>
                 <select

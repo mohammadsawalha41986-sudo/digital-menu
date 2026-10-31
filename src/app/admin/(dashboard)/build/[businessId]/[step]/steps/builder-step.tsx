@@ -6,6 +6,7 @@ import type { ActionState } from '@/server/admin/actions';
 import { DishImagePicker, type LibraryPhoto } from './dish-image-picker';
 import { DishAi, type DishAiActions } from './dish-ai';
 import { DishDiscount } from './dish-discount';
+import { DishOptions, type OptionGroupChoice } from './dish-options';
 
 /**
  * Step 7 — the builder.
@@ -32,6 +33,8 @@ export interface BuilderItem {
   discountStartsAt: string;
   discountEndsAt: string;
   discountBranchKeys: string[];
+  /** The option groups this dish takes, by group key. */
+  modifierKeys: string[];
   categoryKey: string;
   availability: string;
   imageUrl: string | null;
@@ -63,6 +66,7 @@ const BLANK: BuilderItem = {
   discountStartsAt: '',
   discountEndsAt: '',
   discountBranchKeys: [],
+  modifierKeys: [],
   categoryKey: '',
   availability: 'AVAILABLE',
   imageUrl: null,
@@ -88,6 +92,8 @@ export interface BuilderActions {
 
 export function BuilderStep({
   categories,
+  optionGroups,
+  optionsHref,
   currency,
   branches,
   zone,
@@ -96,6 +102,10 @@ export function BuilderStep({
   ai,
 }: {
   categories: BuilderCategory[];
+  /** Option groups the restaurant has made; a dish takes any of them. */
+  optionGroups: OptionGroupChoice[];
+  /** The options page, where groups are made and edited. */
+  optionsHref: string;
   currency: string;
   /** The restaurant's branches, for a discount that applies in some of them. */
   branches: { key: string; nameAr: string }[];
@@ -442,6 +452,13 @@ export function BuilderStep({
                 key={`desc-en-${editing.code}`}
               />
             </div>
+
+            <DishOptions
+              key={`options-${editing.code || 'new'}`}
+              groups={optionGroups}
+              href={optionsHref}
+              chosen={editing.modifierKeys}
+            />
 
             <DishDiscount
               key={`discount-${editing.code || 'new'}`}

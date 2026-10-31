@@ -140,4 +140,50 @@ describe.skipIf(!databaseReachable)('section styles', () => {
       setCategoryStyles(outsider, businessId, [{ categoryId: mainsId, style: 'grid' }]),
     ).rejects.toBeInstanceOf(TenantAccessError);
   });
+
+  it('hides a section from the public menu without losing its dishes or layout, and shows it again', async () => {
+    const hidden = await setCategoryStyles(user, businessId, [
+      { categoryId: drinksId, style: 'list', visible: false },
+      { categoryId: mainsId, style: 'featured', visible: true },
+    ]);
+    expect(hidden).toBe(1);
+
+    const menu = (await getPublicProfile(publicId))?.menus[0];
+    expect(menu?.categories.map((category) => category.key)).toEqual(['mains']);
+    const kept = await prisma.menuCategory.findUniqueOrThrow({ where: { id: drinksId }, include: { items: true } });
+    expect([kept.isActive, kept.displayStyle, kept.items.length]).toEqual([false, 'list', 1]);
+
+    await setCategoryStyles(user, businessId, [
+      { categoryId: drinksId, style: 'list', visible: true },
+      { categoryId: mainsId, style: 'featured', visible: true },
+    ]);
+    const back = (await getPublicProfile(publicId))?.menus[0];
+    expect(back?.categories.map((category) => category.key)).toEqual(['mains', 'drinks']);
+  });
+
+  it('records a visibility change in the audit trail', async () => {
+    await setCategoryStyles(user, businessId, [
+      { categoryId: drinksId, style: 'list', visible: false },
+      { categoryId: mainsId, style: 'featured', visible: true },
+    ]);
+    const audit = await prisma.auditLog.findFirst({
+      where: { businessId, action: 'category.display_style_updated' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(audit?.metadata).toMatchObject({
+      changes: [{ categoryId: drinksId, visibleBefore: true, visibleAfter: false }],
+    });
+    await setCategoryStyles(user, businessId, [
+      { categoryId: drinksId, style: 'list', visible: true },
+      { categoryId: mainsId, style: 'featured', visible: true },
+    ]);
+  });
+
+  it('another restaurant cannot hide a section', async () => {
+    await expect(
+      setCategoryStyles(outsider, businessId, [{ categoryId: drinksId, style: 'list', visible: false }]),
+    ).rejects.toBeInstanceOf(TenantAccessError);
+    const still = await prisma.menuCategory.findUniqueOrThrow({ where: { id: drinksId } });
+    expect(still.isActive).toBe(true);
+  });
 });

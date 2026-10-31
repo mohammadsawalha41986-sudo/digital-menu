@@ -1,3 +1,4 @@
+import { listOptionGroups } from '@/server/menu-studio/modifiers';
 import { discountFieldValues } from '@/server/admin/discount-fields';
 import { parseWorkingHours } from '@/server/business/hours';
 import Link from 'next/link';
@@ -82,7 +83,12 @@ export default async function BuildStepPage({
     include: {
       categories: {
         orderBy: { sortOrder: 'asc' },
-        include: { items: { orderBy: { sortOrder: 'asc' }, include: { image: true } } },
+        include: {
+          items: {
+            orderBy: { sortOrder: 'asc' },
+            include: { image: true, modifiers: { select: { group: { select: { key: true } } } } },
+          },
+        },
       },
     },
   });
@@ -164,6 +170,7 @@ export default async function BuildStepPage({
 interface StepItem {
   itemCode: string;
   updatedAt: Date;
+  modifiers: { group: { key: string } }[];
   discountEnabled: boolean;
   discountMode: string | null;
   discountValue: number | null;
@@ -340,6 +347,16 @@ async function renderStep(context: StepContext) {
     case 'builder': {
       const menu = context.menu;
       const zone = parseWorkingHours(business.workingHours)?.timezone ?? 'Asia/Riyadh';
+      // The option groups a dish can take: made on the options page, chosen here.
+      const optionGroups = (await listOptionGroups(user, business.id)).map((group) => ({
+        key: group.key,
+        nameAr: group.nameAr,
+        nameEn: group.nameEn ?? '',
+        required: group.minSelect > 0,
+        min: group.minSelect,
+        max: group.maxSelect,
+        optionCount: group.options.length,
+      }));
 
       const categories: BuilderCategory[] =
         menu?.categories.map((category) => ({
@@ -360,6 +377,7 @@ async function renderStep(context: StepContext) {
                 : formatMinorAsDecimal(item.priceMinor, item.currency),
             calories: item.calories === null ? '' : String(item.calories),
             ...discountFieldValues(item, item.currency, zone),
+            modifierKeys: item.modifiers.map((link) => link.group.key),
             categoryKey: category.key,
             availability: item.availability,
             imageUrl: urlOf(item.imageMediaId),
@@ -396,6 +414,8 @@ async function renderStep(context: StepContext) {
       return (
         <BuilderStep
           categories={categories}
+          optionGroups={optionGroups}
+          optionsHref={`/admin/businesses/${business.id}/options`}
           currency={business.currency}
           branches={business.branches.map((branch) => ({ key: branch.key, nameAr: branch.nameAr }))}
           zone={zone}
