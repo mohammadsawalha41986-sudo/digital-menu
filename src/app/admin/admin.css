@@ -3382,3 +3382,63 @@
   flex-direction: column;
   gap: var(--sys-space-2);
 }
+
+/* --- Paste preview ----------------------------------------------------------- */
+
+.paste-plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-3);
+  margin-top: var(--sys-space-3);
+}
+
+.paste-plan__section h4 {
+  margin: 0 0 0.3rem;
+}
+
+.paste-plan__section ul,
+.paste-plan__problems ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.paste-plan__section li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--sys-space-3);
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.paste-plan__price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.paste-plan__status {
+  font-size: var(--sys-font-size-sm);
+  font-weight: 700;
+}
+
+.paste-plan__status--new {
+  color: var(--admin-ok);
+}
+
+.paste-plan__status--update {
+  color: var(--admin-warning);
+}
+
+.paste-plan__status--same {
+  color: var(--admin-muted);
+}
+
+.paste-plan__problems {
+  padding: var(--sys-space-3);
+  border: 1px solid var(--admin-danger);
+  border-radius: var(--sys-radius-md-md);
+  color: var(--admin-danger);
+}

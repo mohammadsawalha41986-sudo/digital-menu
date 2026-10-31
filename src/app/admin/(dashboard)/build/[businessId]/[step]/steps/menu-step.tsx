@@ -1,10 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { pasteMenuAction } from '@/server/admin/wizard-actions';
-import type { ActionState } from '@/server/admin/actions';
+import { startTransition, useActionState } from 'react';
+import { pasteMenuAction, type PasteState } from '@/server/admin/wizard-actions';
 
 /**
  * Step 5 — get the menu in.
@@ -23,11 +21,23 @@ export function MenuStep({
   itemCount: number;
   templateUrl: string;
 }) {
-  const [state, submit] = useActionState<ActionState, FormData>(pasteMenuAction, {});
+  const [state, submit, pending] = useActionState<PasteState, FormData>(pasteMenuAction, {});
+  const plan = state.plan;
 
   return (
     <div className="build__stack">
-      <form action={submit} className="build__card">
+      <form
+        // Submitted by hand so the pasted text stays in the box after a
+        // preview; the button pressed says whether to preview or save.
+        onSubmit={(event) => {
+          event.preventDefault();
+          const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+          const data = new FormData(event.currentTarget);
+          data.set('intent', submitter?.value === 'save' ? 'save' : 'preview');
+          startTransition(() => submit(data));
+        }}
+        className="build__card"
+      >
         <h2 className="build__step-title">Add your menu</h2>
 
         {itemCount > 0 ? (
@@ -64,11 +74,60 @@ export function MenuStep({
           />
           <span className="admin__hint">
             A line on its own is a section. Under it, <code>Dish | Price | Description</code> —
-            the description is optional.
+            the description is optional. Preview first: nothing is saved until you press Add.
+            Pasting the same dish again updates it instead of adding a copy.
           </span>
         </div>
 
-        <Paste />
+        <div className="build__actions">
+          <button type="submit" name="intent" value="preview" className="admin__button admin__button--secondary" disabled={pending}>
+            {pending ? 'Reading…' : 'Preview'}
+          </button>
+          {plan && !state.saved && plan.counts.new + plan.counts.update > 0 ? (
+            <button type="submit" name="intent" value="save" className="admin__button" disabled={pending}>
+              Add these items
+            </button>
+          ) : null}
+        </div>
+
+        {plan ? (
+          <div className="paste-plan" data-paste-plan>
+            {plan.sections.map((section) => (
+              <section key={section.name} className="paste-plan__section">
+                <h4>
+                  {section.name}{' '}
+                  <span className="admin__hint">{section.isNew ? 'قسم جديد · new section' : 'قسم موجود · existing'}</span>
+                </h4>
+                <ul>
+                  {section.dishes.map((dish) => (
+                    <li key={dish.line} data-paste-dish={dish.status}>
+                      <span>{dish.name}</span>
+                      <span className="paste-plan__price">{dish.price}</span>
+                      <span className={`paste-plan__status paste-plan__status--${dish.status}`}>
+                        {dish.status === 'new' ? 'جديد' : dish.status === 'update' ? 'تحديث' : 'بلا تغيير'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+            {plan.problems.length > 0 ? (
+              <div className="paste-plan__problems" role="alert">
+                <strong>
+                  {plan.problems.length} {plan.problems.length === 1 ? 'line was' : 'lines were'} not read — fix
+                  and preview again:
+                </strong>
+                <ul>
+                  {plan.problems.map((problem) => (
+                    <li key={problem.line} data-paste-problem={problem.line}>
+                      Line {problem.line}: <bdi>{problem.text}</bdi> — {problem.problem}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </form>
 
       <div className="build__card">
@@ -96,18 +155,6 @@ export function MenuStep({
           </Link>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Paste() {
-  const { pending } = useFormStatus();
-
-  return (
-    <div className="build__actions">
-      <button type="submit" className="admin__button" disabled={pending}>
-        {pending ? 'Reading…' : 'Add these items'}
-      </button>
     </div>
   );
 }

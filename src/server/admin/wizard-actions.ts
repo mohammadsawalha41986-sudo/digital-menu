@@ -10,15 +10,13 @@ import {
   createBusiness,
   updateBusiness,
   updateTemplate,
-  createMenu,
-  createCategory,
-  upsertItem,
   publishMenu,
 } from '@/server/admin/business-service';
 import { uploadMedia, assignMedia } from '@/server/media/service';
 import { analyseLogo, applyBrandPreset } from '@/server/brand/service';
 import { DEFAULT_TEMPLATE_KEY } from '@/templates/registry';
 import { ValidationError } from '@/server/admin/business-service';
+import { planMenuText, saveMenuText, type PastePlan } from './menu-text-import';
 import type { ActionState } from './actions';
 
 /**
@@ -269,120 +267,39 @@ export async function saveDetailsAction(
  * Step 5, the paste path.
  *
  * A restaurant's menu usually exists as text long before it exists as a
- * spreadsheet. Lines are read as `Category | Item | Price | Description`, and
- * a line with no pipe is treated as a category heading — which is how people
- * actually type a menu.
+ * spreadsheet. `intent=preview` reads it and says what would happen, line
+ * by line; `intent=save` does exactly that. See `menu-text-import.ts`.
  */
-export async function pasteMenuAction(
-  _previous: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
+export interface PasteState extends ActionState {
+  plan?: PastePlan;
+  saved?: boolean;
+}
+
+export async function pasteMenuAction(_previous: PasteState, formData: FormData): Promise<PasteState> {
   const user = await requireUser();
   const businessId = String(formData.get('businessId') ?? '');
+  const text = String(formData.get('menuText') ?? '').trim();
+  if (!text) return { error: 'Paste your menu first.' };
+  const save = formData.get('intent') === 'save';
 
-  return run(async () => {
-    const context = await requireTenantContext(user, businessId, 'EDITOR');
-    const text = String(formData.get('menuText') ?? '').trim();
-    if (!text) return 'Paste your menu first.';
-
-    const menu =
-      (await prisma.menu.findFirst({
-        where: { businessId: context.businessId },
-        select: { id: true, key: true },
-      })) ??
-      (await createMenu(user, businessId, {
-        key: 'main',
-        titleAr: 'المنيو',
-        titleEn: 'Menu',
-        status: 'ACTIVE',
-        sortOrder: 0,
-      }));
-
-    let categoryKey = '';
-    let created = 0;
-    let categories = 0;
-
-    for (const raw of text.split('\n')) {
-      const line = raw.trim();
-      if (!line) continue;
-
-      const parts = line.split('|').map((part) => part.trim());
-
-      if (parts.length < 2) {
-        // A bare line is a section heading.
-        const name = parts[0] ?? '';
-        if (!name) continue;
-
-        categoryKey = `cat-${categories + 1}`;
-        await createCategory(user, businessId, menu.id, {
-          key: categoryKey,
-          nameAr: name,
-          nameEn: null,
-          descriptionAr: null,
-          descriptionEn: null,
-          sortOrder: categories,
-          isActive: true,
-          isFeatured: false,
-        });
-        categories += 1;
-        continue;
-      }
-
-      if (!categoryKey) {
-        categoryKey = 'cat-1';
-        await createCategory(user, businessId, menu.id, {
-          key: categoryKey,
-          nameAr: 'المنيو',
-          nameEn: 'Menu',
-          descriptionAr: null,
-          descriptionEn: null,
-          sortOrder: 0,
-          isActive: true,
-          isFeatured: false,
-        });
-        categories += 1;
-      }
-
-      const [first, second, third, fourth] = parts;
-
-      // Two shapes are accepted: "Category | Item | Price | Description" and
-      // "Item | Price | Description" under the heading above it.
-      const looksCategorised = parts.length >= 3 && /\d/.test(third ?? '');
-      const name = looksCategorised ? (second ?? '') : (first ?? '');
-      const price = looksCategorised ? (third ?? '') : (second ?? '');
-      const description = looksCategorised ? (fourth ?? '') : (third ?? '');
-
-      if (!name) continue;
-
-      created += 1;
-      await upsertItem(user, businessId, {
-        itemCode: `P-${String(created).padStart(3, '0')}`,
-        categoryKey,
-        nameAr: name,
-        nameEn: null,
-        descriptionAr: description || null,
-        descriptionEn: null,
-        // Raw text: the service converts it with the business's own currency,
-        // which is the only place that knows how many minor digits it has.
-        price,
-        calories: null,
-        servingSizeAr: null,
-        servingSizeEn: null,
-        ingredientsAr: null,
-        ingredientsEn: null,
-        allergens: [],
-        tags: [],
-        availability: 'AVAILABLE',
-        isFeatured: false,
-        sortOrder: created,
-      });
+  try {
+    const plan = save ? await saveMenuText(user, businessId, text) : await planMenuText(user, businessId, text);
+    const dishes = plan.counts.new + plan.counts.update + plan.counts.same;
+    if (dishes === 0) {
+      return { error: 'Nothing could be read from that text.', plan };
     }
-
-    await revalidateBuild(businessId);
-
-    if (created === 0) return 'Nothing could be read from that text.';
-    return `${created} items added across ${categories} ${categories === 1 ? 'section' : 'sections'}`;
-  });
+    if (save) await revalidateBuild(businessId);
+    const sections = plan.sections.length;
+    const summary = save
+      ? `${plan.counts.new} items added, ${plan.counts.update} updated across ${sections} ${sections === 1 ? 'section' : 'sections'}`
+      : `Ready: ${plan.counts.new} new, ${plan.counts.update} to update, ${plan.counts.same} unchanged`;
+    const skipped = plan.problems.length > 0 ? ` · ${plan.problems.length} ${plan.problems.length === 1 ? 'line' : 'lines'} not read` : '';
+    return { ok: true, message: summary + skipped, plan, saved: save };
+  } catch (error) {
+    if (error instanceof ValidationError) return { error: error.message };
+    if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
+    throw error;
+  }
 }
 
 /** Step 10 — the one act that makes a menu public. */

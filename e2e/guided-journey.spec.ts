@@ -83,6 +83,9 @@ test.describe('a new restaurant, start to finish', () => {
     await page
       .getByLabel('Paste your menu')
       .fill(['Starters', 'Hummus | 18 | With olive oil', 'Fattoush | 22', '', 'Grills', 'Mixed grill | 85'].join('\n'));
+    // Preview first: nothing is written until the owner adds.
+    await page.getByRole('button', { name: 'Preview' }).click();
+    await expect(page.locator('[data-paste-dish="new"]')).toHaveCount(3);
     await page.getByRole('button', { name: 'Add these items' }).click();
 
     await expect(page.getByRole('status').first()).toContainText('3 items added');
@@ -267,6 +270,44 @@ test.describe('a new restaurant, start to finish', () => {
     // The promise of the whole flow: the preview was the real thing.
     expect(publicItems).toEqual(previewItems);
     expect(publicItems.join(' ')).toContain('21');
+  });
+
+  test('step 5 again: an Arabic menu pasted twice is added once, and bad lines are named', async ({ page }) => {
+    await signIn(page);
+    await page.goto(`/admin/build/${businessId}/menu`);
+    const text = [
+      'دجاج الشواية',
+      'نصف دجاج شواية مع الأرز | 23 | نصف دجاج شواية مع أرز',
+      'حبة دجاج شواية مع الأرز | 44 | حبة دجاج شواية مع أرز',
+      'الأرز',
+      'أرز بخاري | 8',
+      'أرز برياني | 8',
+      'أرز مندي |',
+    ].join('\n');
+
+    await page.goto(`/admin/build/${businessId}/builder`);
+    const dishButtons = page.locator('[data-builder-section] .build__item-button');
+    const before = await dishButtons.count();
+    await page.goto(`/admin/build/${businessId}/menu`);
+
+    await page.getByLabel('Paste your menu').fill(text);
+    await page.getByRole('button', { name: 'Preview' }).click();
+    await expect(page.locator('[data-paste-dish="new"]')).toHaveCount(4);
+    await expect(page.locator('[data-paste-problem="7"]')).toContainText('No price');
+    await expect(page.getByLabel('Paste your menu')).toHaveValue(text);
+    await page.getByRole('button', { name: 'Add these items' }).click();
+    await expect(page.getByRole('status').first()).toContainText('1 line not read');
+
+    // The same text again: nothing new, nothing to add.
+    await page.getByRole('button', { name: 'Preview' }).click();
+    await expect(page.locator('[data-paste-dish="new"]')).toHaveCount(0);
+    await expect(page.locator('[data-paste-dish="update"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Add these items' })).toHaveCount(0);
+
+    // Saved once: four dishes more than before, after a reload.
+    await page.goto(`/admin/build/${businessId}/builder`);
+    await expect(dishButtons).toHaveCount(before + 4);
+    await expect(page.locator('[data-builder-section]').filter({ hasText: 'الأرز' }).first()).toContainText('أرز برياني');
   });
 
   test('an owner looking at their own preview is not counted as a customer', async ({ page }) => {
