@@ -70,6 +70,11 @@ export async function buildProfileMetadata(
     title: pageTitle,
     description: pageDescription,
     alternates: { canonical, languages },
+    // Installable as an app on a phone or computer: the manifest, and the
+    // iOS Home Screen title and icon.
+    manifest: `/m/${profile.publicId}/manifest.webmanifest`,
+    appleWebApp: { capable: true, title: title.slice(0, 24), statusBarStyle: 'default' },
+    ...(profile.logo ? { icons: { apple: profile.logo.url } } : {}),
     robots: profile.seo.indexProfile
       ? { index: true, follow: true }
       : { index: false, follow: false },

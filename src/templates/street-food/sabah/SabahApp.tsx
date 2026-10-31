@@ -30,6 +30,7 @@ import { SectionDishes } from './components/SectionDishes';
 import { resolveSectionLayout, type SectionLayout } from './section-layout';
 import { selectionKey, stillValid } from './choices';
 import { useMinute } from './clock';
+import { InstallPrompt } from './components/InstallPrompt';
 import { DEALS_ID, dealsOf } from './deals';
 import type { OfferSort } from '@/lib/discount';
 import { OffersStrip } from './components/OffersStrip';
@@ -682,6 +683,9 @@ export default function App({
         onClose={() => setIsQrOpen(false)}
         lang={lang}
       />
+
+      {/* Offers to install the menu as an app on the visitor's device. */}
+      <InstallPrompt lang={lang} />
 
     </div>
     </SabahDataProvider>
