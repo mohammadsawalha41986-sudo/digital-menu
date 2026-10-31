@@ -1,3 +1,4 @@
+import { formatLocalDateTime } from '@/server/offers/datetime';
 import type { z } from 'zod';
 import { generatePublicId, isValidPublicId } from '@/lib/public-id';
 import { formatMinorAsDecimal, parsePriceToMinor } from '@/lib/money';
@@ -61,6 +62,7 @@ type MenuDesignKey =
   | 'menuPage'
   | 'menuCard'
   | 'menuPrice'
+  | 'menuSale'
   | 'textScale'
   | 'spacing'
   | 'imageShape'
@@ -1203,9 +1205,25 @@ export async function itemFormValues(user: AuthenticatedUser, businessId: string
     include: { category: { select: { key: true } } },
   });
   if (!item) return null;
+  const business = await prisma.business.findUnique({
+    where: { id: context.businessId },
+    select: { workingHours: true },
+  });
+  const zone = parseWorkingHours(business?.workingHours)?.timezone ?? 'Asia/Riyadh';
   return {
     itemCode: item.itemCode,
     categoryKey: item.category.key,
+    discountEnabled: item.discountEnabled,
+    discountMode: item.discountMode ?? 'PERCENT',
+    discountValue:
+      item.discountValue === null
+        ? ''
+        : item.discountMode === 'PERCENT'
+          ? String(item.discountValue)
+          : formatMinorAsDecimal(item.discountValue, item.currency),
+    discountStartsAt: formatLocalDateTime(item.discountStartsAt, zone),
+    discountEndsAt: formatLocalDateTime(item.discountEndsAt, zone),
+    discountBranchKeys: item.discountBranchKeys,
     nameAr: item.nameAr,
     nameEn: item.nameEn ?? '',
     descriptionAr: item.descriptionAr ?? '',

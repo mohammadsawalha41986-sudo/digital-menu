@@ -68,3 +68,30 @@ function zoneOffsetMs(instant: Date, timeZone: string): number {
     return 0;
   }
 }
+
+/**
+ * The inverse of parseLocalDateTime: an instant as a `datetime-local` value
+ * in the named zone (`YYYY-MM-DDTHH:mm`), so a form shows the time the
+ * restaurant typed, not the server's or the browser's.
+ */
+export function formatLocalDateTime(instant: Date | null, timeZone: string): string {
+  if (!instant) return '';
+  try {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+        .formatToParts(instant)
+        .map((part) => [part.type, part.value]),
+    );
+    return `${parts.year}-${parts.month}-${parts.day}T${String(parts.hour).replace('24', '00')}:${parts.minute}`;
+  } catch {
+    return '';
+  }
+}

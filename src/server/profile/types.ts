@@ -62,6 +62,19 @@ export interface PublicModifierGroup {
   }[];
 }
 
+export interface PublicDiscount {
+  /** The price before the discount, minor units. */
+  originalMinor: number;
+  /** Whole-number percentage saved, for the badge. */
+  percent: number;
+  savingMinor: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  /** Position in the offers section when the restaurant orders it by hand. */
+  sortOrder: number;
+  updatedAt: string | null;
+}
+
 export interface PublicItem {
   /** Business-scoped item code — stable, not a database id. */
   code: string;
@@ -69,8 +82,13 @@ export interface PublicItem {
   nameEn: string | null;
   descriptionAr: string | null;
   descriptionEn: string | null;
-  /** Minor units, branch override already applied. */
+  /** Minor units: branch override applied, and the sale price while a discount is live. */
   priceMinor: number | null;
+  /**
+   * The dish's live discount, null when none applies in this view now.
+   * Computed at read time from the stored rule (src/lib/discount.ts).
+   */
+  discount?: PublicDiscount | null;
   currency: string;
   /** Only present when the business supplied it. Never inferred (§37). */
   calories: number | null;
@@ -228,6 +246,10 @@ export interface PublicProfile {
   heroBanners: PublicHeroBanner[];
   /** Seconds each hero slide stays. */
   heroIntervalSec: number;
+  /** How the automatic offers section orders discounted dishes. */
+  offersSort?: 'PERCENT' | 'SAVING' | 'NEWEST' | 'ENDING' | 'MANUAL';
+  /** The next instant a discount starts or ends (ISO), so an open page can refresh. */
+  offersRefreshAt?: string | null;
   downloads: PublicDownload[];
 }
 

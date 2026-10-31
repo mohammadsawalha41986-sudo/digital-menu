@@ -1,3 +1,4 @@
+import type { OfferSort } from '@/lib/discount';
 import { minorUnitDigits } from '@/lib/money';
 import type { PublicHeroBanner, PublicOffer, PublicProfile } from '@/server/profile/types';
 import type {
@@ -33,6 +34,10 @@ export function profileToSabah(profile: PublicProfile): {
   /** How long each hero slide stays, chosen by the restaurant. */
   heroIntervalMs: number;
   offers: MenuOffer[];
+  /** How the automatic offers section orders discounted dishes. */
+  offersSort: OfferSort;
+  /** When a discount next starts or ends (ISO), or null. */
+  offersRefreshAt: string | null;
 } {
   const categoriesAll = profile.menus.flatMap((menu) =>
     menu.categories.map((category) => ({
@@ -69,7 +74,18 @@ export function profileToSabah(profile: PublicProfile): {
           imageSrcSet: item.image?.srcSet ?? undefined,
           imagePosition: item.image?.objectPosition,
           isPopular: item.isFeatured,
-          isOffer: item.tags?.includes('offer') ?? false,
+          isOffer: (item.tags?.includes('offer') ?? false) || Boolean(item.discount),
+          sale: item.discount
+            ? {
+                originalPrice: toAmount(item.discount.originalMinor),
+                percent: item.discount.percent,
+                saving: toAmount(item.discount.savingMinor),
+                startsAt: item.discount.startsAt ?? undefined,
+                endsAt: item.discount.endsAt ?? undefined,
+                sortOrder: item.discount.sortOrder,
+                updatedAt: item.discount.updatedAt ?? undefined,
+              }
+            : undefined,
           isSpicyOption: item.tags?.includes('spicy') ?? false,
           isUnavailable: item.isUnavailable,
           // No price stored: shown without one, never as 0.00 (GOALS I9).
@@ -164,6 +180,8 @@ export function profileToSabah(profile: PublicProfile): {
             ...buildSlides(restaurantInfo, itemsAll.filter((item) => !item.isUnavailable)),
           ].slice(0, 6),
     heroIntervalMs: Math.min(15, Math.max(3, profile.heroIntervalSec ?? 6)) * 1000,
+    offersSort: profile.offersSort ?? 'PERCENT',
+    offersRefreshAt: profile.offersRefreshAt ?? null,
   };
 }
 

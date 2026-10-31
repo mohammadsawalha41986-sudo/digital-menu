@@ -123,6 +123,12 @@ model Business {
 
   /// Seconds each hero slide stays before the next (3-15).
   heroIntervalSec Int @default(6)
+  /// How the automatic "offers & savings" section orders discounted dishes:
+  /// PERCENT (default), SAVING, NEWEST, ENDING or MANUAL.
+  offersSort              String  @default("PERCENT")
+  /// Whether a percentage discount also reduces paid add-ons. Off: the
+  /// discount applies to the dish price only, options at full price.
+  discountIncludesOptions Boolean @default(false)
 
   /// --- Contact (master spec §20, §44). Empty fields hide their action. ---
   phone         String?
@@ -238,6 +244,8 @@ model BrandTheme {
   menuPage   String?
   menuCard   String?
   menuPrice  String?
+  /// Discount badge colour on dishes; null uses the default red.
+  menuSale   String?
   /// sm | md | lg
   textScale  String  @default("md")
   /// compact | regular | airy
@@ -637,6 +645,24 @@ model MenuItem {
   /// Item codes (same business) suggested with this dish — "complete your
   /// meal". At most three, chosen by the restaurant, never inferred.
   pairsWith String[] @default([])
+
+  /// The dish's own discount. Stored as entered (a percent, an amount off,
+  /// or a final price) and turned into a sale price at read time from the
+  /// current price, inside its window — see src/lib/discount.ts. A live
+  /// discount puts the same dish (no copy) in the menu's offers section.
+  discountEnabled    Boolean   @default(false)
+  /// PERCENT | AMOUNT | PRICE
+  discountMode       String?
+  /// Percent as a whole number; amount and final price in minor units.
+  discountValue      Int?
+  discountStartsAt   DateTime?
+  discountEndsAt     DateTime?
+  /// Branch keys the discount applies in; empty is every branch.
+  discountBranchKeys String[]  @default([])
+  /// Position in the offers section when the restaurant orders it by hand.
+  discountSortOrder  Int       @default(0)
+  /// When the discount was last set, for "newest offers first".
+  discountUpdatedAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -76,6 +76,8 @@ export type AuditAction =
   | 'item.modifiers_changed'
   | 'items.bulk_updated'
   | 'item.upsell_updated'
+  | 'item.discount_changed'
+  | 'offers.settings_changed'
   | 'category.display_style_updated'
   | 'ai.generated'
   | 'hero_banner.changed'

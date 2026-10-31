@@ -150,6 +150,7 @@ export const brandSchema = z.object({
   menuPage: optionalHexColor,
   menuCard: optionalHexColor,
   menuPrice: optionalHexColor,
+  menuSale: optionalHexColor,
   textScale: z.enum(['sm', 'md', 'lg']).default('md'),
   spacing: z.enum(['compact', 'regular', 'airy']).default('regular'),
   imageShape: z.enum(['landscape', 'square', 'portrait']).default('landscape'),

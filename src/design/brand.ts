@@ -31,6 +31,7 @@ export interface BrandTokens {
   menuPage?: string | null;
   menuCard?: string | null;
   menuPrice?: string | null;
+  menuSale?: string | null;
   textScale?: string;
   spacing?: string;
   imageShape?: string;
@@ -251,6 +252,7 @@ export function brandTokensToStyle(tokens: BrandTokens): CSSProperties {
     ...(tokens.menuPage ? { '--brand-menu-page': tokens.menuPage } : {}),
     ...(tokens.menuCard ? { '--brand-menu-card': tokens.menuCard } : {}),
     ...(tokens.menuPrice ? { '--brand-menu-price': tokens.menuPrice } : {}),
+    ...(tokens.menuSale ? { '--brand-menu-sale': tokens.menuSale } : {}),
   } as CSSProperties;
 }
 

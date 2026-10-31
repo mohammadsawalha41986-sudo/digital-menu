@@ -1,3 +1,4 @@
+import { discountedOptionPrice, isDiscountMode, isOfferSort, liveDiscount } from '@/lib/discount';
 import { cache } from 'react';
 import { parsePublicId } from '@/lib/public-id';
 import { DEFAULT_LOCALE, isLocale } from '@/i18n/config';
@@ -132,6 +133,8 @@ async function loadProfile(
       templateKey: true,
       variantKey: true,
       heroIntervalSec: true,
+      offersSort: true,
+      discountIncludesOptions: true,
       heroBanners: {
         where: { isVisible: true },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -299,6 +302,14 @@ async function loadProfile(
                   isFeatured: true,
                   availability: true,
                   pairsWith: true,
+                  discountEnabled: true,
+                  discountMode: true,
+                  discountValue: true,
+                  discountStartsAt: true,
+                  discountEndsAt: true,
+                  discountBranchKeys: true,
+                  discountSortOrder: true,
+                  discountUpdatedAt: true,
                   modifiers: {
                     where: { group: { isActive: true } },
                     orderBy: { sortOrder: 'asc' },
@@ -353,6 +364,12 @@ async function loadProfile(
     : null;
 
   const overrides = activeBranch ? await loadBranchOverrides(business.id, activeBranch.key) : null;
+  // One instant for the whole page, so every dish agrees on which discounts are live.
+  const sale: SaleContext = {
+    now: new Date(),
+    branchKey: activeBranch?.key ?? null,
+    includesOptions: business.discountIncludesOptions,
+  };
 
   /*
    * A named menu that does not resolve is *not* treated as "no menu": unlike a
@@ -433,8 +450,10 @@ async function loadProfile(
       // Narrowed *after* the scheduling filter, so a menu outside its window
       // is not reachable by naming it in the URL either.
       .filter((menu) => !activeMenuKey || menu.key === activeMenuKey)
-      .map((menu): PublicMenu => toMenu(menu, overrides, business.currency)),
+      .map((menu): PublicMenu => toMenu(menu, overrides, business.currency, sale)),
     heroIntervalSec: business.heroIntervalSec,
+    offersSort: isOfferSort(business.offersSort) ? business.offersSort : 'PERCENT',
+    offersRefreshAt: await nextDiscountChange(business.id, sale.now),
     heroBanners: business.heroBanners.flatMap((banner) => {
       const image = toImage(banner.media);
       if (!image) return [];
@@ -550,6 +569,7 @@ const BRAND_SELECT = {
   menuPage: true,
   menuCard: true,
   menuPrice: true,
+  menuSale: true,
   textScale: true,
   spacing: true,
   imageShape: true,
@@ -665,6 +685,14 @@ interface ItemRow {
   allergens: string[];
   tags: string[];
   pairsWith: string[];
+  discountEnabled: boolean;
+  discountMode: string | null;
+  discountValue: number | null;
+  discountStartsAt: Date | null;
+  discountEndsAt: Date | null;
+  discountBranchKeys: string[];
+  discountSortOrder: number;
+  discountUpdatedAt: Date | null;
   modifiers: { group: PublicModifierGroup }[];
   isFeatured: boolean;
   availability: string;
@@ -672,10 +700,36 @@ interface ItemRow {
   gallery: { media: MediaRow }[];
 }
 
+interface SaleContext {
+  now: Date;
+  branchKey: string | null;
+  includesOptions: boolean;
+}
+
+/**
+ * The next instant a discount starts or ends, so an open menu can refresh
+ * itself then. Null when nothing is due to change.
+ */
+async function nextDiscountChange(businessId: string, now: Date): Promise<string | null> {
+  const [starts, ends] = await Promise.all([
+    prisma.menuItem.aggregate({
+      where: { businessId, discountEnabled: true, discountStartsAt: { gt: now } },
+      _min: { discountStartsAt: true },
+    }),
+    prisma.menuItem.aggregate({
+      where: { businessId, discountEnabled: true, discountEndsAt: { gt: now } },
+      _min: { discountEndsAt: true },
+    }),
+  ]);
+  const times = [starts._min.discountStartsAt, ends._min.discountEndsAt].filter((value): value is Date => value !== null);
+  return times.length ? new Date(Math.min(...times.map((time) => time.getTime()))).toISOString() : null;
+}
+
 function toMenu(
   menu: MenuRow,
   overrides: OverrideMap | null,
   businessCurrency: string,
+  sale: SaleContext,
 ): PublicMenu {
   // A menu with no design row renders in the default theme rather than
   // unstyled — see src/menu-studio/resolve.ts.
@@ -696,7 +750,7 @@ function toMenu(
     design,
     designOverrides: menu.design ?? UNSTYLED,
     categories: menu.categories
-      .map((category): PublicCategory => withPresentation(toCategory(category, overrides), design))
+      .map((category): PublicCategory => withPresentation(toCategory(category, overrides, sale), design))
       // A category whose every item is hidden would render as an empty heading;
       // drop it rather than show a broken section (§120).
       .filter((category) => category.items.length > 0),
@@ -722,6 +776,8 @@ function withPresentation(category: PublicCategory, design: PublicMenu['design']
     items: category.items.map((item) => ({
       ...item,
       priceMinor: design.showPrices ? item.priceMinor : null,
+      // A hidden price hides its discount too: a "20% off" with no price is noise.
+      discount: design.showPrices ? item.discount : null,
       calories: design.showCalories ? item.calories : null,
       image: design.showImages ? item.image : null,
       gallery: design.showImages ? item.gallery : [],
@@ -729,7 +785,7 @@ function withPresentation(category: PublicCategory, design: PublicMenu['design']
   };
 }
 
-function toCategory(category: CategoryRow, overrides: OverrideMap | null): PublicCategory {
+function toCategory(category: CategoryRow, overrides: OverrideMap | null, sale: SaleContext): PublicCategory {
   return {
     key: category.key,
     nameAr: category.nameAr,
@@ -740,17 +796,37 @@ function toCategory(category: CategoryRow, overrides: OverrideMap | null): Publi
     isFeatured: category.isFeatured,
     displayStyle: category.displayStyle,
     items: category.items
-      .map((item) => toItem(item, overrides))
+      .map((item) => toItem(item, overrides, sale))
       .filter((item): item is PublicItem => item !== null),
   };
 }
 
-function toItem(item: ItemRow, overrides: OverrideMap | null): PublicItem | null {
+function toItem(item: ItemRow, overrides: OverrideMap | null, sale: SaleContext): PublicItem | null {
   const override = overrides?.get(item.itemCode);
   const availability = override?.availability ?? item.availability;
 
   // A branch may hide an item the business as a whole still serves.
   if (availability === 'HIDDEN') return null;
+
+  // The price this view charges before any discount: the branch's own if it has one.
+  const basePrice = override?.priceMinor ?? item.priceMinor;
+  // A dish out of stock is not on offer: it stays listed, at its price, unmarked.
+  const discount =
+    availability === 'UNAVAILABLE'
+      ? null
+      : liveDiscount(
+          {
+            enabled: item.discountEnabled,
+            mode: isDiscountMode(item.discountMode) ? item.discountMode : null,
+            value: item.discountValue,
+            startsAt: item.discountStartsAt,
+            endsAt: item.discountEndsAt,
+            branchKeys: item.discountBranchKeys,
+          },
+          basePrice,
+          sale.now,
+          sale.branchKey,
+        );
 
   return {
     code: item.itemCode,
@@ -758,7 +834,19 @@ function toItem(item: ItemRow, overrides: OverrideMap | null): PublicItem | null
     nameEn: item.nameEn,
     descriptionAr: item.descriptionAr,
     descriptionEn: item.descriptionEn,
-    priceMinor: override?.priceMinor ?? item.priceMinor,
+    // The price charged: the sale price while a discount is live.
+    priceMinor: discount ? discount.saleMinor : basePrice,
+    discount: discount
+      ? {
+          originalMinor: discount.originalMinor,
+          percent: discount.percent,
+          savingMinor: discount.savingMinor,
+          startsAt: discount.startsAt?.toISOString() ?? null,
+          endsAt: discount.endsAt?.toISOString() ?? null,
+          sortOrder: item.discountSortOrder,
+          updatedAt: item.discountUpdatedAt?.toISOString() ?? null,
+        }
+      : null,
     currency: item.currency,
     calories: item.calories,
     servingSizeAr: item.servingSizeAr,
@@ -769,7 +857,20 @@ function toItem(item: ItemRow, overrides: OverrideMap | null): PublicItem | null
     tags: item.tags,
     pairsWith: item.pairsWith,
     // A group with no active option offers nothing to choose.
-    modifiers: item.modifiers.map((link) => link.group).filter((group) => group.options.length > 0),
+    modifiers: item.modifiers
+      .map((link) => link.group)
+      .filter((group) => group.options.length > 0)
+      .map((group) =>
+        discount && sale.includesOptions
+          ? {
+              ...group,
+              options: group.options.map((option) => ({
+                ...option,
+                priceDeltaMinor: discountedOptionPrice(option.priceDeltaMinor, discount, true),
+              })),
+            }
+          : group,
+      ),
     isFeatured: item.isFeatured,
     isUnavailable: availability === 'UNAVAILABLE',
     image: toImage(item.image),
@@ -798,6 +899,7 @@ const DEFAULT_BRAND: PublicProfile['brand'] = {
   menuPage: null,
   menuCard: null,
   menuPrice: null,
+  menuSale: null,
   textScale: 'md',
   spacing: 'regular',
   imageShape: 'landscape',

@@ -29,6 +29,9 @@ import { MenuSearchAndFilter } from './components/MenuSearchAndFilter';
 import { SectionDishes } from './components/SectionDishes';
 import { resolveSectionLayout } from './section-layout';
 import { selectionKey, stillValid } from './choices';
+import { useMinute } from './clock';
+import { DEALS_ID, dealsOf } from './deals';
+import type { OfferSort } from '@/lib/discount';
 import { OffersStrip } from './components/OffersStrip';
 import { CustomerReviewsSection } from './components/CustomerReviewsSection';
 import { GoogleLocationSection } from './components/GoogleLocationSection';
@@ -105,7 +108,7 @@ export default function App({
   // Opening hours depend on the visitor's "now", so they are worked out in
   // the browser (and refreshed each minute); the server render carries no
   // time-sensitive claim.
-  const minute = useSyncExternalStore(subscribeToMinutes, currentMinute, noMinuteOnServer);
+  const minute = useMinute();
   const hours = useMemo(
     () => (minute === null || !BASE_INFO.workingHours ? null : hoursLine(BASE_INFO.workingHours, new Date(minute * 60_000))),
     [minute, BASE_INFO.workingHours],
@@ -624,16 +627,3 @@ export default function App({
 
 /** The same threshold the platform used before: below it, scrolling wins. */
 const MENU_SEARCH_THRESHOLD = 6;
-
-function subscribeToMinutes(onChange: () => void) {
-  const id = setInterval(onChange, 60_000);
-  return () => clearInterval(id);
-}
-
-function currentMinute(): number | null {
-  return Math.floor(Date.now() / 60_000);
-}
-
-function noMinuteOnServer(): number | null {
-  return null;
-}

@@ -41,6 +41,12 @@ const OPTIONAL_COLORS = [
     hint: 'Automatic uses the highlight colour.',
     fallback: '#F59E0B',
   },
+  {
+    key: 'menuSale',
+    label: 'شارة الخصم · Discount badge',
+    hint: 'Automatic is red with white text.',
+    fallback: '#DC2626',
+  },
 ] as const;
 
 type OptionalKey = (typeof OPTIONAL_COLORS)[number]['key'];
@@ -132,6 +138,7 @@ export interface BrandValues {
   menuPage: string | null;
   menuCard: string | null;
   menuPrice: string | null;
+  menuSale?: string | null;
   textScale: string;
   spacing: string;
   imageShape: string;
@@ -167,6 +174,7 @@ export function BrandForm({
     menuPage: brand?.menuPage ?? null,
     menuCard: brand?.menuCard ?? null,
     menuPrice: brand?.menuPrice ?? null,
+    menuSale: brand?.menuSale ?? null,
   }));
   const [fontHeading, setFontHeading] = useState(brand?.fontHeading ?? 'system-sans');
   const [fontBody, setFontBody] = useState(brand?.fontBody ?? 'system-sans');

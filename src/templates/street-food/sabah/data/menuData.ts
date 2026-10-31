@@ -26,6 +26,20 @@ export interface MenuItem {
   pairsWith?: string[];
   /** Marked new by the restaurant. */
   isNew?: boolean;
+  /**
+   * A live discount: `price` is already the sale price, this is what it was.
+   * The same dish object is listed in its section and in the offers section,
+   * so the discount can never be applied twice.
+   */
+  sale?: {
+    originalPrice: number;
+    percent: number;
+    saving: number;
+    startsAt?: string;
+    endsAt?: string;
+    sortOrder: number;
+    updatedAt?: string;
+  };
   /** The restaurant's choices on this dish: size, rice, extras, swaps. */
   choices?: ChoiceGroup[];
   options?: {
