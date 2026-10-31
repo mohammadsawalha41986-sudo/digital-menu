@@ -116,10 +116,12 @@ test('a percentage typed on the dish card shows the badge on the dish', async ({
   const card = page.locator('form[aria-label="Edit dish"]');
   await card.getByLabel('تفعيل خصم · Enable discount').check();
   await card.getByLabel('نوع الخصم · Type').selectOption('PERCENT');
-  await card.getByLabel('النسبة % · Percent').fill('20');
+  // Typed with a percent sign, as an owner often writes it: it reads as 20.
+  await card.getByLabel('النسبة % · Percent').fill('20%');
   await card.getByRole('button', { name: 'Save dish' }).click();
   await expect(card.getByRole('status').first()).toContainText('Dish saved');
   await expect(page.getByText('discount was not saved')).toHaveCount(0);
+  await expect(card.locator('[data-discount-status="live"]')).toBeVisible();
 
   await page.goto('/m/SBH001?lang=ar');
   const dish = page.locator(`[data-item="${PERCENT_DISH}"]`).first();
@@ -133,4 +135,26 @@ test('a percentage typed on the dish card shows the badge on the dish', async ({
   await off.getByLabel('تفعيل خصم · Enable discount').uncheck();
   await off.getByRole('button', { name: 'Save dish' }).click();
   await expect(off.getByRole('status').first()).toContainText('Dish saved');
+});
+
+test('a discount switched on with no percentage is not saved: the browser asks for it at the field', async ({ page }) => {
+  await signIn(page);
+  const href = await discountsPage(page);
+  const businessId = href.split('/').pop() ?? '';
+
+  await page.goto(`/admin/build/${businessId}/builder`);
+  await page.getByRole('button', { name: new RegExp('^' + PERCENT_DISH_NAME_EN + '\\b') }).click();
+  const card = page.locator('form[aria-label="Edit dish"]');
+  await card.getByLabel('تفعيل خصم · Enable discount').check();
+  await card.getByLabel('النسبة % · Percent').fill('');
+  // The field is required while the discount is on, so the form is not submitted.
+  await expect(card.getByLabel('النسبة % · Percent')).toHaveJSProperty('validity.valueMissing', true);
+  await card.getByRole('button', { name: 'Save dish' }).click();
+  await expect(card.getByRole('status').filter({ hasText: 'Dish saved' })).toHaveCount(0);
+
+  // Leave the dish as it was.
+  await card.getByLabel('تفعيل خصم · Enable discount').uncheck();
+  await card.getByRole('button', { name: 'Save dish' }).click();
+  await expect(card.getByRole('status').first()).toContainText('Dish saved');
+  await expect(card.locator('[data-discount-status="disabled"], [data-discount-status="none"]')).toBeVisible();
 });

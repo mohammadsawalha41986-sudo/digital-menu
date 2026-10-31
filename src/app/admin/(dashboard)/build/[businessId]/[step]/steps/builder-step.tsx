@@ -33,6 +33,7 @@ export interface BuilderItem {
   discountStartsAt: string;
   discountEndsAt: string;
   discountBranchKeys: string[];
+  discountState: 'none' | 'live' | 'scheduled' | 'expired' | 'disabled' | 'unavailable';
   /** The option groups this dish takes, by group key. */
   modifierKeys: string[];
   categoryKey: string;
@@ -66,6 +67,7 @@ const BLANK: BuilderItem = {
   discountStartsAt: '',
   discountEndsAt: '',
   discountBranchKeys: [],
+  discountState: 'none',
   modifierKeys: [],
   categoryKey: '',
   availability: 'AVAILABLE',
@@ -468,6 +470,7 @@ export function BuilderStep({
               zone={zone}
               price={editing.price}
               value={{
+                discountState: editing.discountState,
                 discountEnabled: editing.discountEnabled,
                 discountMode: editing.discountMode,
                 discountValue: editing.discountValue,

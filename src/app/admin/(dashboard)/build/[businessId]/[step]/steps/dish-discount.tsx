@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type RefObject } from 'react';
 import { parsePriceToMinor, formatMinorAsDecimal } from '@/lib/money';
-import { percentOff, salePrice, type DiscountMode } from '@/lib/discount';
+import { parsePercent, percentOff, salePrice, type DiscountMode } from '@/lib/discount';
 
 /**
  * The discount panel inside the dish card. Its fields post with the dish, so
@@ -10,7 +10,20 @@ import { percentOff, salePrice, type DiscountMode } from '@/lib/discount';
  * the discount and the saving, or the percentage a final price works out to.
  */
 
+/** Where the discount stands now, worked out on the server from its window. */
+export type DishDiscountStatus = 'none' | 'live' | 'scheduled' | 'expired' | 'disabled' | 'unavailable';
+
+const STATUS_TEXT: Record<DishDiscountStatus, { ar: string; en: string }> = {
+  none: { ar: 'لا يوجد خصم على هذا الصنف بعد', en: 'No discount on this dish yet' },
+  live: { ar: 'نشط الآن: يظهر للعملاء في العروض والتوفير', en: 'Live now: customers see it in the offers' },
+  scheduled: { ar: 'مجدول: يبدأ في الموعد المحدد ثم يظهر', en: 'Scheduled: it shows from its start time' },
+  expired: { ar: 'منتهٍ: لن يظهر للعملاء', en: 'Ended: customers do not see it' },
+  disabled: { ar: 'معطّل: لن يظهر للعملاء', en: 'Off: customers do not see it' },
+  unavailable: { ar: 'الصنف غير متوفر: لا يظهر الخصم', en: 'Dish unavailable: the discount is not shown' },
+};
+
 export interface DishDiscountValues {
+  discountState: DishDiscountStatus;
   discountEnabled: boolean;
   discountMode: string;
   discountValue: string;
@@ -60,12 +73,8 @@ export function DishDiscount({
   }, [formRef]);
 
   const base = parsePriceToMinor(priceText, currency);
-  const typed =
-    mode === 'PERCENT'
-      ? /^\d{1,2}$/.test(amount.trim())
-        ? Number(amount.trim())
-        : null
-      : (parsePriceToMinor(amount.trim(), currency) ?? null);
+  // "20", "20%" and Arabic digits all read as 20, the same as the server.
+  const typed = mode === 'PERCENT' ? parsePercent(amount) : (parsePriceToMinor(amount.trim(), currency) ?? null);
   const sale = base === null || typed === null ? null : salePrice(base, mode, typed);
   const unit = currency;
 
@@ -84,6 +93,11 @@ export function DishDiscount({
   return (
     <fieldset className="dish-discount" aria-label="Discount" data-dish-discount="">
       <legend className="admin__label">خصم · Discount</legend>
+      <p className="admin__hint" data-discount-status={value.discountState}>
+        <span dir="rtl">{STATUS_TEXT[value.discountState].ar}</span>
+        {' · '}
+        <span dir="ltr">{STATUS_TEXT[value.discountState].en}</span>
+      </p>
 
       <label className="options__check">
         <input
@@ -122,6 +136,11 @@ export function DishDiscount({
             dir="ltr"
             inputMode="decimal"
             value={amount}
+            // Required while the discount is on: an empty value is refused by the
+            // browser, in front of the field, instead of being saved as nothing.
+            required={enabled}
+            pattern={mode === 'PERCENT' ? '\\s*[0-9٠-٩]{1,2}\\s*[%٪]?\\s*' : undefined}
+            title={mode === 'PERCENT' ? 'اكتب نسبة من 1 إلى 95 · a whole percentage from 1 to 95' : undefined}
             onChange={(event) => setAmount(event.target.value)}
           />
         </label>

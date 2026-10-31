@@ -28,11 +28,10 @@ export async function buildProfileMetadata(
 
   const locale = await resolveRequestLocale(searchParams, profile.defaultLocale);
 
+  // The restaurant's own name, as entered in its details. A stored SEO title
+  // is not used: nothing in the admin edits it, so it could keep an old name.
   const title =
-    resolveContent(
-      { ar: profile.seo.metaTitleAr ?? profile.nameAr, en: profile.seo.metaTitleEn ?? profile.nameEn },
-      locale,
-    )?.value ?? profile.nameAr;
+    resolveContent({ ar: profile.nameAr, en: profile.nameEn ?? profile.nameAr }, locale)?.value ?? profile.nameAr;
 
   const description = resolveContent(
     {

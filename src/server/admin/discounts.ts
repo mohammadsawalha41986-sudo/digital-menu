@@ -8,6 +8,7 @@ import { parseWorkingHours } from '@/server/business/hours';
 import {
   discountState,
   isDiscountMode,
+  parsePercent,
   isOfferSort,
   percentOff,
   salePrice,
@@ -54,7 +55,7 @@ function readRule(form: DiscountForm, currency: string, zone: string, priceMinor
   const typed = form.value.trim();
   let value: number | null;
   if (mode === 'PERCENT') {
-    value = /^\d{1,2}$/.test(typed) ? Number(typed) : null;
+    value = parsePercent(typed);
     if (value === null || value < 1 || value > 95) throw new ValidationError('The percentage must be a whole number from 1 to 95.');
   } else {
     value = parsePriceToMinor(typed, currency);

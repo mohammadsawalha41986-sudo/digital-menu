@@ -1,4 +1,5 @@
 import { formatMinorAsDecimal } from '@/lib/money';
+import { discountState as windowState } from '@/lib/discount';
 import { formatLocalDateTime } from '@/server/offers/datetime';
 
 /**
@@ -39,6 +40,16 @@ export function discountFieldValues(item: StoredDiscount, currency: string, zone
     discountEndsAt: formatLocalDateTime(item.discountEndsAt, zone),
     discountBranchKeys: item.discountBranchKeys,
   };
+}
+
+/** Where a dish's discount stands at `now`, for the dish card's status line. */
+export function discountStatusOf(item: StoredDiscount & { availability: string }, now = new Date()) {
+  if (item.discountMode === null) return 'none' as const;
+  if (item.availability === 'UNAVAILABLE') return 'unavailable' as const;
+  return windowState(
+    { enabled: item.discountEnabled, startsAt: item.discountStartsAt, endsAt: item.discountEndsAt },
+    now,
+  );
 }
 
 export const EMPTY_DISCOUNT_FIELDS: DiscountFieldValues = {

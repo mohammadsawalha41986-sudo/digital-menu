@@ -28,6 +28,17 @@ export interface DiscountRule {
   branchKeys: string[];
 }
 
+/**
+ * A typed percentage as a whole number: "20", "20%", "20 %" and Arabic-Indic
+ * digits ("٢٠%") all mean 20. Anything else returns null, not a guess.
+ */
+export function parsePercent(text: string): number | null {
+  const ascii = text
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660))
+    .replace(/[%\s٪]/g, '');
+  return /^\d{1,2}$/.test(ascii) ? Number(ascii) : null;
+}
+
 export const isDiscountMode = (value: unknown): value is DiscountMode =>
   typeof value === 'string' && (DISCOUNT_MODES as readonly string[]).includes(value);
 

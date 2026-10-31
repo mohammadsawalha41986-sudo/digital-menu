@@ -1,5 +1,5 @@
 import { listOptionGroups } from '@/server/menu-studio/modifiers';
-import { discountFieldValues } from '@/server/admin/discount-fields';
+import { discountFieldValues, discountStatusOf } from '@/server/admin/discount-fields';
 import { parseWorkingHours } from '@/server/business/hours';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -377,6 +377,7 @@ async function renderStep(context: StepContext) {
                 : formatMinorAsDecimal(item.priceMinor, item.currency),
             calories: item.calories === null ? '' : String(item.calories),
             ...discountFieldValues(item, item.currency, zone),
+            discountState: discountStatusOf(item),
             modifierKeys: item.modifiers.map((link) => link.group.key),
             categoryKey: category.key,
             availability: item.availability,
