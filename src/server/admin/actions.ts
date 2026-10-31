@@ -32,12 +32,17 @@ import {
   upsertItem,
   setItemUpsell,
   setCategoryStyles,
+  renameCategory,
+  itemIdByCode,
+  newItemCode,
 } from './business-service';
+import { duplicateItem, move } from './structure-service';
 import {
   branchSchema,
   brandSchema,
   businessSchema,
   categorySchema,
+  categoryCreateSchema,
   formDataToObject,
   itemSchema,
   menuSchema,
@@ -286,7 +291,7 @@ export async function createCategoryAction(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireUser();
-  const parsed = categorySchema.safeParse(formDataToObject(formData));
+  const parsed = categoryCreateSchema.safeParse(formDataToObject(formData));
 
   if (!parsed.success) return { error: firstIssue(parsed.error.issues) };
 
@@ -494,5 +499,113 @@ export async function deleteOptionGroupAction(
     revalidateBusiness(businessId, publicId);
     revalidatePath(`/admin/businesses/${businessId}/options`);
     return 'Deleted';
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/* Step 7, the builder                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A dish from the builder. A new dish arrives without a code and gets one
+ * from the server; an existing one keeps its own. The menu id pins the
+ * section to the menu being edited.
+ */
+export async function saveDishAction(
+  businessId: string,
+  menuId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const raw = formDataToObject(formData);
+  const isNew = !String(raw.itemCode ?? '').trim();
+  const parsed = itemSchema.safeParse({ ...raw, itemCode: isNew ? 'PENDING' : raw.itemCode, menuId });
+  if (!parsed.success) return { error: firstIssue(parsed.error.issues) };
+
+  return run(async () => {
+    const itemCode = isNew ? await newItemCode(user, businessId) : parsed.data.itemCode;
+    await upsertItem(user, businessId, { ...parsed.data, itemCode });
+    revalidateBusiness(businessId, publicId);
+    return isNew ? 'Dish added' : 'Dish saved';
+  });
+}
+
+export async function renameSectionAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await renameCategory(user, businessId, String(formData.get('categoryId') ?? ''), {
+      nameAr: String(formData.get('nameAr') ?? ''),
+      nameEn: String(formData.get('nameEn') ?? '') || null,
+    });
+    revalidateBusiness(businessId, publicId);
+    return 'Section renamed';
+  });
+}
+
+export async function moveSectionAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    const direction = formData.get('direction') === 'up' ? 'up' : 'down';
+    await move(user, businessId, 'category', String(formData.get('categoryId') ?? ''), direction);
+    revalidateBusiness(businessId, publicId);
+    return 'Order updated';
+  });
+}
+
+export async function deleteSectionAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await deleteCategory(user, businessId, String(formData.get('categoryId') ?? ''));
+    revalidateBusiness(businessId, publicId);
+    return 'Section deleted';
+  });
+}
+
+export async function deleteDishAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await deleteItem(user, businessId, await itemIdByCode(user, businessId, String(formData.get('itemCode') ?? '')));
+    revalidateBusiness(businessId, publicId);
+    return 'Dish deleted';
+  });
+}
+
+export async function duplicateDishAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    const copy = await duplicateItem(
+      user,
+      businessId,
+      await itemIdByCode(user, businessId, String(formData.get('itemCode') ?? '')),
+    );
+    revalidateBusiness(businessId, publicId);
+    return `Copied as “${copy.nameAr}” — hidden until you show it`;
   });
 }

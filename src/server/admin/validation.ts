@@ -188,6 +188,17 @@ export const categorySchema = z.object({
   isFeatured: z.coerce.boolean().default(false),
 });
 
+/**
+ * A new section. The key is the section's permanent internal name and is
+ * made by the server from the names when the form does not send one (the
+ * builder never does: owners name sections, they do not invent identifiers).
+ * Without a sort order it goes after the existing sections.
+ */
+export const categoryCreateSchema = categorySchema.extend({
+  key: keySchema.optional(),
+  sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
+});
+
 /** Item codes are the Excel match key, so they are normalised on the way in. */
 export const itemCodeSchema = z
   .string()
@@ -198,6 +209,8 @@ export const itemCodeSchema = z
 export const itemSchema = z.object({
   itemCode: itemCodeSchema,
   categoryKey: keySchema,
+  /** The menu the section belongs to; needed when two menus share a key. */
+  menuId: z.string().trim().max(64).optional(),
   nameAr: requiredText(),
   nameEn: optionalText(200),
   descriptionAr: optionalText(2000),

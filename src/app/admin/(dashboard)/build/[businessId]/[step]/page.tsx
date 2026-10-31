@@ -13,7 +13,12 @@ import { resolveFont } from '@/menu-studio/typography';
 import { formatMinorAsDecimal } from '@/lib/money';
 import {
   createCategoryAction,
-  upsertItemAction,
+  saveDishAction,
+  renameSectionAction,
+  moveSectionAction,
+  deleteSectionAction,
+  deleteDishAction,
+  duplicateDishAction,
 } from '@/server/admin/actions';
 import {
   uploadMediaAction,
@@ -158,6 +163,7 @@ interface StepItem {
 }
 
 interface StepCategory {
+  id: string;
   key: string;
   updatedAt: Date;
   nameAr: string;
@@ -280,8 +286,11 @@ async function renderStep(context: StepContext) {
 
       const categories: BuilderCategory[] =
         menu?.categories.map((category) => ({
+          id: category.id,
           key: category.key,
-          name: category.nameEn ?? category.nameAr,
+          name: category.nameAr,
+          nameAr: category.nameAr,
+          nameEn: category.nameEn ?? '',
           items: category.items.map((item) => ({
             code: item.itemCode,
             nameAr: item.nameAr,
@@ -314,8 +323,15 @@ async function renderStep(context: StepContext) {
         <BuilderStep
           categories={categories}
           currency={business.currency}
-          saveItem={upsertItemAction.bind(null, business.id, business.publicId)}
-          addCategory={createCategoryAction.bind(null, business.id, menu.id, business.publicId)}
+          actions={{
+            saveItem: saveDishAction.bind(null, business.id, menu.id, business.publicId),
+            addCategory: createCategoryAction.bind(null, business.id, menu.id, business.publicId),
+            renameCategory: renameSectionAction.bind(null, business.id, business.publicId),
+            moveCategory: moveSectionAction.bind(null, business.id, business.publicId),
+            deleteCategory: deleteSectionAction.bind(null, business.id, business.publicId),
+            deleteItem: deleteDishAction.bind(null, business.id, business.publicId),
+            duplicateItem: duplicateDishAction.bind(null, business.id, business.publicId),
+          }}
         />
       );
     }

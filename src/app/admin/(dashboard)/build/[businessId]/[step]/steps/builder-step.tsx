@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useId, useState } from 'react';
+import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ActionState } from '@/server/admin/actions';
 
@@ -28,8 +28,11 @@ export interface BuilderItem {
 }
 
 export interface BuilderCategory {
+  id: string;
   key: string;
   name: string;
+  nameAr: string;
+  nameEn: string;
   items: BuilderItem[];
 }
 
@@ -45,36 +48,52 @@ const BLANK: BuilderItem = {
   imageUrl: null,
 };
 
+type Action = (previous: ActionState, formData: FormData) => Promise<ActionState>;
+
+export interface BuilderActions {
+  saveItem: Action;
+  addCategory: Action;
+  renameCategory: Action;
+  moveCategory: Action;
+  deleteCategory: Action;
+  deleteItem: Action;
+  duplicateItem: Action;
+}
+
 export function BuilderStep({
   categories,
   currency,
-  saveItem,
-  addCategory,
+  actions,
 }: {
   categories: BuilderCategory[];
   currency: string;
-  saveItem: (previous: ActionState, formData: FormData) => Promise<ActionState>;
-  addCategory: (previous: ActionState, formData: FormData) => Promise<ActionState>;
+  actions: BuilderActions;
 }) {
-  const [itemState, submitItem] = useActionState<ActionState, FormData>(saveItem, {});
-  const [categoryState, submitCategory] = useActionState<ActionState, FormData>(addCategory, {});
-  const [selected, setSelected] = useState<BuilderItem | null>(null);
+  const [itemState, submitItem] = useActionState<ActionState, FormData>(actions.saveItem, {});
+  const [categoryState, submitCategory] = useActionState<ActionState, FormData>(actions.addCategory, {});
+  const [renameState, submitRename] = useActionState<ActionState, FormData>(actions.renameCategory, {});
+  const [moveState, submitMove] = useActionState<ActionState, FormData>(actions.moveCategory, {});
+  const [removeState, submitRemove] = useActionState<ActionState, FormData>(actions.deleteCategory, {});
+  const [dishDeleteState, submitDishDelete] = useActionState<ActionState, FormData>(actions.deleteItem, {});
+  const [copyState, submitCopy] = useActionState<ActionState, FormData>(actions.duplicateItem, {});
   const [addingSection, setAddingSection] = useState(categories.length === 0);
 
-  // A new dish needs a code that is stable across renders — the spreadsheet
-  // matches on it, and a value regenerated mid-typing would remount the fields.
-  // It is derived from data instead of from a clock: the component's own id
-  // plus the number of dishes that exist. After a save the server sends fresh
-  // data, the count moves, and the next new dish gets the next code — so two
-  // added in a row never collide, with no clock and no effect.
-  const instance = useId().replace(/[^a-zA-Z0-9]/g, '').slice(-5).toUpperCase();
-  const total = categories.reduce((sum, category) => sum + category.items.length, 0);
+  // Each choice remembers the action result current when it was made, so a
+  // rename that saves closes its form and a deleted dish leaves the editor
+  // without an effect writing state back.
+  const [pick, setPick] = useState<{ item: BuilderItem; since: ActionState } | null>(null);
+  const selected = pick && !(dishDeleteState.ok && dishDeleteState !== pick.since) ? pick.item : null;
+  const setSelected = (item: BuilderItem | null) => setPick(item ? { item, since: dishDeleteState } : null);
+  const [renameOpen, setRenameOpen] = useState<{ id: string; since: ActionState } | null>(null);
+  const renaming =
+    renameOpen && (renameState === renameOpen.since || renameState.error) ? renameOpen.id : null;
+  const setRenaming = (id: string | null) => setRenameOpen(id ? { id, since: renameState } : null);
 
-  const editing = selected ?? {
-    ...BLANK,
-    categoryKey: categories[0]?.key ?? '',
-    code: `NEW-${instance}-${total + 1}`,
-  };
+  // A new dish carries no code: the server gives it one that is free. (A
+  // code made here from a count of dishes repeated after a delete, and the
+  // save then overwrote the dish that already had it.)
+  const editing = selected ?? { ...BLANK, categoryKey: categories[0]?.key ?? '' };
+  const sectionNotice = [renameState, moveState, removeState].find((state) => state.error);
 
   return (
     <div className="build__builder">
@@ -85,12 +104,85 @@ export function BuilderStep({
           <p className="admin__empty">No sections yet.</p>
         ) : (
           <ol className="build__sections">
-            {categories.map((category) => (
-              <li key={category.key}>
-                <p className="studio__category">
-                  <span className="studio__category-name">{category.name}</span>
-                  <span className="studio__category-count">{category.items.length}</span>
-                </p>
+            {categories.map((category, index) => (
+              <li key={category.key} data-builder-section={category.key}>
+                {renaming === category.id ? (
+                  <form action={submitRename} className="build__inline-form" aria-label="Rename section">
+                    <input type="hidden" name="categoryId" value={category.id} />
+                    <input
+                      name="nameAr"
+                      dir="rtl"
+                      className="admin__input"
+                      defaultValue={category.nameAr}
+                      aria-label="اسم القسم بالعربي · Section name (AR)"
+                      required
+                    />
+                    <input
+                      name="nameEn"
+                      className="admin__input"
+                      defaultValue={category.nameEn}
+                      aria-label="Section name (EN)"
+                    />
+                    <div className="build__actions">
+                      <Save label="حفظ الاسم · Save name" />
+                      <button type="button" className="admin__button admin__button--secondary" onClick={() => setRenaming(null)}>
+                        إلغاء · Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="studio__category build__section-head">
+                    <span className="studio__category-name">{category.name}</span>
+                    <span className="studio__category-count">{category.items.length}</span>
+                    <span className="build__section-tools">
+                      <form action={submitMove}>
+                        <input type="hidden" name="categoryId" value={category.id} />
+                        <button
+                          name="direction"
+                          value="up"
+                          className="build__icon-button"
+                          disabled={index === 0}
+                          aria-label={`نقل «${category.name}» للأعلى · Move up`}
+                        >
+                          ▲
+                        </button>
+                        <button
+                          name="direction"
+                          value="down"
+                          className="build__icon-button"
+                          disabled={index === categories.length - 1}
+                          aria-label={`نقل «${category.name}» للأسفل · Move down`}
+                        >
+                          ▼
+                        </button>
+                      </form>
+                      <button
+                        type="button"
+                        className="build__icon-button"
+                        onClick={() => setRenaming(category.id)}
+                        aria-label={`تعديل اسم «${category.name}» · Rename`}
+                      >
+                        ✎
+                      </button>
+                      <form
+                        action={submitRemove}
+                        onSubmit={(event) => {
+                          if (!window.confirm(`حذف قسم «${category.name}»؟`)) event.preventDefault();
+                        }}
+                      >
+                        <input type="hidden" name="categoryId" value={category.id} />
+                        <button
+                          className="build__icon-button"
+                          disabled={category.items.length > 0}
+                          title={category.items.length > 0 ? 'انقل أطباقه أو احذفها أولاً · Empty it first' : undefined}
+                          aria-label={`حذف «${category.name}» · Delete section`}
+                        >
+                          🗑
+                        </button>
+                      </form>
+                    </span>
+                  </div>
+                )}
 
                 <ul className="studio__items">
                   {category.items.map((item) => (
@@ -118,6 +210,12 @@ export function BuilderStep({
             ))}
           </ol>
         )}
+
+        {sectionNotice?.error ? (
+          <p className="admin__message admin__message--error" role="alert">
+            {sectionNotice.error}
+          </p>
+        ) : null}
 
         <div className="build__actions">
           <button
@@ -195,7 +293,7 @@ export function BuilderStep({
           <>
             {/* The code is the stable key the spreadsheet matches on. It is
                 generated for a new dish and never shown as something to edit. */}
-            <input type="hidden" name="itemCode" value={editing.code} key={editing.code} />
+            {editing.code ? <input type="hidden" name="itemCode" value={editing.code} key={editing.code} /> : null}
 
             <div className="admin__field">
               <label className="admin__label" htmlFor="item-name-ar">
@@ -313,16 +411,48 @@ export function BuilderStep({
           </>
         )}
       </form>
+
+      {selected ? (
+        <div className="build__card build__dish-tools" aria-label="Dish tools">
+          {[dishDeleteState, copyState].map((state, index) =>
+            state.error ? (
+              <p key={index} className="admin__message admin__message--error" role="alert">
+                {state.error}
+              </p>
+            ) : state.ok && state.message ? (
+              <p key={index} className="admin__message admin__message--ok" role="status">
+                {state.message}
+              </p>
+            ) : null,
+          )}
+          <div className="build__actions">
+            <form action={submitCopy}>
+              <input type="hidden" name="itemCode" value={selected.code} />
+              <Save label="نسخ الطبق · Duplicate" secondary />
+            </form>
+            <form
+              action={submitDishDelete}
+              onSubmit={(event) => {
+                if (!window.confirm(`حذف «${selected.nameAr}» نهائياً؟`)) event.preventDefault();
+              }}
+            >
+              <input type="hidden" name="itemCode" value={selected.code} />
+              <Save label="حذف الطبق · Delete dish" danger />
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function Save({ label }: { label: string }) {
+function Save({ label, secondary, danger }: { label: string; secondary?: boolean; danger?: boolean }) {
   const { pending } = useFormStatus();
+  const tone = danger ? ' admin__button--danger' : secondary ? ' admin__button--secondary' : '';
 
   return (
     <div className="build__actions">
-      <button type="submit" className="admin__button" disabled={pending}>
+      <button type="submit" className={`admin__button${tone}`} disabled={pending}>
         {pending ? 'Saving…' : label}
       </button>
     </div>

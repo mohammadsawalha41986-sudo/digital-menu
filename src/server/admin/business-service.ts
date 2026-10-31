@@ -12,6 +12,7 @@ import {
 } from '@/server/tenancy/context';
 import { isValidTemplateSelection } from '@/templates/registry';
 import { isFoodBusinessType } from './validation';
+import { sectionKeyFor, uniqueKey } from '@/lib/keys';
 import { isSectionStyle } from '@/templates/street-food/sabah/section-layout';
 import { parseSnapshot, summarise } from '@/server/menus/snapshot';
 import {
@@ -27,6 +28,7 @@ import type {
   brandSchema,
   businessSchema,
   categorySchema,
+  categoryCreateSchema,
   itemSchema,
   menuSchema,
   templateSelectionSchema,
@@ -71,6 +73,7 @@ type MenuDesignKey =
 type BrandInput = Omit<BrandOutput, MenuDesignKey> & Partial<Pick<BrandOutput, MenuDesignKey>>;
 type MenuInput = z.infer<typeof menuSchema>;
 type CategoryInput = z.infer<typeof categorySchema>;
+type CategoryCreateInput = z.infer<typeof categoryCreateSchema>;
 type ItemInput = z.infer<typeof itemSchema>;
 type TemplateInput = z.infer<typeof templateSelectionSchema>;
 
@@ -563,24 +566,47 @@ export async function getPendingChanges(
   return pendingChanges(prisma, menu.id);
 }
 
+/** Names compared the way an owner reads them: trimmed, spaces folded. */
+const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, ' ') === b.trim().replace(/\s+/g, ' ');
+
 export async function createCategory(
   user: AuthenticatedUser,
   businessId: string,
   menuId: string,
-  input: CategoryInput,
+  input: CategoryCreateInput,
 ) {
   const context = await requireTenantContext(user, businessId, 'EDITOR');
 
   const menu = await prisma.menu.findFirst({
     where: { id: menuId, ...tenantScope(context) },
-    select: { id: true },
+    select: { id: true, categories: { select: { key: true, nameAr: true, sortOrder: true } } },
   });
 
   if (!menu) throw new TenantAccessError('Menu not found');
 
-  const category = await prisma.menuCategory.create({
-    data: { ...input, menuId: menu.id, businessId: context.businessId },
-  });
+  // Two sections with one name would be indistinguishable to the owner and
+  // to every customer reading the menu.
+  if (menu.categories.some((existing) => sameName(existing.nameAr, input.nameAr))) {
+    throw new ValidationError(`A section named “${input.nameAr.trim()}” already exists in this menu`);
+  }
+
+  const taken = menu.categories.map((existing) => existing.key);
+  if (input.key && taken.includes(input.key)) {
+    throw new ValidationError(`The section key “${input.key}” is already used in this menu`);
+  }
+  const key = input.key ?? uniqueKey(sectionKeyFor(input.nameAr, input.nameEn), taken);
+  const sortOrder =
+    input.sortOrder ?? menu.categories.reduce((last, existing) => Math.max(last, existing.sortOrder + 1), 0);
+
+  const category = await prisma.menuCategory
+    .create({ data: { ...input, key, sortOrder, menuId: menu.id, businessId: context.businessId } })
+    .catch((error: unknown) => {
+      // Another save made the same key a moment ago.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ValidationError('That section was just added — reload the page');
+      }
+      throw error;
+    });
 
   await recordAudit({
     action: 'category.created',
@@ -626,6 +652,15 @@ export async function deleteCategory(
 ) {
   const context = await requireTenantContext(user, businessId, 'MANAGER');
 
+  // Deleting a section used to take its dishes, prices and photos with it
+  // (the rows cascade). A section is removed only once it is empty.
+  const dishes = await prisma.menuItem.count({ where: { categoryId, businessId: context.businessId } });
+  if (dishes > 0) {
+    throw new ValidationError(
+      `This section still has ${dishes} ${dishes === 1 ? 'dish' : 'dishes'}; move or delete them first`,
+    );
+  }
+
   const result = await prisma.menuCategory.deleteMany({
     where: { id: categoryId, ...tenantScope(context) },
   });
@@ -664,12 +699,32 @@ export async function upsertItem(
     select: { currency: true },
   });
 
-  const category = await prisma.menuCategory.findFirst({
-    where: { key: input.categoryKey, ...tenantScope(context) },
-    select: { id: true },
-  });
+  // A section key is unique within a menu, not across a restaurant's menus:
+  // "drinks" may exist in lunch and dinner both. The menu decides, then the
+  // menu the dish is already in; a key that still names two sections is
+  // refused rather than guessed.
+  const [candidates, current] = await Promise.all([
+    prisma.menuCategory.findMany({
+      where: { key: input.categoryKey, ...(input.menuId ? { menuId: input.menuId } : {}), ...tenantScope(context) },
+      select: { id: true, menuId: true },
+    }),
+    prisma.menuItem.findUnique({
+      where: { businessId_itemCode: { businessId: context.businessId, itemCode: input.itemCode } },
+      select: { category: { select: { menuId: true } } },
+    }),
+  ]);
+  const category =
+    candidates.length === 1
+      ? candidates[0]
+      : candidates.find((candidate) => candidate.menuId === current?.category.menuId);
 
-  if (!category) throw new ValidationError(`Unknown category: ${input.categoryKey}`);
+  if (!category) {
+    throw new ValidationError(
+      candidates.length > 1
+        ? `The section ${input.categoryKey} is in more than one menu; choose the menu`
+        : `Unknown category: ${input.categoryKey}`,
+    );
+  }
 
   const priceMinor =
     input.price.trim() === '' ? null : parsePriceToMinor(input.price, business.currency);
@@ -1062,4 +1117,74 @@ export async function setCategoryStyles(
   });
 
   return changed.length;
+}
+
+/**
+ * Renames a section and nothing else: its key, order, description and
+ * dishes stay as they are. (The full category form rewrites every field, so
+ * a rename through it would clear what it did not show.)
+ */
+export async function renameCategory(
+  user: AuthenticatedUser,
+  businessId: string,
+  categoryId: string,
+  names: { nameAr: string; nameEn: string | null },
+) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const nameAr = names.nameAr.trim();
+  if (!nameAr) throw new ValidationError('Enter the section name in Arabic');
+
+  const category = await prisma.menuCategory.findFirst({
+    where: { id: categoryId, ...tenantScope(context) },
+    select: { id: true, menuId: true, nameAr: true, nameEn: true },
+  });
+  if (!category) throw new TenantAccessError('Category not found');
+
+  const clash = await prisma.menuCategory.findFirst({
+    where: { menuId: category.menuId, id: { not: category.id }, nameAr },
+    select: { id: true },
+  });
+  if (clash) throw new ValidationError(`A section named “${nameAr}” already exists in this menu`);
+
+  const nameEn = names.nameEn?.trim() || null;
+  await prisma.menuCategory.update({ where: { id: category.id }, data: { nameAr, nameEn } });
+
+  await recordAudit({
+    action: 'category.updated',
+    entity: 'menu_category',
+    entityId: category.id,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { before: { nameAr: category.nameAr, nameEn: category.nameEn }, after: { nameAr, nameEn } },
+  });
+}
+
+/** The dish with this code, inside the tenant, or a TenantAccessError. */
+export async function itemIdByCode(user: AuthenticatedUser, businessId: string, itemCode: string) {
+  const context = await requireTenantContext(user, businessId, 'VIEWER');
+  const item = await prisma.menuItem.findUnique({
+    where: { businessId_itemCode: { businessId: context.businessId, itemCode: itemCode.trim().toUpperCase() } },
+    select: { id: true },
+  });
+  if (!item) throw new TenantAccessError('Item not found');
+  return item.id;
+}
+
+/**
+ * A code for a new dish, made by the server so it can never be one that
+ * already exists. (The builder used to make it in the browser from a count
+ * of dishes, which repeats after a delete — and saving under a repeated code
+ * overwrote the dish that had it.)
+ */
+export async function newItemCode(user: AuthenticatedUser, businessId: string) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const code = `D-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`.toUpperCase();
+    const taken = await prisma.menuItem.findUnique({
+      where: { businessId_itemCode: { businessId: context.businessId, itemCode: code } },
+      select: { id: true },
+    });
+    if (!taken) return code;
+  }
+  throw new Error('Could not make a free dish code');
 }

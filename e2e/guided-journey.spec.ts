@@ -136,6 +136,93 @@ test.describe('a new restaurant, start to finish', () => {
     await expect(preview.getByText('21').first()).toBeVisible();
   });
 
+  test('step 7: sections are added in Arabic and English, renamed, reordered and removed', async ({ page }) => {
+    await signIn(page);
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.goto(`/admin/build/${businessId}/builder`);
+
+    // The section form sends names only. This used to fail with
+    // "key: Invalid input: expected string, received undefined".
+    await page.getByRole('button', { name: 'Add a section' }).click();
+    await page.getByLabel('Section name, in Arabic').fill('دجاج الشواية');
+    await page.getByLabel('Section name, in English').fill('Grilled chicken');
+    await page.getByRole('button', { name: 'Add section' }).click();
+    await expect(page.getByRole('status').first()).toContainText('Category created');
+    await expect(page.locator('body')).not.toContainText('expected string');
+    const section = page.locator('[data-builder-section="grilled-chicken"]');
+    await expect(section).toContainText('دجاج الشواية');
+
+    // An empty section to delete later.
+    await page.getByLabel('Section name, in Arabic').fill('مؤقت');
+    await page.getByRole('button', { name: 'Add section' }).click();
+    await expect(page.locator('[data-builder-section]')).toHaveCount(4);
+
+    // A dish in the new section, with a decimal price.
+    await page.getByRole('button', { name: 'Add a dish' }).click();
+    await page.getByLabel('Name, in Arabic', { exact: true }).fill('نصف دجاج شواية مع الأرز');
+    await page.getByLabel('Price (SAR)').fill('23.50');
+    await page.getByLabel('Section', { exact: true }).selectOption('grilled-chicken');
+    await page.getByRole('button', { name: 'Add dish' }).click();
+    await expect(page.locator('form[aria-label="Edit dish"]').getByRole('status')).toContainText('Dish added');
+    await expect(section).toContainText('نصف دجاج شواية مع الأرز');
+    await expect(section).toContainText('23.5 SAR');
+
+    // Rename keeps the dish in place.
+    await section.getByRole('button', { name: /Rename/ }).click();
+    await section.getByLabel('Section name (AR)').fill('دجاج على الفحم');
+    await section.getByRole('button', { name: /Save name/ }).click();
+    await expect(section).toContainText('دجاج على الفحم');
+    await expect(section).toContainText('نصف دجاج شواية مع الأرز');
+
+    // Move it to the top.
+    for (let index = 0; index < 2; index += 1) {
+      await section.getByRole('button', { name: /Move up/ }).click();
+      await page.waitForLoadState('networkidle');
+    }
+    await expect(page.locator('[data-builder-section]').first()).toHaveAttribute('data-builder-section', 'grilled-chicken');
+
+    // A section with a dish cannot be deleted; an empty one can.
+    await expect(section.getByRole('button', { name: /Delete section/ })).toBeDisabled();
+    const temporary = page.locator('[data-builder-section]').filter({ hasText: 'مؤقت' });
+    await temporary.getByRole('button', { name: /Delete section/ }).click();
+    await expect(page.locator('[data-builder-section]')).toHaveCount(3);
+
+    // Everything is still there after a reload.
+    await page.reload();
+    await expect(page.locator('[data-builder-section]').first()).toContainText('دجاج على الفحم');
+    await expect(page.locator('[data-builder-section="grilled-chicken"]')).toContainText('23.5 SAR');
+  });
+
+  test('step 7: a dish is duplicated and deleted, and new dishes never overwrite old ones', async ({ page }) => {
+    await signIn(page);
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.goto(`/admin/build/${businessId}/builder`);
+    const dishes = page.locator('[data-builder-section] .build__item-button');
+    const before = await dishes.count();
+
+    await page.getByRole('button', { name: /Fattoush/ }).click();
+    await page.getByRole('button', { name: /Duplicate/ }).click();
+    await expect(page.locator('[aria-label="Dish tools"]').getByRole('status')).toContainText('Copied');
+    await expect(dishes).toHaveCount(before + 1);
+
+    await page.getByRole('button', { name: /Fattoush/ }).first().click();
+    await page.getByRole('button', { name: /Delete dish/ }).click();
+    await expect(dishes).toHaveCount(before);
+
+    // Two new dishes in a row after a delete: both kept (the browser-made
+    // code used to repeat here and the second save replaced the first).
+    for (const name of ['أرز بخاري', 'أرز برياني']) {
+      await page.getByRole('button', { name: 'Add a dish' }).click();
+      await page.getByLabel('Name, in Arabic', { exact: true }).fill(name);
+      await page.getByLabel('Price (SAR)').fill('8');
+      await page.getByRole('button', { name: 'Add dish' }).click();
+      await expect(page.locator('form[aria-label="Edit dish"]').getByRole('status')).toContainText('Dish added');
+    }
+    await expect(dishes).toHaveCount(before + 2);
+    await expect(page.getByRole('button', { name: /أرز بخاري/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /أرز برياني/ })).toBeVisible();
+  });
+
   test('step 8: the address exists before publishing, and never moves', async ({ page }) => {
     await signIn(page);
     await page.goto(`/admin/build/${businessId}/qr`);

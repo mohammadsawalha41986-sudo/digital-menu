@@ -3339,3 +3339,46 @@
   flex-wrap: wrap;
   gap: var(--sys-space-2);
 }
+
+/* --- Builder: section tools ---------------------------------------------- */
+
+.build__section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sys-space-2);
+}
+
+.build__section-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-inline-start: auto;
+}
+
+.build__section-tools form {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.build__icon-button {
+  min-width: 2rem;
+  min-height: 2rem;
+  border: 1px solid var(--admin-border);
+  border-radius: 0.4rem;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.build__icon-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.build__dish-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
