@@ -109,6 +109,55 @@ export interface ValidateOptions {
   mapping: Record<number, string>;
   rows: string[][];
   rowNumbers: number[];
+  /**
+   * The restaurant's own menus, so the `menu` column is checked here — row
+   * by row, in the preview — instead of failing every row at import time.
+   */
+  menus?: { key: string; titleAr: string; titleEn: string | null }[];
+  /** The restaurant's names: a file that writes them in the menu column means the chosen menu. */
+  businessNames?: string[];
+}
+
+/** Compared as an owner reads: case, spaces and Arabic letter variants folded. */
+function fold(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+type MenuMatch = { kind: 'menu'; key: string } | { kind: 'default' } | { kind: 'unknown' };
+
+/**
+ * What a `menu` cell means. A file may hold the menu's key ("main"), its
+ * title, both names written "عربي | English", or the restaurant's name (which
+ * files exported elsewhere often put in that column). Only this restaurant's
+ * menus are candidates.
+ */
+export function resolveMenuCell(
+  value: string,
+  menus: NonNullable<ValidateOptions['menus']>,
+  businessNames: string[],
+): MenuMatch {
+  const parts = [value, ...value.split('|')].map((part) => part.trim()).filter(Boolean);
+  for (const part of parts) {
+    const folded = fold(part);
+    const menu = menus.find(
+      (candidate) =>
+        candidate.key === part.toLowerCase() ||
+        fold(candidate.titleAr) === folded ||
+        (candidate.titleEn !== null && fold(candidate.titleEn) === folded),
+    );
+    if (menu) return { kind: 'menu', key: menu.key };
+  }
+  for (const part of parts) {
+    if (businessNames.some((name) => name && fold(name) === fold(part))) return { kind: 'default' };
+  }
+  return { kind: 'unknown' };
 }
 
 export function validateRows(options: ValidateOptions): ValidationSummary {
@@ -264,6 +313,24 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
       }
     }
 
+    const rawMenu = get('menu').trim();
+    let menuKey: string | null = rawMenu ? rawMenu.toLowerCase() : null;
+    if (rawMenu && options.menus) {
+      const match = resolveMenuCell(rawMenu, options.menus, options.businessNames ?? []);
+      if (match.kind === 'menu') menuKey = match.key;
+      else if (match.kind === 'default') menuKey = null;
+      else {
+        fail(
+          'menu',
+          rawMenu,
+          `Unknown menu “${rawMenu}”`,
+          `Use one of this restaurant's menus (${options.menus
+            .map((menu) => `${menu.key} — ${menu.titleAr}`)
+            .join(', ')}), or leave the column empty to import into the menu chosen below`,
+        );
+      }
+    }
+
     // Only issues that make the row unimportable invalidate it.
     const blocking = rowIssues.filter((issue) => issue.severity === 'error');
 
@@ -291,7 +358,7 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
       featured: parseBoolean(get('featured'), false),
       availability,
       sortOrder,
-      menuKey: get('menu').trim().toLowerCase() || null,
+      menuKey,
       branchKey: get('branch').trim().toLowerCase() || null,
       issues: rowIssues,
     });

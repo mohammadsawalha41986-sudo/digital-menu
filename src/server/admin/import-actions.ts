@@ -92,7 +92,12 @@ export async function previewImportAction(
         ...(user.role === 'SUPER_ADMIN' ? [{}] : []),
       ],
     },
-    select: { currency: true },
+    select: {
+      currency: true,
+      nameAr: true,
+      nameEn: true,
+      menus: { select: { key: true, titleAr: true, titleEn: true } },
+    },
   });
 
   if (!business) return { error: 'Not found or access denied' };
@@ -121,6 +126,8 @@ export async function previewImportAction(
       mapping,
       rows: parsed.rows,
       rowNumbers: parsed.rowNumbers,
+      menus: business.menus,
+      businessNames: [business.nameAr, business.nameEn ?? ''],
     });
 
     // Existing items, read once, so the plan can say new versus updated.

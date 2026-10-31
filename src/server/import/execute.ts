@@ -8,6 +8,7 @@ import {
   type TenantContext,
 } from '@/server/tenancy/context';
 import type { ValidatedRow } from './validate';
+import { sectionKeyFor, uniqueKey } from '@/lib/keys';
 
 /**
  * Import execution (master spec §64, §65, §66, §75, §76, §77).
@@ -87,7 +88,10 @@ export async function executeImport(
   let errors = 0;
 
   for (const row of options.rows) {
-    if (!row.valid) {
+    // The rows come back from the browser between preview and import, so a
+    // row marked valid is checked again for what makes it importable: never
+    // a dish without a name or with a missing or impossible price.
+    if (!row.valid || !importable(row)) {
       errors += 1;
       await recordRow(batch.id, row, 'ERROR');
       continue;
@@ -132,6 +136,17 @@ export async function executeImport(
   return { batchId: batch.id, created, updated, skipped, errors };
 }
 
+function importable(row: ValidatedRow): boolean {
+  return (
+    typeof row.nameAr === 'string' &&
+    row.nameAr.trim() !== '' &&
+    typeof row.categoryAr === 'string' &&
+    row.categoryAr.trim() !== '' &&
+    Number.isSafeInteger(row.priceMinor) &&
+    (row.priceMinor as number) >= 0
+  );
+}
+
 async function importRow(
   context: TenantContext,
   currency: string,
@@ -149,46 +164,25 @@ async function importRow(
 
   if (!menu) throw new Error(`Unknown menu: ${menuKey}`);
 
-  // Categories are created on demand from the spreadsheet, which is how a
-  // restaurant's own file imports without pre-registering its sections (§62).
+  // Sections are found by name in this menu, or created on demand, which is
+  // how a restaurant's own file imports without pre-registering them (§62).
+  // Matching by name (not by a key re-derived from it) keeps a file from
+  // adding a second "الأرز" next to the one made in the builder.
   const categoryKey = slugifyCategory(row.categoryAr, row.categoryEn);
+  const categoryId = await findOrCreateSection(context.businessId, menu.id, null, row.categoryAr, row.categoryEn);
 
-  const category = await prisma.menuCategory.upsert({
-    where: { menuId_key: { menuId: menu.id, key: categoryKey } },
-    update: {},
-    create: {
-      menuId: menu.id,
-      businessId: context.businessId,
-      key: categoryKey,
-      nameAr: row.categoryAr,
-      nameEn: row.categoryEn,
-    },
-    select: { id: true },
-  });
-
-  // A subcategory is created under its parent on demand, the same way the
-  // parent is (§11). The key is prefixed so "Hot" under Starters and "Hot"
-  // under Drinks stay two different sections rather than collapsing into one.
-  let targetCategoryId = category.id;
+  // A subcategory is found or created under its parent the same way (§11),
+  // so "Hot" under Starters and "Hot" under Drinks stay two sections.
+  let targetCategoryId = categoryId;
 
   if (row.subcategoryAr) {
-    const subKey = `${categoryKey}-${slugifyCategory(row.subcategoryAr, row.subcategoryEn)}`;
-
-    const subcategory = await prisma.menuCategory.upsert({
-      where: { menuId_key: { menuId: menu.id, key: subKey } },
-      update: {},
-      create: {
-        menuId: menu.id,
-        businessId: context.businessId,
-        key: subKey,
-        nameAr: row.subcategoryAr,
-        nameEn: row.subcategoryEn,
-        parentId: category.id,
-      },
-      select: { id: true },
-    });
-
-    targetCategoryId = subcategory.id;
+    targetCategoryId = await findOrCreateSection(
+      context.businessId,
+      menu.id,
+      categoryId,
+      row.subcategoryAr,
+      row.subcategoryEn,
+    );
   }
 
   const itemCode = row.itemCode ?? deriveItemCode(categoryKey, row.nameAr, row.rowNumber);
@@ -438,7 +432,54 @@ export async function rollbackImport(
   return { restored, removed };
 }
 
-/** Stable, readable category key derived from the authored name. */
+/**
+ * The section named `nameAr` in this menu (under `parentId`), created after
+ * the existing ones when there is none. A new key comes from the same rule
+ * the builder uses and is always valid and unique in the menu.
+ */
+async function findOrCreateSection(
+  businessId: string,
+  menuId: string,
+  parentId: string | null,
+  nameAr: string,
+  nameEn: string | null,
+): Promise<string> {
+  const siblings = await prisma.menuCategory.findMany({
+    where: { menuId },
+    select: { id: true, key: true, nameAr: true, parentId: true, sortOrder: true },
+  });
+  const wanted = nameAr.trim().replace(/\s+/g, ' ');
+  const existing = siblings.find(
+    (section) => section.parentId === parentId && section.nameAr.trim().replace(/\s+/g, ' ') === wanted,
+  );
+  if (existing) return existing.id;
+
+  const parentKey = parentId ? siblings.find((section) => section.id === parentId)?.key : undefined;
+  const base = sectionKeyFor(nameAr, nameEn);
+  const key = uniqueKey(
+    parentKey ? `${parentKey.slice(0, 30)}-${base}`.slice(0, 63).replace(/-+$/, '') : base,
+    siblings.map((section) => section.key),
+  );
+  const created = await prisma.menuCategory.create({
+    data: {
+      menuId,
+      businessId,
+      key,
+      nameAr: wanted,
+      nameEn,
+      parentId,
+      sortOrder: siblings.reduce((last, section) => Math.max(last, section.sortOrder + 1), 0),
+    },
+    select: { id: true },
+  });
+  return created.id;
+}
+
+/**
+ * The old section key derivation, kept only for dish codes: a row without an
+ * item code gets one made from it, and keeping it unchanged means
+ * re-importing an earlier file updates its dishes instead of adding copies.
+ */
 function slugifyCategory(nameAr: string, nameEn: string | null): string {
   const source = (nameEn ?? nameAr).trim();
 
