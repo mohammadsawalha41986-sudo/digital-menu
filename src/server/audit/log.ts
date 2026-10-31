@@ -77,6 +77,7 @@ export type AuditAction =
   | 'items.bulk_updated'
   | 'item.upsell_updated'
   | 'category.display_style_updated'
+  | 'ai.generated'
   | 'user.signed_in';
 
 export interface AuditEntry {

@@ -33,6 +33,7 @@ import {
   setItemUpsell,
   setCategoryStyles,
   renameCategory,
+  itemFormValues,
   itemIdByCode,
   newItemCode,
 } from './business-service';
@@ -521,7 +522,9 @@ export async function saveDishAction(
   const user = await requireUser();
   const raw = formDataToObject(formData);
   const isNew = !String(raw.itemCode ?? '').trim();
-  const parsed = itemSchema.safeParse({ ...raw, itemCode: isNew ? 'PENDING' : raw.itemCode, menuId });
+  // An existing dish keeps every field this form does not show.
+  const stored = isNew ? null : await itemFormValues(user, businessId, String(raw.itemCode));
+  const parsed = itemSchema.safeParse({ ...stored, ...raw, itemCode: isNew ? 'PENDING' : raw.itemCode, menuId });
   if (!parsed.success) return { error: firstIssue(parsed.error.issues) };
 
   return run(async () => {

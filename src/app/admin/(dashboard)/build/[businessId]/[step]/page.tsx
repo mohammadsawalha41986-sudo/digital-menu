@@ -28,6 +28,8 @@ import {
   setDishFocalAction,
 } from '@/server/admin/media-actions';
 import { derivativeUrl } from '@/server/media/derivatives';
+import { aiConfigured } from '@/server/ai/menu-ai';
+import { aiCaloriesAction, aiDescribeAction, aiTranslateAction } from '@/server/admin/ai-actions';
 import { BUILD_STEPS, nextStep, previousStep, stepAt } from '../steps';
 import { PreviewPane } from '../preview-pane';
 import { BrandStep } from './steps/brand-step';
@@ -156,6 +158,7 @@ interface StepItem {
   nameAr: string;
   nameEn: string | null;
   descriptionAr: string | null;
+  descriptionEn: string | null;
   priceMinor: number | null;
   currency: string;
   calories: number | null;
@@ -298,6 +301,7 @@ async function renderStep(context: StepContext) {
             nameAr: item.nameAr,
             nameEn: item.nameEn ?? '',
             descriptionAr: item.descriptionAr ?? '',
+            descriptionEn: item.descriptionEn ?? '',
             price:
               item.priceMinor === null
                 ? ''
@@ -353,6 +357,14 @@ async function renderStep(context: StepContext) {
             photoFocal: setDishFocalAction.bind(null, business.id, business.publicId),
           }}
           library={library}
+          ai={{
+            ready: aiConfigured(),
+            actions: {
+              describe: aiDescribeAction.bind(null, business.id),
+              translate: aiTranslateAction.bind(null, business.id),
+              calories: aiCaloriesAction.bind(null, business.id),
+            },
+          }}
         />
       );
     }

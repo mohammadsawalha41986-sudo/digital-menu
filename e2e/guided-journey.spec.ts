@@ -263,6 +263,32 @@ test.describe('a new restaurant, start to finish', () => {
     await expect(page.getByRole('region', { name: 'Dish image' }).locator('[data-dish-photo-current]')).toBeVisible();
   });
 
+  test('step 7: the AI assistant says when it is not set up, and an English description survives a price edit', async ({ page }) => {
+    await signIn(page);
+    await page.goto(`/admin/build/${businessId}/builder`);
+    await page.getByRole('button', { name: /Hummus/ }).click();
+
+    const ai = page.getByRole('region', { name: 'AI assistant' });
+    await expect(ai.locator('[data-ai-off]')).toContainText('ANTHROPIC_API_KEY');
+    await expect(ai.getByRole('button', { name: /Generate description/ })).toBeDisabled();
+
+    const form = page.locator('form[aria-label="Edit dish"]');
+    await page.getByLabel('Description, in English').fill('Chickpeas with tahini and olive oil');
+    await page.getByRole('button', { name: 'Save dish' }).click();
+    await expect(form.getByRole('status')).toContainText('Dish saved');
+
+    // A later edit that only touches the price keeps the English description.
+    await page.reload();
+    await page.getByRole('button', { name: /Hummus/ }).click();
+    await page.getByLabel('Price (SAR)').fill('21');
+    await page.getByRole('button', { name: 'Save dish' }).click();
+    await expect(form.getByRole('status')).toContainText('Dish saved');
+    await page.reload();
+    await page.getByRole('button', { name: /Hummus/ }).click();
+    await expect(page.getByLabel('Description, in English')).toHaveValue('Chickpeas with tahini and olive oil');
+    await expect(page.getByLabel('Price (SAR)')).toHaveValue('21');
+  });
+
   test('step 8: the address exists before publishing, and never moves', async ({ page }) => {
     await signIn(page);
     await page.goto(`/admin/build/${businessId}/qr`);

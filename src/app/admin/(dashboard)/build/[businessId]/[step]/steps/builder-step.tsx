@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ActionState } from '@/server/admin/actions';
 import { DishImagePicker, type LibraryPhoto } from './dish-image-picker';
+import { DishAi, type DishAiActions } from './dish-ai';
 
 /**
  * Step 7 — the builder.
@@ -21,6 +22,7 @@ export interface BuilderItem {
   nameAr: string;
   nameEn: string;
   descriptionAr: string;
+  descriptionEn: string;
   price: string;
   calories: string;
   categoryKey: string;
@@ -45,6 +47,7 @@ const BLANK: BuilderItem = {
   nameAr: '',
   nameEn: '',
   descriptionAr: '',
+  descriptionEn: '',
   price: '',
   calories: '',
   categoryKey: '',
@@ -75,10 +78,13 @@ export function BuilderStep({
   currency,
   actions,
   library,
+  ai,
 }: {
   categories: BuilderCategory[];
   currency: string;
   actions: BuilderActions;
+  /** The AI assistant: whether the server has a key, and its actions. */
+  ai: { ready: boolean; actions: DishAiActions };
   /** The restaurant's photos, for the dish image picker. */
   library: LibraryPhoto[];
 }) {
@@ -90,6 +96,7 @@ export function BuilderStep({
   const [dishDeleteState, submitDishDelete] = useActionState<ActionState, FormData>(actions.deleteItem, {});
   const [copyState, submitCopy] = useActionState<ActionState, FormData>(actions.duplicateItem, {});
   const [addingSection, setAddingSection] = useState(categories.length === 0);
+  const dishForm = useRef<HTMLFormElement>(null);
 
   // Each choice remembers the action result current when it was made, so a
   // rename that saves closes its form and a deleted dish leaves the editor
@@ -291,7 +298,7 @@ export function BuilderStep({
         ) : null}
       </section>
 
-      <form action={submitItem} className="build__card build__builder-edit" aria-label="Edit dish">
+      <form ref={dishForm} action={submitItem} className="build__card build__builder-edit" aria-label="Edit dish">
         <h2 className="build__step-subtitle">{selected ? 'Edit dish' : 'New dish'}</h2>
 
         {itemState.error ? (
@@ -401,6 +408,29 @@ export function BuilderStep({
                 key={`desc-${editing.code}`}
               />
             </div>
+
+            <div className="admin__field">
+              <label className="admin__label" htmlFor="item-description-en">
+                Description, in English
+              </label>
+              <textarea
+                id="item-description-en"
+                name="descriptionEn"
+                dir="ltr"
+                rows={2}
+                className="admin__input"
+                defaultValue={editing.descriptionEn}
+                key={`desc-en-${editing.code}`}
+              />
+            </div>
+
+            <DishAi
+              key={`ai-${editing.code || 'new'}`}
+              formRef={dishForm}
+              section={categories.find((category) => category.key === editing.categoryKey)?.name ?? ''}
+              ready={ai.ready}
+              actions={ai.actions}
+            />
 
             <div className="admin__grid">
               <div className="admin__field">

@@ -3623,3 +3623,61 @@
 .dish-photo__use {
   color: var(--admin-muted);
 }
+
+/* --- AI assistant in the dish editor ---------------------------------------- */
+
+.dish-ai {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+  padding: var(--sys-space-3);
+  border: 1px dashed var(--admin-accent);
+  border-radius: var(--sys-radius-md-md);
+}
+
+.dish-ai__title {
+  margin: 0;
+  font-size: var(--sys-font-size-md, 1rem);
+}
+
+.dish-ai__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sys-space-2);
+}
+
+.dish-ai__proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: var(--sys-space-2) var(--sys-space-3);
+  border-radius: 0.5rem;
+  background: color-mix(in oklab, var(--admin-accent) 7%, var(--admin-surface));
+}
+
+.dish-ai__proposal p {
+  margin: 0;
+}
+
+.dish-ai__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+  gap: var(--sys-space-2);
+}
+
+.dish-ai__calories summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.dish-ai__calories[open] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sys-space-2);
+}
+
+.dish-ai__assumptions {
+  margin: 0;
+  padding-inline-start: 1.2rem;
+  font-size: var(--sys-font-size-sm);
+}

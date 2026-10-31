@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import { generatePublicId, isValidPublicId } from '@/lib/public-id';
-import { parsePriceToMinor } from '@/lib/money';
+import { formatMinorAsDecimal, parsePriceToMinor } from '@/lib/money';
 import { prisma } from '@/server/db/client';
 import { diffFields, recordAudit } from '@/server/audit/log';
 import {
@@ -1187,4 +1187,39 @@ export async function newItemCode(user: AuthenticatedUser, businessId: string) {
     if (!taken) return code;
   }
   throw new Error('Could not make a free dish code');
+}
+
+/**
+ * A stored dish as the raw values the dish form would send, so a form that
+ * shows only some fields can be merged over it. Without this, saving from a
+ * form without (say) the English description or the tags wrote them back as
+ * empty: editing a price in the builder wiped a dish's "new" and "spicy"
+ * tags, its English description, ingredients, allergens and order.
+ */
+export async function itemFormValues(user: AuthenticatedUser, businessId: string, itemCode: string) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const item = await prisma.menuItem.findUnique({
+    where: { businessId_itemCode: { businessId: context.businessId, itemCode: itemCode.trim().toUpperCase() } },
+    include: { category: { select: { key: true } } },
+  });
+  if (!item) return null;
+  return {
+    itemCode: item.itemCode,
+    categoryKey: item.category.key,
+    nameAr: item.nameAr,
+    nameEn: item.nameEn ?? '',
+    descriptionAr: item.descriptionAr ?? '',
+    descriptionEn: item.descriptionEn ?? '',
+    price: item.priceMinor === null ? '' : formatMinorAsDecimal(item.priceMinor, item.currency),
+    calories: item.calories === null ? '' : String(item.calories),
+    servingSizeAr: item.servingSizeAr ?? '',
+    servingSizeEn: item.servingSizeEn ?? '',
+    ingredientsAr: item.ingredientsAr ?? '',
+    ingredientsEn: item.ingredientsEn ?? '',
+    allergens: item.allergens,
+    tags: item.tags,
+    availability: item.availability,
+    isFeatured: item.isFeatured,
+    sortOrder: String(item.sortOrder),
+  } satisfies Record<string, unknown>;
 }

@@ -7,6 +7,7 @@ import {
   deleteCategory,
   deleteItem,
   itemIdByCode,
+  itemFormValues,
   newItemCode,
   renameCategory,
   upsertItem,
@@ -222,6 +223,31 @@ describe.skipIf(!databaseReachable)('menu builder', () => {
 
     await deleteItem(user, businessId, await itemIdByCode(user, businessId, copy.itemCode));
     expect(await prisma.menuItem.count({ where: { id: copy.id } })).toBe(0);
+  });
+
+  it('keeps the fields the builder form does not show when a dish is saved from it', async () => {
+    await prisma.menuItem.update({
+      where: { businessId_itemCode: { businessId, itemCode: 'B-1' } },
+      data: {
+        descriptionEn: 'Half a rotisserie chicken',
+        tags: ['new', 'spicy'],
+        allergens: ['milk'],
+        ingredientsAr: 'دجاج، أرز',
+        isFeatured: true,
+        sortOrder: 7,
+      },
+    });
+    // Exactly what the Step 7 form posts: no English description, tags, etc.
+    const form = { itemCode: 'B-1', nameAr: 'نصف دجاج', nameEn: '', price: '26', calories: '', descriptionAr: '', categoryKey: 'grilled-chicken', availability: 'AVAILABLE' };
+    const stored = await itemFormValues(user, businessId, 'B-1');
+    await upsertItem(user, businessId, { ...itemSchema.parse({ ...stored, ...form }), menuId });
+
+    const row = await prisma.menuItem.findUniqueOrThrow({ where: { businessId_itemCode: { businessId, itemCode: 'B-1' } } });
+    expect([row.priceMinor, row.descriptionEn, row.tags, row.allergens, row.ingredientsAr, row.isFeatured, row.sortOrder]).toEqual([
+      2600, 'Half a rotisserie chicken', ['new', 'spicy'], ['milk'], 'دجاج، أرز', true, 7,
+    ]);
+    // What the save did before: the same form alone empties them.
+    expect(itemSchema.parse(form).tags).toEqual([]);
   });
 
   it('refuses another tenant everywhere', async () => {
