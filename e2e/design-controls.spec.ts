@@ -1,6 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { signIn } from './support/admin';
 
+// Every test here saves the whole design form of the same restaurant; run in
+// parallel, one test's save writes over another's half-way through.
+test.describe.configure({ mode: 'serial' });
+
 async function designPage(page: Page) {
   await page.goto('/admin/businesses');
   const href = await page.locator('a[href="/m/DEM006"]').first().evaluate((link) =>

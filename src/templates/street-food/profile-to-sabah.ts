@@ -74,6 +74,20 @@ export function profileToSabah(profile: PublicProfile): {
           noPrice: item.priceMinor === null,
           pairsWith: item.pairsWith,
           isNew: item.tags?.includes('new') ?? false,
+          choices: (item.modifiers ?? []).map((group) => ({
+            key: group.key,
+            nameAr: group.nameAr,
+            nameEn: group.nameEn ?? group.nameAr,
+            min: group.minSelect,
+            max: group.maxSelect,
+            options: group.options.map((option) => ({
+              key: option.key,
+              nameAr: option.nameAr,
+              nameEn: option.nameEn ?? option.nameAr,
+              price: toAmount(option.priceDeltaMinor),
+              isDefault: option.isDefault,
+            })),
+          })),
         })),
     ),
   );

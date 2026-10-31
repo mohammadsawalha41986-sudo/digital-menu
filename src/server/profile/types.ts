@@ -36,6 +36,26 @@ export interface PublicImage {
   objectPosition: string;
 }
 
+/**
+ * One set of choices on a dish. `minSelect > 0` makes it required; a group
+ * with `maxSelect` 1 is a single choice (size, rice type), more is a pick of
+ * several (extras). Option prices are differences from the dish price.
+ */
+export interface PublicModifierGroup {
+  key: string;
+  nameAr: string;
+  nameEn: string | null;
+  minSelect: number;
+  maxSelect: number;
+  options: {
+    key: string;
+    nameAr: string;
+    nameEn: string | null;
+    priceDeltaMinor: number;
+    isDefault: boolean;
+  }[];
+}
+
 export interface PublicItem {
   /** Business-scoped item code — stable, not a database id. */
   code: string;
@@ -56,6 +76,8 @@ export interface PublicItem {
   tags: string[];
   /** Item codes the restaurant suggests with this dish ("complete your meal"). */
   pairsWith: string[];
+  /** Choices the customer makes when ordering: size, rice, extras, swaps. */
+  modifiers: PublicModifierGroup[];
   isFeatured: boolean;
   /** True when the item is served but currently out (§83). */
   isUnavailable: boolean;

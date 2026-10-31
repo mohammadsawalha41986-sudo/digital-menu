@@ -8,6 +8,7 @@ import { X, Plus, Minus, Flame, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
 import type { Language, CartItem } from '../types';
+import { chosen, defaultSelection, isSingle, missing, priceWith, selectionKey, toggle, type Selection } from '../choices';
 
 interface ItemCustomizeModalProps {
   item: MenuItem | null;
@@ -32,6 +33,8 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
   const [spiceLevel, setSpiceLevel] = useState<'normal' | 'spicy'>('normal');
   const [notes, setNotes] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [selection, setSelection] = useState<Selection>(() => defaultSelection(item?.choices ?? []));
+  const [showMissing, setShowMissing] = useState(false);
 
   if (!item) return null;
 
@@ -39,18 +42,34 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
 
   // Compute base unit price
   const basePrice = selectedOption ? selectedOption.price : item.price;
-  // Paid extras are not modelled by the platform, so none are offered; a
-  // customer can still ask for one in the notes.
-  const unitPrice = basePrice;
-  const totalPrice = unitPrice * quantity;
+  // The restaurant's own choices: each chosen option adds its difference.
+  const groups = item.choices ?? [];
+  const picks = chosen(groups, selection);
+  const unanswered = missing(groups, selection);
+  const unitPrice = priceWith(basePrice, picks);
+  const totalPrice = Math.round(unitPrice * quantity * 1000) / 1000;
+  // The size-like group — the first required single choice whose options
+  // cost differently — lists full prices (medium 15, large 20). Every other
+  // group shows what it adds, since its full price depends on the size.
+  const priceSetter = groups.find(
+    (group) => isSingle(group) && group.min > 0 && new Set(group.options.map((option) => option.price)).size > 1,
+  )?.key;
 
   const handleAdd = () => {
-    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${spiceLevel}-${Date.now()}`;
-    
+    if (unanswered.length > 0) {
+      // Point at the first choice still to make instead of adding a dish the
+      // restaurant cannot prepare as ordered.
+      setShowMissing(true);
+      document.getElementById(`choice-${unanswered[0]?.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${selectionKey(picks)}-${spiceLevel}-${Date.now()}`;
+
     onAddToCart({
       cartItemId,
       item,
       selectedOption,
+      choices: picks.length > 0 ? picks : undefined,
       spiceLevel: item.isSpicyOption ? spiceLevel : undefined,
       notes: notes.trim() || undefined,
       quantity,
@@ -154,6 +173,88 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               </div>
             )}
 
+            {/* The restaurant's choices: size, rice, extras, swaps */}
+            {groups.map((group) => {
+              const picked = selection[group.key] ?? [];
+              const needsAnswer = showMissing && unanswered.some((entry) => entry.key === group.key);
+              const fullPrice = group.key === priceSetter;
+              return (
+                <fieldset key={group.key} id={`choice-${group.key}`} className="space-y-2.5" data-choice-group={group.key}>
+                  <legend className="w-full flex items-center justify-between gap-2 mb-2.5">
+                    <span className="text-xs font-black text-emerald-300 uppercase tracking-wider">
+                      {isAr ? group.nameAr : group.nameEn}
+                    </span>
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                        needsAnswer
+                          ? 'border-red-500 text-red-300 bg-red-950/60'
+                          : 'border-emerald-900 text-stone-400'
+                      }`}
+                      data-choice-rule
+                    >
+                      {group.min > 0
+                        ? isSingle(group)
+                          ? isAr ? 'إجباري · اختر واحداً' : 'Required · pick one'
+                          : isAr ? `إجباري · ${group.min} على الأقل` : `Required · at least ${group.min}`
+                        : isSingle(group)
+                          ? isAr ? 'اختياري' : 'Optional'
+                          : isAr ? `اختياري · حتى ${group.max}` : `Optional · up to ${group.max}`}
+                    </span>
+                  </legend>
+                  <div className={isSingle(group) ? 'grid grid-cols-2 sm:grid-cols-3 gap-2' : 'space-y-2'}>
+                    {group.options.map((option) => {
+                      const on = picked.includes(option.key);
+                      const full = !fullPrice && !isSingle(group) && !on && picked.length >= group.max;
+                      const priceLabel = fullPrice
+                        ? `${formatAmount(basePrice + option.price, currency)} ${currencyUnit(currency, isAr)}`
+                        : option.price !== 0
+                          ? `${option.price > 0 ? '+' : '−'}${formatAmount(Math.abs(option.price), currency)} ${currencyUnit(currency, isAr)}`
+                          : null;
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          role={isSingle(group) ? 'radio' : 'checkbox'}
+                          aria-checked={on}
+                          aria-disabled={full || undefined}
+                          data-choice={option.key}
+                          onClick={() => setSelection((current) => toggle(current, group, option.key))}
+                          className={`w-full rounded-2xl border transition-all cursor-pointer ${
+                            isSingle(group) ? 'p-3 text-center' : 'px-3.5 py-2.5 flex items-center justify-between gap-3 text-start'
+                          } ${
+                            on
+                              ? 'bg-emerald-950/80 border-emerald-400 text-white shadow-md shadow-emerald-950'
+                              : full
+                                ? 'bg-stone-900/60 border-emerald-950 text-stone-500'
+                                : 'bg-stone-900/90 border-emerald-950 text-stone-300 hover:border-emerald-700/60'
+                          }`}
+                        >
+                          {isSingle(group) ? null : (
+                            <span
+                              aria-hidden="true"
+                              className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center text-[12px] font-black ${
+                                on ? 'bg-emerald-500 border-emerald-400 text-stone-950' : 'border-stone-600'
+                              }`}
+                            >
+                              {on ? '✓' : ''}
+                            </span>
+                          )}
+                          <span className={`${isSingle(group) ? 'block' : 'flex-1'} text-xs sm:text-sm font-bold`}>
+                            {isAr ? option.nameAr : option.nameEn}
+                          </span>
+                          {priceLabel ? (
+                            <span className={`${isSingle(group) ? 'block mt-1' : ''} text-xs font-black text-amber-400 tabular-nums`}>
+                              {priceLabel}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              );
+            })}
+
             {/* Spice Level (if applicable) */}
             {item.isSpicyOption && (
               <div className="space-y-2.5">
@@ -246,7 +347,15 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
               onClick={handleAdd}
               className="flex-1 flex items-center justify-between px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-black text-sm shadow-xl shadow-amber-500/25 border border-amber-300 transition-all cursor-pointer"
             >
-              <span>{isAr ? 'إضافة إلى الطلب' : 'Add to Order'}</span>
+              <span>
+                {unanswered.length > 0 && showMissing
+                  ? isAr
+                    ? `اختر ${unanswered[0]?.nameAr}`
+                    : `Choose ${unanswered[0]?.nameEn}`
+                  : isAr
+                    ? 'إضافة إلى الطلب'
+                    : 'Add to Order'}
+              </span>
               <span className="tabular-nums">
                 {formatAmount(totalPrice, currency)} {currencyUnit(currency, isAr)}
               </span>

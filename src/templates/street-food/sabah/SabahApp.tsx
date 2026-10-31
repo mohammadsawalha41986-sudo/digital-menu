@@ -28,6 +28,7 @@ import { CategoryNav } from './components/CategoryNav';
 import { MenuSearchAndFilter } from './components/MenuSearchAndFilter';
 import { SectionDishes } from './components/SectionDishes';
 import { resolveSectionLayout } from './section-layout';
+import { selectionKey, stillValid } from './choices';
 import { OffersStrip } from './components/OffersStrip';
 import { CustomerReviewsSection } from './components/CustomerReviewsSection';
 import { GoogleLocationSection } from './components/GoogleLocationSection';
@@ -143,7 +144,13 @@ export default function App({
     () =>
       storedCart.filter((line) => {
         const current = MENU_ITEMS.find((dish) => dish.id === line.item?.id);
-        return Boolean(current && !current.isUnavailable && !current.noPrice && current.price === line.item.price);
+        return Boolean(
+          current &&
+            !current.isUnavailable &&
+            !current.noPrice &&
+            current.price === line.item.price &&
+            stillValid(current.choices ?? [], line.choices),
+        );
       }),
     [storedCart, MENU_ITEMS],
   );
@@ -179,8 +186,17 @@ export default function App({
   // A suggested dish added from the dish sheet or the cart: one, plain, and
   // the cart stays where it is.
   const quickAdd = (dish: MenuItem) => {
+    // A dish with a choice to make (a size, a rice) opens its sheet instead:
+    // it cannot go to the kitchen half-ordered.
+    if ((dish.choices ?? []).some((group) => group.min > 0)) {
+      setIsCartOpen(false);
+      setActiveItemForCustomization(dish);
+      return;
+    }
     setCart((prev) => {
-      const existing = prev.find((line) => line.item.id === dish.id && !line.selectedOption && !line.notes && !line.spiceLevel);
+      const existing = prev.find(
+        (line) => line.item.id === dish.id && !line.selectedOption && !line.choices?.length && !line.notes && !line.spiceLevel,
+      );
       if (existing) {
         return prev.map((line) =>
           line === existing ? { ...line, quantity: line.quantity + 1, totalPrice: line.unitPrice * (line.quantity + 1) } : line,
@@ -199,6 +215,7 @@ export default function App({
         (ci) =>
           ci.item.id === newItem.item.id &&
           ci.selectedOption?.nameAr === newItem.selectedOption?.nameAr &&
+          selectionKey(ci.choices) === selectionKey(newItem.choices) &&
           ci.spiceLevel === newItem.spiceLevel &&
           ci.extraCheese === newItem.extraCheese &&
           ci.extraGarlic === newItem.extraGarlic &&
@@ -570,6 +587,8 @@ export default function App({
       />
 
       <ItemCustomizeModal
+        // A fresh sheet per dish: choices made on one never carry to the next.
+        key={activeItemForCustomization?.id ?? 'none'}
         item={activeItemForCustomization}
         lang={lang}
         onClose={() => setActiveItemForCustomization(null)}

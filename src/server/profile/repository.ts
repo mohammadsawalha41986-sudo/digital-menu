@@ -14,6 +14,7 @@ import type {
   PublicDownload,
   PublicImage,
   PublicItem,
+  PublicModifierGroup,
   PublicMenu,
   PublicProfile,
 } from './types';
@@ -277,6 +278,32 @@ async function loadProfile(
                   isFeatured: true,
                   availability: true,
                   pairsWith: true,
+                  modifiers: {
+                    where: { group: { isActive: true } },
+                    orderBy: { sortOrder: 'asc' },
+                    select: {
+                      group: {
+                        select: {
+                          key: true,
+                          nameAr: true,
+                          nameEn: true,
+                          minSelect: true,
+                          maxSelect: true,
+                          options: {
+                            where: { isActive: true },
+                            orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+                            select: {
+                              key: true,
+                              nameAr: true,
+                              nameEn: true,
+                              priceDeltaMinor: true,
+                              isDefault: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
                   image: { select: MEDIA_SELECT },
                   gallery: {
                     orderBy: { sortOrder: 'asc' },
@@ -591,6 +618,7 @@ interface ItemRow {
   allergens: string[];
   tags: string[];
   pairsWith: string[];
+  modifiers: { group: PublicModifierGroup }[];
   isFeatured: boolean;
   availability: string;
   image: MediaRow | null;
@@ -693,6 +721,8 @@ function toItem(item: ItemRow, overrides: OverrideMap | null): PublicItem | null
     allergens: item.allergens,
     tags: item.tags,
     pairsWith: item.pairsWith,
+    // A group with no active option offers nothing to choose.
+    modifiers: item.modifiers.map((link) => link.group).filter((group) => group.options.length > 0),
     isFeatured: item.isFeatured,
     isUnavailable: availability === 'UNAVAILABLE',
     image: toImage(item.image),

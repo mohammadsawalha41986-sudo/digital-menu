@@ -119,12 +119,12 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => onSelect(item)}
-          aria-label={item.options ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
+          aria-label={item.options || item.choices?.length ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
           className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-emerald-950 cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span className="hidden sm:inline">
-            {item.options ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
+            {item.options || item.choices?.length ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
           </span>
         </motion.button>
         )}

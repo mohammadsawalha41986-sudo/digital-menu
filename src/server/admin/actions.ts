@@ -7,6 +7,11 @@ import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { workingHoursFromForm } from '@/server/business/hours';
 import {
+  deleteModifierGroup,
+  saveOptionGroup,
+  type OptionGroupForm,
+} from '@/server/menu-studio/modifiers';
+import {
   ValidationError,
   createBranch,
   createBusiness,
@@ -451,5 +456,43 @@ export async function setSectionStylesAction(
     revalidateBusiness(businessId, publicId);
     revalidatePath(`/admin/businesses/${businessId}/sections`);
     return changed === 0 ? 'Nothing changed' : 'Saved';
+  });
+}
+
+/** Options & add-ons: one group with its options and the dishes it is on. */
+export async function saveOptionGroupAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  let form: OptionGroupForm;
+  try {
+    form = JSON.parse(String(formData.get('group') ?? '')) as OptionGroupForm;
+  } catch {
+    return { error: 'The form could not be read; reload the page and try again.' };
+  }
+
+  return run(async () => {
+    await saveOptionGroup(user, businessId, form);
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/options`);
+    return 'Saved';
+  });
+}
+
+export async function deleteOptionGroupAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await deleteModifierGroup(user, businessId, String(formData.get('key') ?? ''));
+    revalidateBusiness(businessId, publicId);
+    revalidatePath(`/admin/businesses/${businessId}/options`);
+    return 'Deleted';
   });
 }

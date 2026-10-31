@@ -171,12 +171,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.93 }}
             onClick={() => onSelect(item)}
-            aria-label={item.options || item.isSpicyOption ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
+            aria-label={item.options || item.isSpicyOption || item.choices?.length ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
             className={`inline-flex shrink-0 items-center justify-center gap-1.5 ${compact ? 'w-10 h-10 rounded-full sm:w-auto sm:h-auto sm:rounded-xl sm:px-3.5 sm:py-2' : 'px-3.5 py-2 rounded-xl'} bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/60 border border-emerald-400/30 transition-all cursor-pointer`}
           >
             <Plus className={`${compact ? 'w-5 h-5 sm:w-4 sm:h-4' : 'w-4 h-4'} stroke-[2.5]`} />
             <span className={compact ? 'hidden sm:inline' : undefined}>
-              {item.options || item.isSpicyOption
+              {item.options || item.isSpicyOption || item.choices?.length
                 ? (isAr ? 'اختيار' : 'Choose')
                 : (isAr ? 'إضافة' : 'Add')}
             </span>

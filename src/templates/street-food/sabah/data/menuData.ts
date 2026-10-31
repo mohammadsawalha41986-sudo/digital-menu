@@ -1,3 +1,4 @@
+import type { ChoiceGroup } from '../choices';
 import type { SectionStyle } from '../section-layout';
 import type { WorkingHours } from '@/server/business/hours';
 export interface MenuItem {
@@ -25,6 +26,8 @@ export interface MenuItem {
   pairsWith?: string[];
   /** Marked new by the restaurant. */
   isNew?: boolean;
+  /** The restaurant's choices on this dish: size, rice, extras, swaps. */
+  choices?: ChoiceGroup[];
   options?: {
     nameAr: string;
     nameEn: string;
