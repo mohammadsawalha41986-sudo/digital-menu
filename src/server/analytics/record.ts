@@ -35,6 +35,14 @@ export const EVENT_TYPES = [
   'social_youtube',
   'social_website',
   'language_switch',
+  // The install offer. `install_prompt_shown` is counted once per page load;
+  // `app_installed` only where the browser reports it (not on iPhone).
+  'install_prompt_shown',
+  'install_request',
+  'install_accepted',
+  'install_declined',
+  'install_dismissed',
+  'app_installed',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

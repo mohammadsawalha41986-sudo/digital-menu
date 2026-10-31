@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { menuManifest } from '@/server/profile/install';
+import { appIconPath, menuManifest, parseAppIconFile } from '@/server/profile/install';
 import type { PublicProfile } from '@/server/profile/types';
 
 /** A profile with just what the manifest reads. */
@@ -30,6 +30,24 @@ describe('the menu’s install manifest', () => {
     expect(m).toMatchObject({ id: '/m/DG9PP1', start_url: '/m/DG9PP1', scope: '/m/DG9PP1', display: 'standalone' });
   });
 
+  it('keeps two restaurants’ installs apart: different ids, names, icons and colours', () => {
+    const first = menuManifest(profile());
+    const second = menuManifest(
+      profile({
+        publicId: 'SBH001',
+        nameAr: 'مطعم صباح الليل',
+        nameEn: 'Sabah El Lail',
+        brand: { colorPrimary: '#0f5132', colorBackground: '#101512' },
+      }),
+    );
+    expect(second.id).not.toBe(first.id);
+    expect(second.start_url).toBe('/m/SBH001');
+    expect(second.name).toBe('مطعم صباح الليل');
+    expect(second.theme_color).toBe('#0f5132');
+    expect(second.icons.map((icon) => icon.src)).toEqual(['/m/SBH001/app-icon/192.png', '/m/SBH001/app-icon/512.png']);
+    expect(first.icons.map((icon) => icon.src)).toEqual(['/m/DG9PP1/app-icon/192.png', '/m/DG9PP1/app-icon/512.png']);
+  });
+
   it('uses the restaurant’s colours', () => {
     expect(menuManifest(profile())).toMatchObject({ theme_color: '#1f2421', background_color: '#fbf9f5' });
   });
@@ -43,16 +61,34 @@ describe('the menu’s install manifest', () => {
     expect(menuManifest(profile({ nameAr: 'مطعم الشواية الذهبية الكبير جدا' })).short_name.endsWith('…')).toBe(true);
   });
 
-  it('uses the restaurant’s logo as its icon, or the platform icon when there is none', () => {
+  it('always offers the two PNG sizes a browser installs with, rendered from the logo by this app', () => {
     const withLogo = menuManifest(
       profile({ logo: { url: 'https://cdn.example.com/logo.webp', width: 512, height: 512 } }),
     );
-    expect(withLogo.icons.map((icon) => icon.sizes)).toEqual(['192x192', '512x512']);
-    expect(withLogo.icons.every((icon) => icon.src === 'https://cdn.example.com/logo.webp')).toBe(true);
+    expect(withLogo.icons).toEqual([
+      { src: '/m/DG9PP1/app-icon/192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/m/DG9PP1/app-icon/512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+    ]);
+    // The raw logo address never becomes an icon: it could be any shape or size.
+    expect(withLogo.icons.some((icon) => icon.src.includes('cdn.example.com'))).toBe(false);
 
     const withoutLogo = menuManifest(profile());
-    expect(withoutLogo.icons).toEqual([
-      expect.objectContaining({ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml' }),
-    ]);
+    expect(withoutLogo.icons.map((icon) => icon.src)).toEqual(['/m/DG9PP1/app-icon/192.png', '/m/DG9PP1/app-icon/512.png']);
+  });
+});
+
+describe('the install icon addresses', () => {
+  it('builds one address per size under the menu', () => {
+    expect(appIconPath('DG9PP1', 192)).toBe('/m/DG9PP1/app-icon/192.png');
+  });
+
+  it('accepts only the two sizes, as PNG names', () => {
+    expect(parseAppIconFile('192.png')).toBe(192);
+    expect(parseAppIconFile('512.png')).toBe(512);
+    expect(parseAppIconFile('100.png')).toBeNull();
+    expect(parseAppIconFile('192.jpg')).toBeNull();
+    expect(parseAppIconFile('192')).toBeNull();
+    expect(parseAppIconFile('../192.png')).toBeNull();
+    expect(parseAppIconFile('1920.png')).toBeNull();
   });
 });

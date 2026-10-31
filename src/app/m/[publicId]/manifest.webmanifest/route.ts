@@ -5,6 +5,8 @@ import { menuManifest } from '@/server/profile/install';
  * The install manifest of one menu. A menu that is not live has none, so an
  * unpublished or hidden restaurant cannot be installed.
  */
+export const dynamic = 'force-dynamic';
+
 export async function GET(_request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = await params;
   const profile = await getPublicProfile(publicId);

@@ -142,6 +142,7 @@ ${noteInfo}
                 )}
                 <button
                   onClick={onClose}
+                  aria-label={lang === 'ar' ? 'إغلاق السلة' : 'Close cart'}
                   className="w-8 h-8 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />

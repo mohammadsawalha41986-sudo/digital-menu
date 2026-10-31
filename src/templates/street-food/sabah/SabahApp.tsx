@@ -88,7 +88,7 @@ export default function App({
   slides = [],
   qrDataUri = null,
   imageLayout = 'grid',
-  publicId = 'reference',
+  publicId,
   offers = [],
   offersSort = 'PERCENT',
   offersRefreshAt = null,
@@ -173,6 +173,12 @@ export default function App({
   
   // Modals & Drawers
   const [activeItemForCustomization, setActiveItemForCustomization] = useState<MenuItem | null>(null);
+  // Opening a dish is the visitor's first real step: the install offer waits for it.
+  const [dishOpened, setDishOpened] = useState(false);
+  const openDish = (dish: MenuItem) => {
+    setDishOpened(true);
+    setActiveItemForCustomization(dish);
+  };
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isCaloriesOpen, setIsCaloriesOpen] = useState(false);
@@ -180,7 +186,7 @@ export default function App({
 
   // Cart state
   // One cart per restaurant, read without disturbing hydration.
-  const cartKey = cartStorageKey(publicId);
+  const cartKey = cartStorageKey(publicId ?? 'reference');
   const storedCart = useSyncExternalStore(subscribeToCart, () => getCart(cartKey), getServerCart);
   const setCart = (update: CartItem[] | ((previous: CartItem[]) => CartItem[])) =>
     writeCart(cartKey, typeof update === 'function' ? update : () => update);
@@ -238,7 +244,7 @@ export default function App({
     // it cannot go to the kitchen half-ordered.
     if ((dish.choices ?? []).some((group) => group.min > 0)) {
       setIsCartOpen(false);
-      setActiveItemForCustomization(dish);
+      openDish(dish);
       return;
     }
     setCart((prev) => {
@@ -366,7 +372,7 @@ export default function App({
           effect={heroEffect}
           intervalMs={heroIntervalMs}
           onOpenCalories={() => setIsCaloriesOpen(true)}
-          onSelectFeaturedItem={(item) => setActiveItemForCustomization(item)}
+          onSelectFeaturedItem={(item) => openDish(item)}
         />
       </>
     ),
@@ -421,7 +427,7 @@ export default function App({
                   layout={resolveSectionLayout('auto', visitorView === 'grid' && imageLayout === 'list' ? 'grid' : imageLayout, deals.length)}
                   dishes={deals}
                   lang={lang}
-                  onSelect={(item) => setActiveItemForCustomization(item)}
+                  onSelect={(item) => openDish(item)}
                 />
               </section>
             ) : null}
@@ -479,7 +485,7 @@ export default function App({
                     layout={sectionLayout(cat, itemsInThisCat.length)}
                     dishes={itemsInThisCat}
                     lang={lang}
-                    onSelect={(item) => setActiveItemForCustomization(item)}
+                    onSelect={(item) => openDish(item)}
                   />
                 </motion.section>
                 {showOffersAfter ? <OffersStrip lang={lang} /> : null}
@@ -583,6 +589,7 @@ export default function App({
 
       {/* Floating Bottom Quick Bar on Mobile */}
       <div
+        data-dock="mobile"
         className="fixed inset-x-3 z-30 md:hidden flex items-center gap-1.5 p-1.5 rounded-[1.25rem] bg-black/55 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60"
         style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
@@ -685,7 +692,14 @@ export default function App({
       />
 
       {/* Offers to install the menu as an app on the visitor's device. */}
-      <InstallPrompt lang={lang} />
+      {publicId ? (
+        <InstallPrompt
+          lang={lang}
+          publicId={publicId}
+          engaged={dishOpened || totalCartCount > 0}
+          hidden={isCartOpen || activeItemForCustomization !== null || isQrOpen || isCaloriesOpen}
+        />
+      ) : null}
 
     </div>
     </SabahDataProvider>

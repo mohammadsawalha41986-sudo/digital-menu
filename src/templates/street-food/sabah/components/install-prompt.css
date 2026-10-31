@@ -1,0 +1,37 @@
+/*
+ * Where the install offer sits. It must never cover the order, so it is placed
+ * with the bar it could collide with in mind:
+ *
+ * - On a phone, the order bar is fixed 0.75rem from the bottom and 3.75rem
+ *   tall (SabahApp: `data-dock="mobile"`). The offer rests 0.75rem above it.
+ * - On a wide screen, the bar is hidden and the scroll-to-top button sits at
+ *   the lower left, so the offer takes the lower right.
+ */
+
+.sf-install-prompt {
+  position: fixed;
+  z-index: 35;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.5rem);
+  max-width: 28rem;
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-inline: auto;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(245 158 11 / 0.4);
+  background: rgb(12 10 9 / 0.95);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(8px);
+}
+
+@media (min-width: 768px) {
+  .sf-install-prompt {
+    left: auto;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    width: 22rem;
+    margin-inline: 0;
+  }
+}

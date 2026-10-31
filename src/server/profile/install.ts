@@ -6,11 +6,28 @@ import type { PublicProfile } from './types';
  * two menus installed side by side stay apart (`id`, `start_url`, `scope`).
  */
 
+/** The icon sizes a browser asks for when it installs an app. */
+export const APP_ICON_SIZES = [192, 512] as const;
+export type AppIconSize = (typeof APP_ICON_SIZES)[number];
+
+/** Where one icon size of a menu is served: a PNG this app renders itself. */
+export function appIconPath(publicId: string, size: AppIconSize): string {
+  return `/m/${publicId}/app-icon/${size}.png`;
+}
+
+/** Reads `192.png` or `512.png` from a route segment; anything else is not an icon. */
+export function parseAppIconFile(file: string): AppIconSize | null {
+  const match = /^(\d{3})\.png$/.exec(file);
+  if (!match) return null;
+  const size = Number(match[1]);
+  return (APP_ICON_SIZES as readonly number[]).includes(size) ? (size as AppIconSize) : null;
+}
+
 export interface MenuManifestIcon {
   src: string;
   sizes: string;
-  type?: string;
-  purpose?: string;
+  type: string;
+  purpose: string;
 }
 
 export interface MenuManifest {
@@ -41,14 +58,15 @@ export function menuManifest(profile: PublicProfile): MenuManifest {
     : (profile.descriptionEn ?? profile.descriptionAr ?? undefined);
   const base = `/m/${profile.publicId}`;
 
-  // The restaurant's own logo as the icon. Without one, the platform's default
-  // icon. The logo's file type is left for the browser to read from the file.
-  const icons: MenuManifestIcon[] = profile.logo
-    ? [
-        { src: profile.logo.url, sizes: '192x192', purpose: 'any' },
-        { src: profile.logo.url, sizes: '512x512', purpose: 'any' },
-      ]
-    : [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }];
+  // The icons are always PNGs this app renders from the logo: the logo is
+  // centred on the brand colour at the exact size asked for and never
+  // stretched. A logo that cannot be read gets the platform icon instead.
+  const icons: MenuManifestIcon[] = APP_ICON_SIZES.map((size) => ({
+    src: appIconPath(profile.publicId, size),
+    sizes: `${size}x${size}`,
+    type: 'image/png',
+    purpose: 'any',
+  }));
 
   return {
     id: base,
