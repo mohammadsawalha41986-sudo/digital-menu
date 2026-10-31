@@ -3232,9 +3232,18 @@
 
 @media (min-width: 900px) {
   .options__row {
-    grid-template-columns: 1.3fr 1.3fr 6rem auto auto;
+    display: flex;
+    flex-wrap: wrap;
     border-bottom: 0;
     padding-block-end: 0;
+  }
+
+  .options__row > .admin__input:not(.options__price):not(.options__max) {
+    flex: 1 1 10rem;
+  }
+
+  .options__row > .options__price {
+    flex: 0 0 5.5rem;
   }
 }
 

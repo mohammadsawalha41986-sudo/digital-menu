@@ -18,6 +18,8 @@ export interface ModifierOptionInput {
   nameAr: string;
   nameEn?: string | null;
   priceDeltaMinor?: number;
+  caloriesDelta?: number | null;
+  maxQty?: number;
   isDefault?: boolean;
   isActive?: boolean;
   sortOrder?: number;
@@ -27,6 +29,8 @@ export interface ModifierGroupInput {
   key: string;
   nameAr: string;
   nameEn?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   minSelect?: number;
   maxSelect?: number;
   sortOrder?: number;
@@ -42,9 +46,23 @@ function assertBounds(input: ModifierGroupInput) {
   if (max < 1) throw new ValidationError('A group must allow at least one choice.');
   if (min > max) throw new ValidationError('The minimum cannot exceed the maximum.');
   if (input.options.length === 0) throw new ValidationError('A modifier group needs at least one option.');
-  if (min > input.options.length) {
-    throw new ValidationError('The minimum cannot exceed the number of options offered.');
+
+  for (const option of input.options) {
+    const qty = option.maxQty ?? 1;
+    if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
+      throw new ValidationError(`“${option.nameAr}”: the most a customer may take must be between 1 and 20.`);
+    }
+    if (qty > max) {
+      throw new ValidationError(`“${option.nameAr}”: it cannot be taken more times than the group allows (${max}).`);
+    }
+    const kcal = option.caloriesDelta;
+    if (kcal !== null && kcal !== undefined && (!Number.isInteger(kcal) || Math.abs(kcal) > 5000)) {
+      throw new ValidationError(`“${option.nameAr}”: calories must be a whole number.`);
+    }
   }
+  // With repeats, the options can fill a larger minimum than their count.
+  const reachable = input.options.reduce((sum, option) => sum + (option.maxQty ?? 1), 0);
+  if (min > reachable) throw new ValidationError('The minimum cannot exceed what the options can fill.');
 
   const keys = input.options.map((option) => option.key);
   if (new Set(keys).size !== keys.length) {
@@ -96,6 +114,8 @@ export async function saveModifierGroup(
           data: {
             nameAr: input.nameAr,
             nameEn: input.nameEn ?? null,
+            descriptionAr: input.descriptionAr ?? null,
+            descriptionEn: input.descriptionEn ?? null,
             minSelect: input.minSelect ?? 0,
             maxSelect: input.maxSelect ?? 1,
             sortOrder: input.sortOrder ?? 0,
@@ -108,6 +128,8 @@ export async function saveModifierGroup(
             key: input.key,
             nameAr: input.nameAr,
             nameEn: input.nameEn ?? null,
+            descriptionAr: input.descriptionAr ?? null,
+            descriptionEn: input.descriptionEn ?? null,
             minSelect: input.minSelect ?? 0,
             maxSelect: input.maxSelect ?? 1,
             sortOrder: input.sortOrder ?? 0,
@@ -124,6 +146,8 @@ export async function saveModifierGroup(
         nameAr: option.nameAr,
         nameEn: option.nameEn ?? null,
         priceDeltaMinor: option.priceDeltaMinor ?? 0,
+        caloriesDelta: option.caloriesDelta ?? null,
+        maxQty: option.maxQty ?? 1,
         isDefault: option.isDefault ?? false,
         isActive: option.isActive ?? true,
         sortOrder: option.sortOrder ?? index,
@@ -335,10 +359,26 @@ export interface OptionGroupForm {
   key?: string;
   nameAr: string;
   nameEn?: string;
+  descriptionAr?: string;
+  descriptionEn?: string;
   required: boolean;
+  /** How many a required group needs (default 1): "choose 2 drinks". */
+  min?: number;
   /** How many options a customer may pick; 1 is a single choice. */
   max: number;
-  options: { key?: string; nameAr: string; nameEn?: string; price: string; isDefault: boolean }[];
+  options: {
+    key?: string;
+    nameAr: string;
+    nameEn?: string;
+    price: string;
+    /** Calorie difference as typed; empty is unknown. */
+    calories?: string;
+    /** How many of this option one order may hold (1 = once). */
+    maxQty?: number;
+    isDefault: boolean;
+    /** False hides the option from customers without deleting it. */
+    isActive?: boolean;
+  }[];
   items: string[];
 }
 
@@ -367,24 +407,38 @@ export async function saveOptionGroup(user: AuthenticatedUser, businessId: strin
       if (price === null) {
         throw new ValidationError(`The price of “${option.nameAr.trim()}” is not a number.`);
       }
+      const kcalText = option.calories?.trim() ?? '';
+      const kcal = kcalText === '' ? null : Number(kcalText);
+      if (kcal !== null && !Number.isInteger(kcal)) {
+        throw new ValidationError(`The calories of “${option.nameAr.trim()}” must be a whole number.`);
+      }
       return {
         key: option.key || newKey('o'),
         nameAr: option.nameAr.trim(),
         nameEn: option.nameEn?.trim() || null,
         priceDeltaMinor: price,
+        caloriesDelta: kcal,
+        maxQty: Math.trunc(Number(option.maxQty ?? 1)) || 1,
         isDefault: option.isDefault,
+        isActive: option.isActive ?? true,
         sortOrder: index,
       };
     });
 
   const key = form.key || newKey('g');
+  const reachable = options.reduce((sum, option) => sum + option.maxQty, 0);
+  const maxSelect = Math.min(max, Math.max(reachable, 1));
+  const min = form.required ? Math.max(1, Math.trunc(Number(form.min ?? 1)) || 1) : 0;
+  if (min > maxSelect) throw new ValidationError('The minimum cannot be more than the maximum.');
   await saveModifierGroup(user, businessId, {
     key,
     nameAr,
     nameEn: form.nameEn?.trim() || null,
-    minSelect: form.required ? 1 : 0,
-    maxSelect: Math.min(max, Math.max(options.length, 1)),
-    options,
+    descriptionAr: form.descriptionAr?.trim() || null,
+    descriptionEn: form.descriptionEn?.trim() || null,
+    minSelect: min,
+    maxSelect,
+    options: options.map((option) => ({ ...option, maxQty: Math.min(option.maxQty, maxSelect) })),
   });
   await setModifierGroupItems(user, businessId, key, form.items);
   return key;
@@ -401,4 +455,42 @@ export async function listOptionGroups(user: AuthenticatedUser, businessId: stri
       items: { select: { item: { select: { itemCode: true } } } },
     },
   });
+}
+
+/**
+ * An independent copy of a group, on no dish yet: for when one dish needs a
+ * variation of a shared group without changing it on every other dish.
+ */
+export async function duplicateOptionGroup(user: AuthenticatedUser, businessId: string, key: string) {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const source = await prisma.modifierGroup.findFirst({
+    where: { businessId: context.businessId, key },
+    include: { options: { orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }] } },
+  });
+  if (!source) throw new ValidationError('That modifier group does not exist.');
+
+  const copyKey = newKey('g');
+  await saveModifierGroup(user, businessId, {
+    key: copyKey,
+    nameAr: `${source.nameAr} (نسخة)`,
+    nameEn: source.nameEn ? `${source.nameEn} (copy)` : null,
+    descriptionAr: source.descriptionAr,
+    descriptionEn: source.descriptionEn,
+    minSelect: source.minSelect,
+    maxSelect: source.maxSelect,
+    sortOrder: source.sortOrder,
+    isActive: source.isActive,
+    options: source.options.map((option) => ({
+      key: option.key,
+      nameAr: option.nameAr,
+      nameEn: option.nameEn,
+      priceDeltaMinor: option.priceDeltaMinor,
+      caloriesDelta: option.caloriesDelta,
+      maxQty: option.maxQty,
+      isDefault: option.isDefault,
+      isActive: option.isActive,
+      sortOrder: option.sortOrder,
+    })),
+  });
+  return copyKey;
 }

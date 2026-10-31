@@ -80,6 +80,8 @@ export function profileToSabah(profile: PublicProfile): {
             key: group.key,
             nameAr: group.nameAr,
             nameEn: group.nameEn ?? group.nameAr,
+            descriptionAr: group.descriptionAr ?? undefined,
+            descriptionEn: group.descriptionEn ?? group.descriptionAr ?? undefined,
             min: group.minSelect,
             max: group.maxSelect,
             options: group.options.map((option) => ({
@@ -87,6 +89,8 @@ export function profileToSabah(profile: PublicProfile): {
               nameAr: option.nameAr,
               nameEn: option.nameEn ?? option.nameAr,
               price: toAmount(option.priceDeltaMinor),
+              calories: option.caloriesDelta ?? null,
+              maxQty: option.maxQty ?? 1,
               isDefault: option.isDefault,
             })),
           })),

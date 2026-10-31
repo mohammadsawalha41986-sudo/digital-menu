@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  caloriesWith,
+  countOf,
+  step,
   chosen,
   defaultSelection,
   missing,
@@ -108,5 +111,89 @@ describe('dish choices', () => {
     expect(stillValid([...groups, sauce], picks)).toBe(false);
 
     expect(stillValid([], undefined)).toBe(true);
+  });
+});
+
+describe('quantities and calories', () => {
+  const drinks: ChoiceGroup = {
+    key: 'drinks',
+    nameAr: 'المشروب',
+    nameEn: 'Drink',
+    min: 2,
+    max: 2,
+    options: [
+      { key: 'pepsi', nameAr: 'بيبسي', nameEn: 'Pepsi', price: 0, calories: 150, maxQty: 2, isDefault: false },
+      { key: 'water', nameAr: 'ماء', nameEn: 'Water', price: 0, calories: 0, maxQty: 2, isDefault: false },
+      { key: 'juice', nameAr: 'عصير', nameEn: 'Juice', price: 3, calories: null, maxQty: 1, isDefault: false },
+    ],
+  };
+  const riceSwap: ChoiceGroup = {
+    key: 'rice',
+    nameAr: 'الرز',
+    nameEn: 'Rice',
+    min: 1,
+    max: 1,
+    options: [
+      { key: 'bukhari', nameAr: 'بخاري', nameEn: 'Bukhari', price: 0, calories: 0, isDefault: true },
+      { key: 'none', nameAr: 'بدون رز', nameEn: 'No rice', price: -2, calories: -350, isDefault: false },
+      { key: 'peshawar', nameAr: 'بشاور', nameEn: 'Peshawar', price: 3, calories: 40, isDefault: false },
+    ],
+  };
+
+  it('two of the same drink count as two picks and satisfy "choose 2"', () => {
+    let selection = step({}, drinks, 'pepsi', 1);
+    expect(missing([drinks], selection)).toEqual([drinks]);
+    selection = step(selection, drinks, 'pepsi', 1);
+    expect(countOf(selection, 'drinks', 'pepsi')).toBe(2);
+    expect(missing([drinks], selection)).toEqual([]);
+    expect(chosen([drinks], selection)[0]?.options).toEqual([
+      { key: 'pepsi', nameAr: 'بيبسي', nameEn: 'Pepsi', price: 0, qty: 2, calories: 150 },
+    ]);
+  });
+
+  it('never goes past the group maximum or the option’s own limit', () => {
+    let selection = step(step({}, drinks, 'pepsi', 1), drinks, 'water', 1);
+    expect(step(selection, drinks, 'pepsi', 1)).toBe(selection); // group full
+    selection = step({}, drinks, 'juice', 1);
+    expect(step(selection, drinks, 'juice', 1)).toBe(selection); // juice once only
+    expect(step(selection, drinks, 'juice', -1)).toEqual({ drinks: [] });
+  });
+
+  it('charges each extra by its quantity', () => {
+    const extras: ChoiceGroup = { ...drinks, key: 'x', min: 0, max: 3, options: [{ ...drinks.options[0]!, price: 1.5, maxQty: 3 }] };
+    const selection = step(step({}, extras, 'pepsi', 1), extras, 'pepsi', 1);
+    expect(priceWith(20, chosen([extras], selection))).toBe(23);
+  });
+
+  it('a swap adds only its difference, so the replaced rice is not counted twice', () => {
+    const base = 1100; // the dish with its bukhari rice
+    expect(caloriesWith(base, chosen([riceSwap], { rice: ['bukhari'] }))).toEqual({ kcal: 1100, complete: true });
+    expect(caloriesWith(base, chosen([riceSwap], { rice: ['none'] }))).toEqual({ kcal: 750, complete: true });
+    expect(caloriesWith(base, chosen([riceSwap], { rice: ['peshawar'] }))).toEqual({ kcal: 1140, complete: true });
+    expect(priceWith(25, chosen([riceSwap], { rice: ['none'] }))).toBe(23);
+  });
+
+  it('adds calories per quantity, and marks the total incomplete when a choice has none — never invents one', () => {
+    const two = chosen([drinks], { drinks: ['pepsi', 'pepsi'] });
+    expect(caloriesWith(1100, two)).toEqual({ kcal: 1400, complete: true });
+    const withJuice = chosen([drinks], { drinks: ['pepsi', 'juice'] });
+    expect(caloriesWith(1100, withJuice)).toEqual({ kcal: 1250, complete: false });
+    expect(caloriesWith(null, two)).toEqual({ kcal: null, complete: false });
+  });
+
+  it('a stored line with more of an option than allowed, or a changed price, is dropped', () => {
+    const picks = chosen([drinks], { drinks: ['pepsi', 'pepsi'] });
+    expect(stillValid([drinks], picks)).toBe(true);
+    expect(stillValid([{ ...drinks, options: drinks.options.map((option) => ({ ...option, maxQty: 1 })) }], picks)).toBe(false);
+    expect(stillValid([{ ...drinks, max: 1, min: 1 }], picks)).toBe(false);
+    // A line saved before quantities existed still reads as one each.
+    expect(stillValid([riceSwap], [{ group: 'rice', nameAr: '', nameEn: '', options: [{ key: 'none', nameAr: '', nameEn: '', price: -2 }] }])).toBe(true);
+  });
+
+  it('two Pepsis and one Pepsi are different cart lines', () => {
+    expect(selectionKey(chosen([drinks], { drinks: ['pepsi', 'pepsi'] }))).not.toBe(
+      selectionKey(chosen([drinks], { drinks: ['pepsi', 'water'] })),
+    );
+    expect(selectionKey(chosen([drinks], { drinks: ['pepsi', 'pepsi'] }))).toBe('drinks:pepsix2');
   });
 });

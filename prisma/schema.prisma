@@ -1093,6 +1093,9 @@ model ModifierGroup {
 
   nameAr String
   nameEn String?
+  /// A short line under the group name, e.g. "one drink is free with the meal".
+  descriptionAr String?
+  descriptionEn String?
 
   /// Selection bounds. `minSelect > 0` makes the group required.
   minSelect Int @default(0)
@@ -1125,6 +1128,13 @@ model ModifierOption {
   nameEn String?
 
   priceDeltaMinor Int     @default(0)
+  /// Calorie difference this option makes to the dish, like the price delta:
+  /// a swap carries the difference (no rice: negative), an extra its own
+  /// calories. Null is unknown, never zero (GOALS I9).
+  caloriesDelta   Int?
+  /// How many of this one option a customer may take (two Pepsis). Each one
+  /// counts toward the group's maximum.
+  maxQty          Int     @default(1)
   isDefault       Boolean @default(false)
   isActive        Boolean @default(true)
   sortOrder       Int     @default(0)

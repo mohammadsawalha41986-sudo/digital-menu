@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma/client';
 import { createBusiness, publishMenu } from '@/server/admin/business-service';
-import { saveOptionGroup, setModifierGroupItems } from '@/server/menu-studio/modifiers';
+import { duplicateOptionGroup, saveOptionGroup, setModifierGroupItems } from '@/server/menu-studio/modifiers';
 import { getPublicProfile } from '@/server/profile/repository';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { resetEnvCache } from '@/lib/env';
@@ -111,6 +111,8 @@ describe.skipIf(!databaseReachable)('options & add-ons', () => {
         key,
         nameAr: 'الحجم',
         nameEn: 'Size',
+        descriptionAr: null,
+        descriptionEn: null,
         minSelect: 1,
         maxSelect: 1,
         options: [
@@ -163,5 +165,80 @@ describe.skipIf(!databaseReachable)('options & add-ons', () => {
     await expect(
       saveOptionGroup(outsider, businessId, { nameAr: 'x', required: false, max: 1, options: [], items: [] }),
     ).rejects.toBeInstanceOf(TenantAccessError);
+  });
+
+  it('a drinks group: choose 2, the same drink twice allowed, calories per option, an unavailable one hidden', async () => {
+    const key = await saveOptionGroup(user, businessId, {
+      nameAr: 'اختر المشروب',
+      descriptionAr: 'مشروبان مع الوجبة',
+      required: true,
+      min: 2,
+      max: 2,
+      options: [
+        { nameAr: 'بيبسي', price: '', calories: '150', maxQty: 2, isDefault: false },
+        { nameAr: 'ماء', price: '', calories: '0', maxQty: 2, isDefault: false },
+        { nameAr: 'ميرندا', price: '0.250', calories: '', maxQty: 1, isDefault: false, isActive: false },
+      ],
+      items: ['SS-001'],
+    });
+
+    const stored = await prisma.modifierGroup.findFirstOrThrow({ where: { businessId, key }, include: { options: { orderBy: { sortOrder: 'asc' } } } });
+    expect([stored.minSelect, stored.maxSelect, stored.descriptionAr]).toEqual([2, 2, 'مشروبان مع الوجبة']);
+    expect(stored.options.map((option) => [option.nameAr, option.caloriesDelta, option.maxQty, option.isActive])).toEqual([
+      ['بيبسي', 150, 2, true],
+      ['ماء', 0, 2, true],
+      // Empty calories stay unknown, never 0.
+      ['ميرندا', null, 1, false],
+    ]);
+
+    const profile = await getPublicProfile(publicId);
+    const dish = profile?.menus[0]?.categories.flatMap((category) => category.items).find((item) => item.code === 'SS-001');
+    const drinks = dish?.modifiers.find((group) => group.key === key);
+    expect(drinks?.options.map((option) => [option.nameAr, option.caloriesDelta, option.maxQty])).toEqual([
+      ['بيبسي', 150, 2],
+      ['ماء', 0, 2],
+    ]);
+  });
+
+  it('refuses a per-option limit beyond the group, a minimum the options cannot fill, and fractional calories', async () => {
+    const base = { nameAr: 'مشروبات', required: true, items: [] };
+    await expect(
+      saveOptionGroup(user, businessId, { ...base, min: 3, max: 3, options: [{ nameAr: 'ماء', price: '', maxQty: 2, isDefault: false }] }),
+    ).rejects.toThrow(/minimum/);
+    await expect(
+      saveOptionGroup(user, businessId, { ...base, max: 2, options: [{ nameAr: 'ماء', price: '', calories: '1.5', isDefault: false }] }),
+    ).rejects.toThrow(/whole number/);
+  });
+
+  it('duplicates a shared group as an independent copy on no dish; changing the copy leaves the original', async () => {
+    const original = await prisma.modifierGroup.findFirstOrThrow({
+      where: { businessId, nameAr: 'اختر المشروب' },
+      include: { options: true, items: true },
+    });
+    const copyKey = await duplicateOptionGroup(user, businessId, original.key);
+    const copy = await prisma.modifierGroup.findFirstOrThrow({ where: { businessId, key: copyKey }, include: { options: true, items: true } });
+    expect(copy.items).toEqual([]);
+    expect(copy.options.map((option) => [option.nameAr, option.caloriesDelta, option.maxQty]).sort()).toEqual(
+      original.options.map((option) => [option.nameAr, option.caloriesDelta, option.maxQty]).sort(),
+    );
+
+    await saveOptionGroup(user, businessId, {
+      key: copyKey,
+      nameAr: 'مشروب واحد',
+      required: true,
+      max: 1,
+      options: [{ nameAr: 'ماء', price: '', isDefault: false }],
+      items: [],
+    });
+    const after = await prisma.modifierGroup.findUniqueOrThrow({ where: { id: original.id }, include: { options: true, items: true } });
+    expect([after.nameAr, after.maxSelect, after.options.length, after.items.length]).toEqual([
+      'اختر المشروب',
+      2,
+      3,
+      original.items.length,
+    ]);
+
+    // Another restaurant cannot copy it.
+    await expect(duplicateOptionGroup(outsider, businessId, original.key)).rejects.toBeInstanceOf(TenantAccessError);
   });
 });

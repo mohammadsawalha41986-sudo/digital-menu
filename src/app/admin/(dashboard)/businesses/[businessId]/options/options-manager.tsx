@@ -8,14 +8,23 @@ interface Option {
   nameAr: string;
   nameEn: string;
   price: string;
+  /** Calorie difference as typed; empty is unknown. */
+  calories?: string;
+  /** How many of this option one dish may carry. */
+  maxQty?: number;
   isDefault: boolean;
+  isActive?: boolean;
 }
 
 interface Group {
   key?: string;
   nameAr: string;
   nameEn: string;
+  descriptionAr?: string;
+  descriptionEn?: string;
   required: boolean;
+  /** For a required group: how many must be picked. */
+  min?: number;
   max: number;
   options: Option[];
   items: string[];
@@ -77,6 +86,23 @@ const PRESETS: { label: string; hint: string; group: Group }[] = [
     },
   },
   {
+    label: 'مشروبات',
+    hint: 'اختر مشروبين — يمكن تكرار نفس المشروب',
+    group: {
+      nameAr: 'اختر المشروب',
+      nameEn: 'Choose your drink',
+      required: true,
+      min: 2,
+      max: 2,
+      options: [
+        { nameAr: 'بيبسي', nameEn: 'Pepsi', price: '', maxQty: 2, isDefault: false },
+        { nameAr: 'سفن أب', nameEn: '7Up', price: '', maxQty: 2, isDefault: false },
+        { nameAr: 'ماء', nameEn: 'Water', price: '', calories: '0', maxQty: 2, isDefault: false },
+      ],
+      items: [],
+    },
+  },
+  {
     label: 'استبدال',
     hint: 'مثل رز بدل البطاطا',
     group: {
@@ -98,13 +124,16 @@ export function OptionsManager({
   groups,
   saveAction,
   deleteAction,
+  duplicateAction,
 }: {
   currency: string;
   sections: Section[];
   groups: Group[];
   saveAction: Action;
   deleteAction: Action;
+  duplicateAction: Action;
 }) {
+  const [copyState, copy, copying] = useActionState<ActionState, FormData>(duplicateAction, {});
   // The group open in the editor: an existing one (by key) or a new draft.
   const [editing, setEditing] = useState<{ group: Group; isNew: boolean } | null>(null);
   const [deleteState, remove, deleting] = useActionState<ActionState, FormData>(deleteAction, {});
@@ -143,6 +172,15 @@ export function OptionsManager({
 
       <section className="admin__panel">
         <h2 className="admin__panel-title">المجموعات · Groups ({groups.length})</h2>
+        {copyState.error ? (
+          <p className="admin__message admin__message--error" role="alert">
+            {copyState.error}
+          </p>
+        ) : copyState.ok ? (
+          <p className="admin__hint" role="status">
+            {copyState.message}
+          </p>
+        ) : null}
         {deleteState.error ? (
           <p className="admin__message admin__message--error" role="alert">
             {deleteState.error}
@@ -187,6 +225,18 @@ export function OptionsManager({
                   <form
                     onSubmit={(event) => {
                       event.preventDefault();
+                      const data = new FormData(event.currentTarget);
+                      startTransition(() => copy(data));
+                    }}
+                  >
+                    <input type="hidden" name="key" value={group.key} />
+                    <button type="submit" className="admin__button admin__button--small admin__button--secondary" disabled={copying}>
+                      نسخة مستقلة · Duplicate
+                    </button>
+                  </form>
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
                       if (!window.confirm(`حذف «${group.nameAr}» من كل الأطباق؟`)) return;
                       const data = new FormData(event.currentTarget);
                       startTransition(() => remove(data));
@@ -209,7 +259,8 @@ export function OptionsManager({
 
 function rule(group: Group) {
   const pick = group.max === 1 ? 'اختيار واحد' : `حتى ${group.max} اختيارات`;
-  return `${group.required ? 'إجباري' : 'اختياري'} · ${pick}`;
+  const min = group.required && (group.min ?? 1) > 1 ? ` · ${group.min} على الأقل` : '';
+  return `${group.required ? 'إجباري' : 'اختياري'}${min} · ${pick}`;
 }
 
 function Editor({
@@ -256,6 +307,17 @@ function Editor({
       <form
         onSubmit={(event) => {
           event.preventDefault();
+          // A shared group changes on every dish it is on: say so first.
+          const shared = initial.items.length;
+          if (
+            !isNew &&
+            shared > 1 &&
+            !window.confirm(
+              `هذا التعديل سيظهر على ${shared} أطباق تستخدم هذه المجموعة. لتعديل طبق واحد فقط استخدم «نسخة مستقلة». متابعة؟`,
+            )
+          ) {
+            return;
+          }
           const data = new FormData();
           data.set('group', JSON.stringify(group));
           startTransition(() => submit(data));
@@ -274,11 +336,47 @@ function Editor({
           </label>
         </div>
 
+        <div className="options__names">
+          <label className="admin__field">
+            <span>وصف قصير (اختياري) · Note (AR)</span>
+            <input
+              className="admin__input"
+              value={group.descriptionAr ?? ''}
+              placeholder="مثال: مشروب واحد مجاني مع الوجبة"
+              onChange={(event) => update({ descriptionAr: event.target.value })}
+            />
+          </label>
+          <label className="admin__field">
+            <span>Note (EN)</span>
+            <input className="admin__input" dir="ltr" value={group.descriptionEn ?? ''} onChange={(event) => update({ descriptionEn: event.target.value })} />
+          </label>
+        </div>
+
+        {!isNew && initial.items.length > 1 ? (
+          <p className="admin__hint" data-shared-warning="">
+            ⚠ مستخدمة على {initial.items.length} أطباق: أي تعديل هنا يظهر عليها كلها. · Shared by {initial.items.length} dishes.
+          </p>
+        ) : null}
+
         <div className="options__rules">
           <label className="options__check">
             <input type="checkbox" checked={group.required} onChange={(event) => update({ required: event.target.checked })} />
             إجباري — لا يُضاف الطبق للطلب قبل الاختيار · Required
           </label>
+          {group.required && !single ? (
+            <label className="options__check">
+              عدد الاختيارات المطلوبة على الأقل
+              <input
+                type="number"
+                min={1}
+                max={group.max}
+                className="admin__input options__max"
+                value={group.min ?? 1}
+                onChange={(event) => update({ min: Math.max(1, Math.min(group.max, Number(event.target.value) || 1)) })}
+                aria-label="At least"
+              />
+            </label>
+          ) : null}
           <label className="options__check">
             <input type="radio" name="pick" checked={single} onChange={() => update({ max: 1 })} />
             اختيار واحد فقط · One choice
@@ -302,6 +400,10 @@ function Editor({
           <legend>الخيارات · Options</legend>
           <p className="admin__hint">
             السعر هو الزيادة على سعر الطبق ({currency}). اتركه فارغاً إذا كان مجانياً. مثال: الطبق 15 والكبير +5 = 20.
+          </p>
+          <p className="admin__hint">
+            السعرات: فرق السعرات عن الطبق الأساسي — الإضافة بسعراتها (+120)، والبديل بالفرق فقط (بدون رز: −350). اتركها
+            فارغة إن لم تكن معروفة؛ لا تُخمَّن. «حتى ×» يسمح للعميل بأخذ نفس الخيار أكثر من مرة (مشروبان).
           </p>
           {group.options.map((option, index) => (
             <div key={index} className="options__row" data-option-row>
@@ -329,6 +431,31 @@ function Editor({
                 value={option.price}
                 onChange={(event) => setOption(index, { price: event.target.value })}
               />
+              <input
+                className="admin__input options__price"
+                inputMode="numeric"
+                dir="ltr"
+                placeholder="kcal"
+                aria-label={`خيار ${index + 1} — سعرات حرارية`}
+                value={option.calories ?? ''}
+                onChange={(event) => setOption(index, { calories: event.target.value })}
+              />
+              {single ? null : (
+                <label className="options__check" title="How many of this one option a customer may take">
+                  حتى ×
+                  <input
+                    type="number"
+                    min={1}
+                    max={Math.max(1, group.max)}
+                    className="admin__input options__max"
+                    aria-label={`خيار ${index + 1} — أقصى كمية`}
+                    value={option.maxQty ?? 1}
+                    onChange={(event) =>
+                      setOption(index, { maxQty: Math.max(1, Math.min(group.max, Number(event.target.value) || 1)) })
+                    }
+                  />
+                </label>
+              )}
               <label className="options__check options__default">
                 <input
                   type="checkbox"
@@ -336,6 +463,14 @@ function Editor({
                   onChange={(event) => setOption(index, { isDefault: event.target.checked })}
                 />
                 مختار مسبقاً
+              </label>
+              <label className="options__check" title="Unavailable options are hidden from customers">
+                <input
+                  type="checkbox"
+                  checked={option.isActive ?? true}
+                  onChange={(event) => setOption(index, { isActive: event.target.checked })}
+                />
+                متوفر
               </label>
               <button
                 type="button"

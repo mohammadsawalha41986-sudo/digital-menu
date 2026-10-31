@@ -4,7 +4,7 @@ import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
 import { listOptionGroups } from '@/server/menu-studio/modifiers';
 import { TenantAccessError } from '@/server/tenancy/context';
-import { deleteOptionGroupAction, saveOptionGroupAction } from '@/server/admin/actions';
+import { deleteOptionGroupAction, duplicateOptionGroupAction, saveOptionGroupAction } from '@/server/admin/actions';
 import { formatMinorAsDecimal } from '@/lib/money';
 import { OptionsManager } from './options-manager';
 
@@ -70,19 +70,26 @@ export default async function OptionsPage({ params }: { params: Promise<{ busine
             key: group.key,
             nameAr: group.nameAr,
             nameEn: group.nameEn ?? '',
+            descriptionAr: group.descriptionAr ?? '',
+            descriptionEn: group.descriptionEn ?? '',
             required: group.minSelect > 0,
+            min: Math.max(1, group.minSelect),
             max: group.maxSelect,
             options: group.options.map((option) => ({
               key: option.key,
               nameAr: option.nameAr,
               nameEn: option.nameEn ?? '',
               price: option.priceDeltaMinor === 0 ? '' : formatMinorAsDecimal(option.priceDeltaMinor, business.currency),
+              calories: option.caloriesDelta === null ? '' : String(option.caloriesDelta),
+              maxQty: option.maxQty,
               isDefault: option.isDefault,
+              isActive: option.isActive,
             })),
             items: group.items.map((link) => link.item.itemCode),
           }))}
           saveAction={saveOptionGroupAction.bind(null, business.id, business.publicId)}
           deleteAction={deleteOptionGroupAction.bind(null, business.id, business.publicId)}
+          duplicateAction={duplicateOptionGroupAction.bind(null, business.id, business.publicId)}
         />
       )}
     </>

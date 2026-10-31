@@ -72,7 +72,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       const noteStr = ci.notes ? ` (ملاحظة: ${ci.notes})` : '';
       // One line per choice under the dish, so the kitchen reads them apart.
       const choiceLines = (ci.choices ?? [])
-        .map((group) => `\n   • ${group.nameAr}: ${group.options.map((option) => option.nameAr).join('، ')}`)
+        .map((group) => `\n   • ${group.nameAr}: ${group.options.map((option) => ((option.qty ?? 1) > 1 ? `${option.nameAr} ×${option.qty}` : option.nameAr)).join('، ')}`)
         .join('');
 
       return `${index + 1}. ${ci.item.nameAr}${optionStr}${spiceStr} x ${ci.quantity} = ${formatAmount(ci.totalPrice, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}${noteStr}${choiceLines}`;
@@ -270,7 +270,9 @@ ${noteInfo}
                           {ci.choices?.map((group) => (
                             <span key={group.group} className="text-[11px] text-amber-300 font-semibold block" data-cart-choice={group.group}>
                               {isAr ? group.nameAr : group.nameEn}:{' '}
-                              {group.options.map((option) => (isAr ? option.nameAr : option.nameEn)).join(isAr ? '، ' : ', ')}
+                              {group.options
+                                .map((option) => `${isAr ? option.nameAr : option.nameEn}${(option.qty ?? 1) > 1 ? ` ×${option.qty}` : ''}`)
+                                .join(isAr ? '، ' : ', ')}
                             </span>
                           ))}
 

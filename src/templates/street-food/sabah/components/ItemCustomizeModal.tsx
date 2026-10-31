@@ -8,7 +8,10 @@ import { X, Plus, Minus, Flame, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
 import type { Language, CartItem } from '../types';
-import { chosen, defaultSelection, isSingle, missing, priceWith, selectionKey, toggle, type Selection } from '../choices';
+import { caloriesWith, chosen, countOf, defaultSelection, isSingle, missing, priceWith, selectionKey, step, toggle, type Selection } from '../choices';
+
+/** A unique suffix for a cart line, taken when the customer adds it. */
+const lineStamp = () => Date.now();
 
 interface ItemCustomizeModalProps {
   item: MenuItem | null;
@@ -43,11 +46,13 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
   // Compute base unit price
   const basePrice = selectedOption ? selectedOption.price : item.price;
   // The restaurant's own choices: each chosen option adds its difference.
-  const groups = item.choices ?? [];
+  // Required choices first, then the optional ones, each in the restaurant's order.
+  const groups = [...(item.choices ?? [])].sort((a, b) => Number(b.min > 0) - Number(a.min > 0));
   const picks = chosen(groups, selection);
   const unanswered = missing(groups, selection);
   const unitPrice = priceWith(basePrice, picks);
   const totalPrice = Math.round(unitPrice * quantity * 1000) / 1000;
+  const energy = caloriesWith(item.calories, picks);
   // The size-like group — the first required single choice whose options
   // cost differently — lists full prices (medium 15, large 20). Every other
   // group shows what it adds, since its full price depends on the size.
@@ -63,7 +68,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
       document.getElementById(`choice-${unanswered[0]?.key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${selectionKey(picks)}-${spiceLevel}-${Date.now()}`;
+    const cartItemId = `${item.id}-${selectedOption?.nameAr || 'std'}-${selectionKey(picks)}-${spiceLevel}-${lineStamp()}`;
 
     onAddToCart({
       cartItemId,
@@ -124,9 +129,15 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
             <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
               {isAr ? item.nameAr : item.nameEn}
             </h2>
-            {item.calories && (
-              <span className="text-xs text-amber-300 font-mono mt-0.5 block font-semibold">
-                {item.calories} {isAr ? 'سعرة حرارية تقريبية' : 'estimated calories'}
+            {energy.kcal !== null && (
+              <span className="text-xs text-amber-300 font-mono mt-0.5 block font-semibold" data-sheet-calories={energy.kcal}>
+                {energy.complete ? '' : '+'}
+                {energy.kcal} {isAr ? 'سعرة حرارية' : 'kcal'}
+                {energy.complete
+                  ? ''
+                  : isAr
+                    ? ' · بعض الاختيارات بلا سعرات محددة'
+                    : ' · some choices have no calorie figure'}
               </span>
             )}
           </div>
@@ -195,15 +206,65 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                       {group.min > 0
                         ? isSingle(group)
                           ? isAr ? 'إجباري · اختر واحداً' : 'Required · pick one'
-                          : isAr ? `إجباري · ${group.min} على الأقل` : `Required · at least ${group.min}`
+                          : group.min === group.max
+                            ? isAr ? `إجباري · اختر ${group.min} (${picked.length} من ${group.max})` : `Required · pick ${group.min} (${picked.length} of ${group.max})`
+                            : isAr ? `إجباري · ${group.min} إلى ${group.max} (${picked.length} من ${group.max})` : `Required · ${group.min}–${group.max} (${picked.length} of ${group.max})`
                         : isSingle(group)
                           ? isAr ? 'اختياري' : 'Optional'
-                          : isAr ? `اختياري · حتى ${group.max}` : `Optional · up to ${group.max}`}
+                          : isAr ? `اختياري · حتى ${group.max} (${picked.length} من ${group.max})` : `Optional · up to ${group.max} (${picked.length} of ${group.max})`}
                     </span>
                   </legend>
+                  {(isAr ? group.descriptionAr : group.descriptionEn) ? (
+                    <p className="text-[11px] text-stone-400 -mt-1.5">{isAr ? group.descriptionAr : group.descriptionEn}</p>
+                  ) : null}
                   <div className={isSingle(group) ? 'grid grid-cols-2 sm:grid-cols-3 gap-2' : 'space-y-2'}>
                     {group.options.map((option) => {
                       const on = picked.includes(option.key);
+                      const count = countOf(selection, group.key, option.key);
+                      // An option the customer may take more than once gets a counter.
+                      if (!isSingle(group) && (option.maxQty ?? 1) > 1) {
+                        const atMost = count >= (option.maxQty ?? 1) || picked.length >= group.max;
+                        const name = isAr ? option.nameAr : option.nameEn;
+                        return (
+                          <div
+                            key={option.key}
+                            data-choice={option.key}
+                            data-count={count}
+                            className={`w-full rounded-2xl border px-3.5 py-2 flex items-center justify-between gap-3 ${
+                              count > 0 ? 'bg-emerald-950/80 border-emerald-400 text-white' : 'bg-stone-900/90 border-emerald-950 text-stone-300'
+                            }`}
+                          >
+                            <span className="flex-1 text-xs sm:text-sm font-bold">{name}</span>
+                            {option.price !== 0 ? (
+                              <span className="text-xs font-black text-amber-400 tabular-nums">
+                                {option.price > 0 ? '+' : '−'}
+                                {formatAmount(Math.abs(option.price), currency)} {currencyUnit(currency, isAr)}
+                              </span>
+                            ) : null}
+                            <span className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                aria-label={isAr ? `إنقاص ${name}` : `One fewer ${name}`}
+                                disabled={count === 0}
+                                onClick={() => setSelection((current) => step(current, group, option.key, -1))}
+                                className="w-7 h-7 rounded-lg bg-stone-800 text-white flex items-center justify-center disabled:opacity-40 cursor-pointer"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="w-6 text-center font-black tabular-nums">{count}</span>
+                              <button
+                                type="button"
+                                aria-label={isAr ? `زيادة ${name}` : `One more ${name}`}
+                                disabled={atMost}
+                                onClick={() => setSelection((current) => step(current, group, option.key, 1))}
+                                className="w-7 h-7 rounded-lg bg-stone-800 text-white flex items-center justify-center disabled:opacity-40 cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </span>
+                          </div>
+                        );
+                      }
                       const full = !fullPrice && !isSingle(group) && !on && picked.length >= group.max;
                       const priceLabel = fullPrice
                         ? `${formatAmount(basePrice + option.price, currency)} ${currencyUnit(currency, isAr)}`

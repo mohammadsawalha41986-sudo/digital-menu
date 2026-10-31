@@ -308,6 +308,8 @@ async function loadProfile(
                           key: true,
                           nameAr: true,
                           nameEn: true,
+                          descriptionAr: true,
+                          descriptionEn: true,
                           minSelect: true,
                           maxSelect: true,
                           options: {
@@ -318,6 +320,8 @@ async function loadProfile(
                               nameAr: true,
                               nameEn: true,
                               priceDeltaMinor: true,
+                              caloriesDelta: true,
+                              maxQty: true,
                               isDefault: true,
                             },
                           },

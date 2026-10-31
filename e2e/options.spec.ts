@@ -59,3 +59,57 @@ test('a required choice with a price reaches the dish sheet, the cart and the Wh
   await group.getByRole('button', { name: /Delete/ }).click();
   await expect(group).toHaveCount(0);
 });
+
+test('choose two drinks: the same drink twice, a live "0 of 2" counter, calories that follow the choice', async ({ page }) => {
+  page.on('dialog', (dialog) => dialog.accept());
+  await signIn(page);
+  await optionsPage(page);
+
+  // The drinks pattern: required, choose 2, each drink up to twice.
+  await page.getByRole('button', { name: /مشروبات/ }).click();
+  const editor = page.getByRole('region', { name: 'Group editor' });
+  await editor.getByLabel('خيار 1 — سعرات حرارية').fill('150');
+  await editor.getByLabel('شاورما تركي', { exact: true }).check();
+  await editor.getByRole('button', { name: /Save/ }).click();
+  const group = page.locator('[data-option-group="اختر المشروب"]');
+  await expect(group).toContainText('على 1 طبق');
+  await expect(group).toContainText('2 على الأقل');
+
+  await page.goto('/m/SBH001?lang=ar');
+  const card = page.locator('#menu-items-container [data-item="SHW-002"]');
+  await card.scrollIntoViewIfNeeded();
+  await card.getByRole('button').last().click();
+
+  const rule = page.locator('[data-choice-group]').filter({ hasText: 'اختر المشروب' }).locator('[data-choice-rule]');
+  await expect(rule).toContainText('(0 من 2)');
+  await expect(page.locator('[data-sheet-calories]')).toHaveAttribute('data-sheet-calories', '520');
+
+  const more = page.getByRole('button', { name: 'زيادة بيبسي' });
+  await more.click();
+  await more.click();
+  await expect(rule).toContainText('(2 من 2)');
+  await expect(page.locator('[data-choice]').filter({ hasText: 'بيبسي' })).toHaveAttribute('data-count', '2');
+  // The group is full: no third drink.
+  await expect(more).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'زيادة ماء' })).toBeDisabled();
+  // 520 + 2 × 150.
+  await expect(page.locator('[data-sheet-calories]')).toHaveAttribute('data-sheet-calories', '820');
+
+  const add = page.getByRole('button', { name: /إضافة إلى الطلب/ });
+  await add.click();
+  await expect(page.locator('[data-cart-choice]')).toContainText('بيبسي ×2');
+
+  await page.evaluate(() => {
+    window.open = ((url: string) => {
+      (window as unknown as { openedUrl: string }).openedUrl = url;
+      return null;
+    }) as typeof window.open;
+  });
+  await page.getByRole('button', { name: /إرسال الطلب عبر واتساب/ }).click();
+  const opened = await page.evaluate(() => (window as unknown as { openedUrl?: string }).openedUrl ?? '');
+  expect(decodeURIComponent(opened.split('?text=')[1] ?? '')).toContain('اختر المشروب: بيبسي ×2');
+
+  await optionsPage(page);
+  await group.getByRole('button', { name: /Delete/ }).click();
+  await expect(group).toHaveCount(0);
+});

@@ -45,6 +45,8 @@ export interface PublicModifierGroup {
   key: string;
   nameAr: string;
   nameEn: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   minSelect: number;
   maxSelect: number;
   options: {
@@ -52,6 +54,10 @@ export interface PublicModifierGroup {
     nameAr: string;
     nameEn: string | null;
     priceDeltaMinor: number;
+    /** Calorie difference; null when the restaurant has not given it. */
+    caloriesDelta?: number | null;
+    /** How many of this option one dish may carry. */
+    maxQty?: number;
     isDefault: boolean;
   }[];
 }

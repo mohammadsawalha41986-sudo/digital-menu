@@ -9,6 +9,7 @@ import { workingHoursFromForm } from '@/server/business/hours';
 import {
   deleteModifierGroup,
   saveOptionGroup,
+  duplicateOptionGroup,
   type OptionGroupForm,
 } from '@/server/menu-studio/modifiers';
 import {
@@ -492,6 +493,21 @@ export async function saveOptionGroupAction(
     revalidateBusiness(businessId, publicId);
     revalidatePath(`/admin/businesses/${businessId}/options`);
     return 'Saved';
+  });
+}
+
+/** An independent copy of a shared group, on no dish yet. */
+export async function duplicateOptionGroupAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await duplicateOptionGroup(user, businessId, String(formData.get('key') ?? ''));
+    revalidatePath(`/admin/businesses/${businessId}/options`);
+    return 'نُسخت المجموعة · Copied';
   });
 }
 
