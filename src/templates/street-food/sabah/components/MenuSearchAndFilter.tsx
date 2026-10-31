@@ -17,6 +17,8 @@ interface MenuSearchAndFilterProps {
   onOpenCaloriesModal: () => void;
   /** Short menus are faster to scroll than to search. */
   showSearch: boolean;
+  /** Dishes on offer right now, shown on the offers tab. */
+  offerCount?: number;
 }
 
 export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
@@ -30,6 +32,7 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
   onToggleViewMode,
   onOpenCaloriesModal,
   showSearch,
+  offerCount,
 }) => {
   const isAr = lang === 'ar';
 
@@ -107,6 +110,11 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
               >
                 <Sparkles className="w-3 h-3 text-amber-300" />
                 <span>{isAr ? 'عروض التوفير' : 'Value Combos'}</span>
+                {offerCount ? (
+                  <span className="font-mono text-amber-300" data-offer-count>
+                    ({offerCount})
+                  </span>
+                ) : null}
               </motion.button>
 
               <motion.button

@@ -524,3 +524,21 @@
     object-position: var(--sf-pos, 50% 50%);
   }
 }
+
+/* Discounts. The badge colour is the restaurant's own (Design > Discount
+   badge); the text on it and the struck-through price carry the message, so
+   the colour is never the only signal. */
+.sf-sale-badge {
+  background: var(--brand-menu-sale, #dc2626);
+  color: #ffffff;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.sf-sale-text {
+  color: var(--brand-menu-price, #fbbf24);
+}
+
+[data-sale-was] {
+  text-decoration-thickness: 1.5px;
+}

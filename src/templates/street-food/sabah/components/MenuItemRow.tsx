@@ -7,6 +7,7 @@ import { Plus, Flame, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
 import type { Language } from '../types';
+import { SaleBadge, SaleWas } from './SaleTag';
 
 interface MenuItemRowProps {
   item: MenuItem;
@@ -62,7 +63,8 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
               {isAr ? 'جديد' : 'New'}
             </span>
           ) : null}
-          {item.isOffer && (
+          {item.sale ? <SaleBadge item={item} isAr={isAr} small /> : null}
+          {item.isOffer && !item.sale && (
             <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-stone-950 shrink-0">
               {isAr ? 'عرض' : 'Offer'}
             </span>
@@ -101,6 +103,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
   <span />
 ) : (
         <div className="text-right rtl:text-right ltr:text-left">
+          {item.sale ? <SaleWas item={item} isAr={isAr} currency={currency} showSaving={false} /> : null}
           <span className="text-base sm:text-lg font-black text-amber-400 tabular-nums sf-price" data-price>
             {formatAmount(item.price, currency)}
           </span>

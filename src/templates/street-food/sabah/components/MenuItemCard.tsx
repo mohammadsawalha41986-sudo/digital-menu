@@ -7,6 +7,7 @@ import { Plus, Flame, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
 import type { Language } from '../types';
+import { SaleBadge, SaleUrgency, SaleWas } from './SaleTag';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -69,7 +70,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
           
           {/* Subtle badges */}
           <div className="absolute top-2.5 right-2.5 rtl:right-2.5 ltr:left-2.5 flex items-center gap-1.5 z-10">
-            {item.isOffer && (
+            {item.sale ? <SaleBadge item={item} isAr={isAr} /> : null}
+            {item.isOffer && !item.sale && (
               <span className="text-[11px] font-black px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 text-stone-950 shadow-md flex items-center gap-1 border border-amber-300">
                 <Sparkles className="w-3 h-3 text-stone-950" />
                 <span>{isAr ? 'عرض توفير' : 'Value Deal'}</span>
@@ -109,6 +111,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             <h3 className={`${compact ? 'text-[15px] line-clamp-2 sm:line-clamp-none' : wide ? 'text-xl sm:text-3xl' : 'text-base'} ${wide ? '' : 'sm:text-lg'} font-bold text-white group-hover:text-amber-300 transition-colors leading-snug`}>
               {isAr ? item.nameAr : item.nameEn}
             </h3>
+            <SaleUrgency item={item} isAr={isAr} />
           </div>
 
           {/* Description */}
@@ -146,6 +149,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   <span />
 ) : (
           <div className="flex flex-col">
+            {item.sale ? <SaleWas item={item} isAr={isAr} currency={currency} showSaving={!compact} /> : null}
             {/* On a phone the price speaks for itself; "Price" is shown only
                 where there is room, "From" always (it changes the meaning). */}
             <span className={`text-[11px] text-stone-400 ${compact && !(item.options && item.options.length > 0) ? 'hidden sm:block' : ''}`}>

@@ -63,6 +63,10 @@ export interface SabahAppProps {
   publicId?: string;
   /** Current offers, for the strip in the middle of the menu. */
   offers?: MenuOffer[];
+  /** How the automatic "offers & savings" section orders discounted dishes. */
+  offersSort?: OfferSort;
+  /** When a discount next starts or ends (ISO): the page refreshes then. */
+  offersRefreshAt?: string | null;
   /** Order of the page's sections. */
   sectionOrder?: string[];
   /** Offers inside the menu (after the second category) or in their own place. */
@@ -85,6 +89,8 @@ export default function App({
   imageLayout = 'grid',
   publicId = 'reference',
   offers = [],
+  offersSort = 'PERCENT',
+  offersRefreshAt = null,
   sectionOrder = ['hero', 'menu', 'offers', 'reviews', 'location'],
   offersInsideMenu = true,
   heroEffect = 'slide',
@@ -109,6 +115,19 @@ export default function App({
   // the browser (and refreshed each minute); the server render carries no
   // time-sensitive claim.
   const minute = useMinute();
+
+  // A discount that starts or ends while the page is open changes the prices
+  // shown: refresh at that instant (only when it is within the day).
+  useEffect(() => {
+    if (!offersRefreshAt) return;
+    const wait = new Date(offersRefreshAt).getTime() - Date.now();
+    if (!(wait < 24 * 60 * 60 * 1000)) return;
+    const id = setTimeout(() => window.location.reload(), Math.max(0, wait) + 1500);
+    return () => clearTimeout(id);
+  }, [offersRefreshAt]);
+
+  // The automatic section: every dish with a live discount, in the chosen order.
+  const deals = useMemo(() => dealsOf(menuItems ?? [], offersSort), [menuItems, offersSort]);
   const hours = useMemo(
     () => (minute === null || !BASE_INFO.workingHours ? null : hoursLine(BASE_INFO.workingHours, new Date(minute * 60_000))),
     [minute, BASE_INFO.workingHours],
@@ -356,10 +375,33 @@ export default function App({
             onToggleViewMode={setVisitorView}
             onOpenCaloriesModal={() => setIsCaloriesOpen(true)}
             showSearch={MENU_ITEMS.length >= MENU_SEARCH_THRESHOLD}
+            offerCount={MENU_ITEMS.filter((item) => item.isOffer && !item.isUnavailable).length}
           />
 
           {/* 5. Menu Items Display with framer-motion Scroll Reveal Entrance */}
           <div id="menu-items-container" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+            {/* The automatic section: appears only while some dish has a live discount. */}
+            {selectedCategory === 'all' && activeFilter === 'all' && searchQuery.trim() === '' && deals.length > 0 ? (
+              <section id={DEALS_ID} data-deals-section aria-label={isAr ? 'العروض والتوفير' : 'Deals & savings'} className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36">
+                <div className="flex items-end justify-between gap-2 pb-3.5 border-b border-amber-500/40">
+                  <div className="flex items-center gap-2.5">
+                    <span aria-hidden="true" className="text-xl">🔥</span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                      {isAr ? 'العروض والتوفير' : 'Deals & savings'}
+                    </h2>
+                    <span className="text-xs text-amber-400 font-mono font-bold bg-stone-900/90 px-2.5 py-0.5 rounded-full border border-amber-500/30" data-deals-count>
+                      {deals.length}
+                    </span>
+                  </div>
+                </div>
+                <SectionDishes
+                  layout={resolveSectionLayout('auto', visitorView === 'grid' && imageLayout === 'list' ? 'grid' : imageLayout, deals.length)}
+                  dishes={deals}
+                  lang={lang}
+                  onSelect={(item) => setActiveItemForCustomization(item)}
+                />
+              </section>
+            ) : null}
             {categoriesToDisplay.map((cat: MenuCategory, catIndex: number) => {
               const itemsInThisCat = filteredItems.filter((i) => i.categoryId === cat.id);
               if (itemsInThisCat.length === 0) return null;

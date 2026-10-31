@@ -45,6 +45,7 @@ export default async function BusinessPage({
         { href: `${build}/images`, label: 'صور الأطباق', sub: 'Dish photos' },
         { href: `${base}/options`, label: 'الخيارات والإضافات', sub: 'Sizes, rice choice, extras, swaps' },
         { href: `${base}/upsell`, label: 'اقتراحات البيع', sub: 'Upsell: pairings & new dishes' },
+        { href: `${base}/discounts`, label: 'الخصومات والعروض', sub: 'Dish discounts & the offers section' },
         { href: `${base}/data`, label: 'استيراد / تصدير', sub: 'Import / export (Excel)' },
         { href: `${base}/nutrition`, label: 'السعرات', sub: 'Calories' },
       ],

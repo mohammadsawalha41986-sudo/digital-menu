@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import type { ActionState } from '@/server/admin/actions';
 import { DishImagePicker, type LibraryPhoto } from './dish-image-picker';
 import { DishAi, type DishAiActions } from './dish-ai';
+import { DishDiscount } from './dish-discount';
 
 /**
  * Step 7 — the builder.
@@ -25,6 +26,12 @@ export interface BuilderItem {
   descriptionEn: string;
   price: string;
   calories: string;
+  discountEnabled: boolean;
+  discountMode: string;
+  discountValue: string;
+  discountStartsAt: string;
+  discountEndsAt: string;
+  discountBranchKeys: string[];
   categoryKey: string;
   availability: string;
   imageUrl: string | null;
@@ -50,6 +57,12 @@ const BLANK: BuilderItem = {
   descriptionEn: '',
   price: '',
   calories: '',
+  discountEnabled: false,
+  discountMode: 'PERCENT',
+  discountValue: '',
+  discountStartsAt: '',
+  discountEndsAt: '',
+  discountBranchKeys: [],
   categoryKey: '',
   availability: 'AVAILABLE',
   imageUrl: null,
@@ -76,12 +89,18 @@ export interface BuilderActions {
 export function BuilderStep({
   categories,
   currency,
+  branches,
+  zone,
   actions,
   library,
   ai,
 }: {
   categories: BuilderCategory[];
   currency: string;
+  /** The restaurant's branches, for a discount that applies in some of them. */
+  branches: { key: string; nameAr: string }[];
+  /** The zone the discount dates are typed in. */
+  zone: string;
   actions: BuilderActions;
   /** The AI assistant: whether the server has a key, and its actions. */
   ai: { ready: boolean; actions: DishAiActions };
@@ -423,6 +442,23 @@ export function BuilderStep({
                 key={`desc-en-${editing.code}`}
               />
             </div>
+
+            <DishDiscount
+              key={`discount-${editing.code || 'new'}`}
+              formRef={dishForm}
+              currency={currency}
+              branches={branches}
+              zone={zone}
+              price={editing.price}
+              value={{
+                discountEnabled: editing.discountEnabled,
+                discountMode: editing.discountMode,
+                discountValue: editing.discountValue,
+                discountStartsAt: editing.discountStartsAt,
+                discountEndsAt: editing.discountEndsAt,
+                discountBranchKeys: editing.discountBranchKeys,
+              }}
+            />
 
             <DishAi
               key={`ai-${editing.code || 'new'}`}

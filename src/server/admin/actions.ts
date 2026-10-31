@@ -7,6 +7,13 @@ import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { workingHoursFromForm } from '@/server/business/hours';
 import {
+  applyDiscountToMany,
+  saveOffersSettings,
+  saveDiscount,
+  setDiscountEnabled,
+  type DiscountForm,
+} from './discounts';
+import {
   deleteModifierGroup,
   saveOptionGroup,
   duplicateOptionGroup,
@@ -550,11 +557,100 @@ export async function saveDishAction(
   const parsed = itemSchema.safeParse({ ...stored, ...raw, itemCode: isNew ? 'PENDING' : raw.itemCode, menuId });
   if (!parsed.success) return { error: firstIssue(parsed.error.issues) };
 
+  // The discount panel posts its own fields in this same form. Read from the
+  // form, not from `raw`: an unticked box is absent, and must mean "off".
+  const discountRequested = formData.has('discountMode');
+
   return run(async () => {
     const itemCode = isNew ? await newItemCode(user, businessId) : parsed.data.itemCode;
     await upsertItem(user, businessId, { ...parsed.data, itemCode });
+    if (discountRequested) {
+      try {
+        await saveDiscount(user, businessId, discountFromForm(formData, itemCode));
+      } catch (error) {
+        revalidateBusiness(businessId, publicId);
+        if (error instanceof ValidationError) {
+          // The dish itself is saved; the message says so, and shows as an error.
+          throw new ValidationError(
+            `${isNew ? 'The dish was added' : 'The dish was saved'}, but its discount was not: ${error.message}`,
+          );
+        }
+        throw error;
+      }
+    }
     revalidateBusiness(businessId, publicId);
     return isNew ? 'Dish added' : 'Dish saved';
+  });
+}
+
+/** The discount fields of a form, as the discount service reads them. */
+function discountFromForm(formData: FormData, itemCode: string): DiscountForm {
+  return {
+    itemCode,
+    enabled: formData.get('discountEnabled') === 'on',
+    mode: String(formData.get('discountMode') ?? ''),
+    value: String(formData.get('discountValue') ?? ''),
+    startsAt: String(formData.get('discountStartsAt') ?? ''),
+    endsAt: String(formData.get('discountEndsAt') ?? ''),
+    branchKeys: formData.getAll('discountBranchKeys').map(String),
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Discounts page                                                              */
+/* -------------------------------------------------------------------------- */
+
+export async function setDiscountEnabledAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    await setDiscountEnabled(user, businessId, String(formData.get('itemCode') ?? ''), formData.get('enabled') === 'true');
+    revalidateBusiness(businessId, publicId);
+    return 'Saved';
+  });
+}
+
+export async function applyDiscountToManyAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    const count = await applyDiscountToMany(user, businessId, formData.getAll('itemCodes').map(String), {
+      enabled: formData.get('enabled') === 'on',
+      mode: String(formData.get('mode') ?? ''),
+      value: String(formData.get('value') ?? ''),
+      startsAt: String(formData.get('startsAt') ?? ''),
+      endsAt: String(formData.get('endsAt') ?? ''),
+      branchKeys: formData.getAll('branchKeys').map(String),
+    });
+    revalidateBusiness(businessId, publicId);
+    return `Saved for ${count} ${count === 1 ? 'dish' : 'dishes'}`;
+  });
+}
+
+export async function saveOffersSettingsAction(
+  businessId: string,
+  publicId: string,
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  return run(async () => {
+    const order = String(formData.get('order') ?? '').split(',').map((code) => code.trim()).filter(Boolean);
+    await saveOffersSettings(user, businessId, {
+      sort: String(formData.get('sort') ?? ''),
+      includesOptions: formData.get('includesOptions') === 'on',
+      manualOrder: order,
+    });
+    revalidateBusiness(businessId, publicId);
+    return 'Saved';
   });
 }
 

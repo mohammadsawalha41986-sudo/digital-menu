@@ -40,6 +40,7 @@ function emittedTokens(): Set<string> {
     menuPage: '#101010',
     menuCard: '#202020',
     menuPrice: '#303030',
+    menuSale: '#404040',
   });
 
   return new Set(Object.keys(style).filter((key) => key.startsWith('--brand-')));

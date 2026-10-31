@@ -325,3 +325,17 @@ export async function listDiscounts(user: AuthenticatedUser, businessId: string,
     rows,
   };
 }
+
+/** The latest changes to discounts and offers settings, newest first. */
+export async function listDiscountHistory(user: AuthenticatedUser, businessId: string, limit = 25) {
+  const context = await requireTenantContext(user, businessId, 'VIEWER');
+  return prisma.auditLog.findMany({
+    where: {
+      businessId: context.businessId,
+      action: { in: ['item.discount_changed', 'offers.settings_changed'] },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: { id: true, action: true, metadata: true, createdAt: true },
+  });
+}

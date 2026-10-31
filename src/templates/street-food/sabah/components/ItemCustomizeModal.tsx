@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { currencyUnit, formatAmount } from '../money';
 import { useSabah } from '../context';
 import { Suggestions, orderableSuggestions } from './Suggestions';
+import { SaleBadge, SaleUrgency, SaleWas } from './SaleTag';
 import { X, Plus, Minus, Flame, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
@@ -126,9 +127,17 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
 
           {/* The name sits under the photo, so the photo needs no shade. */}
           <div className="px-4 sm:px-5 pt-4">
-            <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
-              {isAr ? item.nameAr : item.nameEn}
-            </h2>
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                {isAr ? item.nameAr : item.nameEn}
+              </h2>
+              {item.sale ? <SaleBadge item={item} isAr={isAr} /> : null}
+            </div>
+            {item.sale ? (
+              <div className="mt-1">
+                <SaleWas item={item} isAr={isAr} currency={currency} />
+              </div>
+            ) : null}
             {energy.kcal !== null && (
               <span className="text-xs text-amber-300 font-mono mt-0.5 block font-semibold" data-sheet-calories={energy.kcal}>
                 {energy.complete ? '' : '+'}

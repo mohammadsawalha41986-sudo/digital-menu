@@ -1,3 +1,5 @@
+import { discountFieldValues } from '@/server/admin/discount-fields';
+import { parseWorkingHours } from '@/server/business/hours';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
@@ -162,6 +164,12 @@ export default async function BuildStepPage({
 interface StepItem {
   itemCode: string;
   updatedAt: Date;
+  discountEnabled: boolean;
+  discountMode: string | null;
+  discountValue: number | null;
+  discountStartsAt: Date | null;
+  discountEndsAt: Date | null;
+  discountBranchKeys: string[];
   nameAr: string;
   nameEn: string | null;
   descriptionAr: string | null;
@@ -331,6 +339,7 @@ async function renderStep(context: StepContext) {
 
     case 'builder': {
       const menu = context.menu;
+      const zone = parseWorkingHours(business.workingHours)?.timezone ?? 'Asia/Riyadh';
 
       const categories: BuilderCategory[] =
         menu?.categories.map((category) => ({
@@ -350,6 +359,7 @@ async function renderStep(context: StepContext) {
                 ? ''
                 : formatMinorAsDecimal(item.priceMinor, item.currency),
             calories: item.calories === null ? '' : String(item.calories),
+            ...discountFieldValues(item, item.currency, zone),
             categoryKey: category.key,
             availability: item.availability,
             imageUrl: urlOf(item.imageMediaId),
@@ -387,6 +397,8 @@ async function renderStep(context: StepContext) {
         <BuilderStep
           categories={categories}
           currency={business.currency}
+          branches={business.branches.map((branch) => ({ key: branch.key, nameAr: branch.nameAr }))}
+          zone={zone}
           actions={{
             saveItem: saveDishAction.bind(null, business.id, menu.id, business.publicId),
             addCategory: createCategoryAction.bind(null, business.id, menu.id, business.publicId),

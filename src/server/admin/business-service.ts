@@ -1,4 +1,4 @@
-import { formatLocalDateTime } from '@/server/offers/datetime';
+import { discountFieldValues } from './discount-fields';
 import type { z } from 'zod';
 import { generatePublicId, isValidPublicId } from '@/lib/public-id';
 import { formatMinorAsDecimal, parsePriceToMinor } from '@/lib/money';
@@ -1213,17 +1213,7 @@ export async function itemFormValues(user: AuthenticatedUser, businessId: string
   return {
     itemCode: item.itemCode,
     categoryKey: item.category.key,
-    discountEnabled: item.discountEnabled,
-    discountMode: item.discountMode ?? 'PERCENT',
-    discountValue:
-      item.discountValue === null
-        ? ''
-        : item.discountMode === 'PERCENT'
-          ? String(item.discountValue)
-          : formatMinorAsDecimal(item.discountValue, item.currency),
-    discountStartsAt: formatLocalDateTime(item.discountStartsAt, zone),
-    discountEndsAt: formatLocalDateTime(item.discountEndsAt, zone),
-    discountBranchKeys: item.discountBranchKeys,
+    ...discountFieldValues(item, item.currency, zone),
     nameAr: item.nameAr,
     nameEn: item.nameEn ?? '',
     descriptionAr: item.descriptionAr ?? '',
