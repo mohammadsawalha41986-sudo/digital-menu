@@ -39,7 +39,7 @@ export function HoursForm({
   submitLabel?: string;
 }) {
   return (
-    <ActionForm action={action} submitLabel={submitLabel}>
+    <ActionForm action={action} submitLabel={submitLabel} keepValues>
       <label className="admin__field">
         <span className="admin__label">Timezone</span>
         <select

@@ -57,7 +57,7 @@ export function BusinessForm({
   submitLabel: string;
 }) {
   return (
-    <ActionForm action={action} submitLabel={submitLabel}>
+    <ActionForm action={action} submitLabel={submitLabel} keepValues>
       <div className="admin__grid">
         <TextField
           name="nameAr"
