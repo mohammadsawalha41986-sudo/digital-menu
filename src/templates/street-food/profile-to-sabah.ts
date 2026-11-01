@@ -135,14 +135,15 @@ export function profileToSabah(profile: PublicProfile): {
     order: index,
     orderable: !item.isUnavailable && !item.noPrice,
   }));
-  const menuItems: MenuItem[] = itemsAll.map((item) =>
-    (item.pairsWith?.length ?? 0) > 0 || !autoOn
-      ? item
-      : {
-          ...item,
-          pairsWith: suggestionsFor({ id: item.id, role: roleOfSection.get(item.categoryId) ?? 'OTHER' }, pool),
-        },
-  );
+  // Each dish carries its section's role, so the dish sheet and the cart can
+  // group what they suggest into drinks, sides, desserts and popular dishes.
+  const menuItems: MenuItem[] = itemsAll.map((item) => {
+    const role = roleOfSection.get(item.categoryId) ?? 'OTHER';
+    const withRole: MenuItem = { ...item, role };
+    return (item.pairsWith?.length ?? 0) > 0 || !autoOn
+      ? withRole
+      : { ...withRole, pairsWith: suggestionsFor({ id: item.id, role }, pool) };
+  });
 
   // Keep only categories that actually have items — the app hides empty
   // sections anyway, but a chip rail chip pointing at no items reads broken.

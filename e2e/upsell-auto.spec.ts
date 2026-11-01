@@ -31,6 +31,27 @@ test('a main dish with no picks suggests a drink, automatically', async ({ page 
   expect(await page.locator('[data-suggestion]').count()).toBeGreaterThan(0);
 });
 
+test('the suggestions are grouped by kind, and a tab shows only its own dishes', async ({ page }) => {
+  await openDish(page);
+  const tabs = page.getByRole('tab');
+  await expect(tabs.first()).toBeVisible();
+  const count = await tabs.count();
+  expect(count).toBeGreaterThan(1);
+
+  const shownIds = () => page.locator('[data-suggestion]').evaluateAll((items) => items.map((item) => item.getAttribute('data-suggestion')));
+  const first = await shownIds();
+  expect(first.length).toBeGreaterThan(0);
+
+  // Another tab shows other dishes: the kinds do not overlap for these pairs.
+  const key = await page.locator('[role="tab"][aria-selected="false"]').first().getAttribute('data-tab');
+  const other = page.locator(`[role="tab"][data-tab="${key}"]`);
+  await other.click();
+  await expect(other).toHaveAttribute('aria-selected', 'true');
+  const second = await shownIds();
+  expect(second.length).toBeGreaterThan(0);
+  expect(second.some((id) => first.includes(id))).toBe(false);
+});
+
 test('switching the automatic suggestions off removes them, and on brings them back', async ({ page }) => {
   await signIn(page);
   await upsellPage(page);

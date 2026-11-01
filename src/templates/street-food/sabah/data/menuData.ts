@@ -1,11 +1,14 @@
 import type { ChoiceGroup } from '../choices';
 import type { SectionStyle } from '../section-layout';
 import type { WorkingHours } from '@/server/business/hours';
+import type { SectionRole } from '@/lib/upsell';
 export interface MenuItem {
   id: string;
   nameAr: string;
   nameEn: string;
   categoryId: string;
+  /** The role of the dish's section (main, side, drink, dessert, other). Groups suggestions by type. */
+  role?: SectionRole;
   price: number;
   calories?: number;
   descriptionAr?: string;

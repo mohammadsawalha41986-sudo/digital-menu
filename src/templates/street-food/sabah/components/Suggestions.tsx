@@ -5,11 +5,18 @@ import { Plus, Check } from 'lucide-react';
 import { useSabah } from '../context';
 import { currencyUnit, formatAmount } from '../money';
 import type { MenuItem } from '../data/menuData';
+import {
+  SUGGESTION_GROUP_LABEL,
+  defaultSuggestionGroup,
+  suggestionGroups,
+  type SuggestionGroupKey,
+} from './suggestion-groups';
 
 /**
  * Dishes the restaurant suggests — "complete your meal" in the dish sheet,
  * "you may also like" in the cart. One tap adds one, without leaving the
- * sheet or the cart.
+ * sheet or the cart. Suggestions are grouped into tabs (drinks, sides,
+ * desserts, popular) when they span more than one kind.
  */
 export const Suggestions: React.FC<{
   title: string;
@@ -19,14 +26,43 @@ export const Suggestions: React.FC<{
 }> = ({ title, dishes, isAr, onAdd }) => {
   const { info } = useSabah();
   const [added, setAdded] = useState<string[]>([]);
+  const [picked, setPicked] = useState<SuggestionGroupKey | null>(null);
 
   if (dishes.length === 0) return null;
+
+  const groups = suggestionGroups(dishes);
+  const current = groups.find((group) => group.key === (picked ?? defaultSuggestionGroup(groups))) ?? groups[0];
+  const shown = current ? current.dishes : dishes;
 
   return (
     <section className="space-y-2.5" data-suggestions>
       <h4 className="text-xs font-black text-emerald-300 uppercase tracking-wider">{title}</h4>
+      {groups.length > 1 ? (
+        <div role="tablist" aria-label={title} className="flex gap-1.5 overflow-x-auto hide-scrollbar" data-suggestion-tabs>
+          {groups.map((group) => {
+            const selected = group.key === current?.key;
+            return (
+              <button
+                key={group.key}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                data-tab={group.key}
+                onClick={() => setPicked(group.key)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer border transition-all ${
+                  selected
+                    ? 'bg-stone-100 text-stone-950 border-white'
+                    : 'bg-stone-900/80 text-stone-300 border-emerald-950 hover:bg-stone-850'
+                }`}
+              >
+                {isAr ? SUGGESTION_GROUP_LABEL[group.key].ar : SUGGESTION_GROUP_LABEL[group.key].en}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       <ul className="space-y-2">
-        {dishes.map((dish) => {
+        {shown.map((dish) => {
           const done = added.includes(dish.id);
           return (
             <li
