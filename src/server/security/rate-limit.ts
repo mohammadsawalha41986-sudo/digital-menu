@@ -118,6 +118,11 @@ export const RULES = {
   /** Client preview tokens, per client — brute-forcing a token is the threat. */
   previewToken: { namespace: 'preview', windowMs: 60_000, max: 30 },
   /**
+   * Staff availability links, per visitor. A staff page makes several requests
+   * a minute on a busy shift; guessing a token is the threat, so a ceiling.
+   */
+  staffToken: { namespace: 'staff', windowMs: 60_000, max: 60 },
+  /**
    * Command palette, per signed-in account. High, because it queries on every
    * keystroke and a fast typist is not an attacker — but a ceiling, because a
    * search endpoint without one is a database-load amplifier.

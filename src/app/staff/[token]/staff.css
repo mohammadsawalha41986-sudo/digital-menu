@@ -1,0 +1,241 @@
+/*
+ * The staff page. Used on a phone at the pass or in the kitchen, so: large
+ * touch targets (44px and up), one column, logical properties so Arabic and
+ * English both sit right, and no dependency on the menu's theme.
+ */
+
+.staff {
+  --staff-ink: #1c1917;
+  --staff-muted: #57534e;
+  --staff-line: #d6d3d1;
+  --staff-page: #fafaf9;
+  --staff-card: #ffffff;
+  --staff-ok: #15803d;
+  --staff-out: #b45309;
+  --staff-hidden: #57534e;
+  --staff-accent: #1c1917;
+
+  min-block-size: 100dvh;
+  padding: 16px;
+  background: var(--staff-page);
+  color: var(--staff-ink);
+  font-family: 'Cairo', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  max-inline-size: 640px;
+  margin-inline: auto;
+}
+
+.staff__header {
+  display: grid;
+  gap: 12px;
+  padding-block-end: 12px;
+  border-block-end: 1px solid var(--staff-line);
+}
+
+.staff__eyebrow {
+  margin: 0;
+  font-size: 13px;
+  color: var(--staff-muted);
+}
+
+.staff__title {
+  margin: 2px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.staff__counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.staff__counts div {
+  padding: 8px;
+  border: 1px solid var(--staff-line);
+  border-radius: 12px;
+  background: var(--staff-card);
+  text-align: center;
+}
+
+.staff__counts dt {
+  font-size: 12px;
+  color: var(--staff-muted);
+}
+
+.staff__counts dd {
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.staff__search {
+  display: grid;
+  gap: 6px;
+  margin-block: 14px;
+}
+
+.staff__search-label {
+  font-size: 13px;
+  color: var(--staff-muted);
+}
+
+.staff__search-input {
+  min-block-size: 44px;
+  padding-inline: 12px;
+  border: 1px solid var(--staff-line);
+  border-radius: 12px;
+  background: var(--staff-card);
+  font: inherit;
+  color: var(--staff-ink);
+}
+
+.staff__section {
+  margin-block-end: 18px;
+}
+
+.staff__section-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.staff__section-title span {
+  font-weight: 500;
+  color: var(--staff-muted);
+}
+
+.staff__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.staff__row {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--staff-line);
+  border-radius: 14px;
+  background: var(--staff-card);
+}
+
+.staff__row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.staff__names {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.staff__name-ar {
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.staff__name-en {
+  font-size: 13px;
+  color: var(--staff-muted);
+}
+
+.staff__choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.staff__choice {
+  min-block-size: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--staff-line);
+  border-radius: 10px;
+  background: var(--staff-page);
+  color: var(--staff-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.staff__choice {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  align-content: center;
+}
+
+.staff__choice-ar {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.staff__choice-en {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.8;
+  line-height: 1.2;
+}
+
+.staff__choice:disabled {
+  cursor: default;
+}
+
+.staff__choice.is-current {
+  background: var(--staff-accent);
+  color: #ffffff;
+  border-color: var(--staff-accent);
+}
+
+.staff__choice--unavailable:not(.is-current) {
+  color: var(--staff-out);
+}
+
+.staff__choice--hidden:not(.is-current) {
+  color: var(--staff-hidden);
+}
+
+.staff__choice:focus-visible {
+  outline: 3px solid var(--staff-accent);
+  outline-offset: 2px;
+}
+
+.staff__locked {
+  margin: 0;
+  font-size: 13px;
+  color: var(--staff-muted);
+}
+
+.staff__error {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.staff__saved {
+  margin: 0;
+  font-size: 13px;
+  color: var(--staff-ok);
+}
+
+.staff__footnote {
+  margin-block: 20px 0;
+  font-size: 12px;
+  color: var(--staff-muted);
+  text-align: center;
+}
+
+@media (max-width: 380px) {
+  .staff__choices {
+    grid-template-columns: 1fr;
+  }
+}

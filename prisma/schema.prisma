@@ -85,6 +85,7 @@ model User {
   importBatches   ImportBatch[]
   priceChanges    PriceHistory[]
   previewLinks       PreviewLink[]   @relation("PreviewLinkCreator")
+  staffLinks         StaffLink[]     @relation("StaffLinkCreator")
   completedRequests  ChangeRequest[] @relation("ChangeRequestCompleter")
 
   @@index([role])
@@ -192,6 +193,7 @@ model Business {
   menuDesigns     MenuDesign[]
   brandPresets    BrandPreset[]
   previewLinks    PreviewLink[]
+  staffLinks      StaffLink[]
   changeRequests  ChangeRequest[]
   logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   welcome         Media?               @relation("BusinessWelcome", fields: [welcomeMediaId], references: [id], onDelete: SetNull)
@@ -1358,6 +1360,38 @@ model PreviewLink {
 
   @@index([businessId, createdAt])
   @@map("preview_links")
+}
+
+/// A link a restaurant gives its own staff, to mark dishes unavailable or hidden
+/// from the menu without signing in. It can change nothing else: availability
+/// only, and only for dishes of its own restaurant.
+model StaffLink {
+  id         String @id @default(cuid())
+  businessId String
+
+  /// Short public handle, used in the URL beside the secret.
+  key String @unique
+
+  /// SHA-256 of the secret. The secret itself is never stored.
+  tokenHash String
+
+  /// Who the link is for, so the owner can tell links apart: "Front desk".
+  label String
+
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  useCount   Int       @default(0)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation("StaffLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@map("staff_links")
 }
 
 /// A change the client asked for, recorded so a managed service can work

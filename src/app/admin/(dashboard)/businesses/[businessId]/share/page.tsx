@@ -4,7 +4,9 @@ import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { getEnv } from '@/lib/env';
+import { listStaffLinks } from '@/server/staff/service';
 import { SharePanel } from './share-panel';
+import { StaffLinks } from './staff-links';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +52,8 @@ export default async function SharePage({
     title: branch.nameEn ?? branch.nameAr,
   }));
 
+  const staffLinks = await listStaffLinks(user, business.id);
+
   return (
     <>
       <header className="admin__header">
@@ -75,6 +79,8 @@ export default async function SharePage({
         menus={menus}
         branches={branches}
       />
+
+      <StaffLinks businessId={business.id} links={staffLinks} />
     </>
   );
 }
