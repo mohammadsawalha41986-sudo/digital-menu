@@ -362,7 +362,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
             {/* Complete your meal — the restaurant's own suggestions */}
             {onQuickAdd ? (
               <Suggestions
-                title={isAr ? 'يكمل وجبتك' : 'Complete your meal'}
+                title={isAr ? 'غالبًا ما يتم طلبه مع' : 'Often ordered together'}
                 dishes={orderableSuggestions(item.pairsWith ?? [], MENU_ITEMS, [item.id])}
                 isAr={isAr}
                 onAdd={onQuickAdd}

@@ -50,6 +50,17 @@ test('the suggestions are grouped by kind, and a tab shows only its own dishes',
   const second = await shownIds();
   expect(second.length).toBeGreaterThan(0);
   expect(second.some((id) => first.includes(id))).toBe(false);
+
+  // A tab is a comfortable touch target: at least 44 pixels tall.
+  const box = await tabs.first().boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+  // The keyboard moves between tabs; forward is left in Arabic.
+  const before = await page.locator('[role="tab"][aria-selected="true"]').getAttribute('data-tab');
+  await page.locator(`[role="tab"][data-tab="${before}"]`).focus();
+  await page.keyboard.press('ArrowLeft');
+  const after = await page.locator('[role="tab"][aria-selected="true"]').getAttribute('data-tab');
+  expect(after).not.toBe(before);
 });
 
 test('switching the automatic suggestions off removes them, and on brings them back', async ({ page }) => {

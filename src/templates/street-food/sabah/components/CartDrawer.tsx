@@ -336,7 +336,7 @@ ${noteInfo}
 
                   {onQuickAdd ? (
                     <Suggestions
-                      title={paired.length > 0 ? (isAr ? 'قد يعجبك أيضاً' : 'You may also like') : isAr ? 'جرّب الجديد' : 'Try something new'}
+                      title={paired.length > 0 ? (isAr ? 'أكمل وجبتك مع' : 'Complete your meal') : isAr ? 'جرّب الجديد' : 'Try something new'}
                       dishes={paired.length > 0 ? paired : fresh}
                       isAr={isAr}
                       onAdd={onQuickAdd}
