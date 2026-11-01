@@ -105,6 +105,7 @@ export default async function UpsellPage({ params }: { params: Promise<{ busines
                     code={item.itemCode}
                     name={item.nameAr}
                     pairsWith={item.pairsWith}
+                    automaticLinks={item.pairsAuto}
                     isNew={item.tags.includes(NEW_TAG)}
                     options={options.filter((option) => option.code !== item.itemCode)}
                     max={MAX_PAIRINGS}

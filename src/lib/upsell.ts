@@ -34,8 +34,9 @@ const KEYWORDS: { role: SectionRole; words: string[] }[] = [
   {
     role: 'DRINK',
     words: [
-      'مشروب', 'عصير', 'عصاير', 'ماء', 'مياه', 'بيبسي', 'كولا', 'سفن', 'ميرندا', 'كينزا', 'ماونتن', 'قهوه', 'شاي',
-      'لبن', 'drink', 'beverage', 'juice', 'water', 'pepsi', 'cola', '7up', 'sprite', 'fanta', 'kinza', 'coffee', 'tea',
+      'مشروب', 'عصير', 'عصاير', 'عصائر', 'ماء', 'مياه', 'بيبسي', 'كولا', 'سفن', 'ميرندا', 'كينزا', 'ماونتن', 'قهوه', 'شاي',
+      'اسبريسو', 'تقطير', 'لبن', 'drink', 'beverage', 'juice', 'water', 'pepsi', 'cola', '7up', 'sprite', 'fanta', 'kinza',
+      'coffee', 'tea', 'espresso', 'filter',
     ],
   },
   {
@@ -57,7 +58,8 @@ const KEYWORDS: { role: SectionRole; words: string[] }[] = [
     role: 'MAIN',
     words: [
       'دجاج', 'شواي', 'مشاوي', 'مشويات', 'شاورما', 'برجر', 'بروستد', 'لحم', 'كباب', 'مندي', 'بخاري', 'كبسه', 'بيتزا',
-      'وجبه', 'ساندويش', 'سندويش', 'كومبو', 'عرض', 'ايدام', 'chicken', 'grill', 'shawarma', 'burger', 'meat', 'kebab',
+      'وجبه', 'ساندويش', 'سندويش', 'ساندويت', 'كومبو', 'عرض', 'ايدام', 'رئيس', 'chicken', 'grill', 'shawarma', 'burger',
+      'meat', 'kebab', 'main',
       'kabsa', 'mandi', 'bukhari', 'meal', 'sandwich', 'broasted', 'pizza', 'combo',
     ],
   },

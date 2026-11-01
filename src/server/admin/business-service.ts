@@ -1,4 +1,5 @@
 import { discountFieldValues } from './discount-fields';
+import { MAX_LINKS } from './upsell-links';
 import type { z } from 'zod';
 import { generatePublicId, isValidPublicId } from '@/lib/public-id';
 import { formatMinorAsDecimal, parsePriceToMinor } from '@/lib/money';
@@ -1003,7 +1004,7 @@ export async function getHoursForAdmin(user: AuthenticatedUser, businessId: stri
 }
 
 /** At most this many dishes are suggested with any one dish. */
-export const MAX_PAIRINGS = 3;
+export const MAX_PAIRINGS = MAX_LINKS;
 
 /** The tag that marks a dish as new on the menu ("جديد"). */
 export const NEW_TAG = 'new';
@@ -1056,7 +1057,8 @@ export async function setItemUpsell(
 
   const updated = await prisma.menuItem.update({
     where: { id: item.id },
-    data: { pairsWith, tags },
+    // Saved by the restaurant, so these are its own picks, not automatic links.
+    data: { pairsWith, tags, pairsAuto: false },
     select: { itemCode: true, pairsWith: true, tags: true },
   });
 
@@ -1084,7 +1086,19 @@ export async function setAutoUpsell(user: AuthenticatedUser, businessId: string,
     select: { autoUpsell: true },
   });
   if (before.autoUpsell === enabled) return false;
-  await prisma.business.update({ where: { id: context.businessId }, data: { autoUpsell: enabled } });
+  // Switching off also clears the links the menu wrote. The restaurant's own
+  // picks are not touched. Both writes succeed or neither does.
+  await prisma.$transaction([
+    prisma.business.update({ where: { id: context.businessId }, data: { autoUpsell: enabled } }),
+    ...(enabled
+      ? []
+      : [
+          prisma.menuItem.updateMany({
+            where: { businessId: context.businessId, pairsAuto: true },
+            data: { pairsWith: [], pairsAuto: false },
+          }),
+        ]),
+  ]);
   await recordAudit({
     action: 'item.upsell_updated',
     entity: 'business',

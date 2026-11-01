@@ -648,8 +648,12 @@ model MenuItem {
   sortOrder    Int              @default(0)
 
   /// Item codes (same business) suggested with this dish — "complete your
-  /// meal". At most three, chosen by the restaurant, never inferred.
+  /// meal". At most three. Chosen by the restaurant, or written from the
+  /// automatic suggestions (see `pairsAuto`).
   pairsWith String[] @default([])
+  /// True when `pairsWith` was written from the automatic suggestions, not picked
+  /// by the restaurant. Turning automatic suggestions off clears only these.
+  pairsAuto Boolean @default(false)
 
   /// The dish's own discount. Stored as entered (a percent, an amount off,
   /// or a final price) and turned into a sale price at read time from the

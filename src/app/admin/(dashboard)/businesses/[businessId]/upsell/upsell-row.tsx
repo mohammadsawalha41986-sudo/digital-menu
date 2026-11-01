@@ -7,6 +7,7 @@ export function UpsellRow({
   code,
   name,
   pairsWith,
+  automaticLinks,
   isNew,
   options,
   max,
@@ -16,6 +17,8 @@ export function UpsellRow({
   code: string;
   name: string;
   pairsWith: string[];
+  /** The picks were written from the automatic suggestions, not by the restaurant. */
+  automaticLinks: boolean;
   isNew: boolean;
   options: { code: string; name: string }[];
   max: number;
@@ -63,6 +66,12 @@ export function UpsellRow({
             </select>
           ))}
         </div>
+
+        {automaticLinks && pairsWith.length > 0 ? (
+          <span className="admin__hint upsell__auto-hint" data-auto-link={code}>
+            تلقائي من المنيو · Linked automatically. Save your own picks to replace them.
+          </span>
+        ) : null}
 
         {automatic.length > 0 && pairsWith.length === 0 ? (
           <span className="admin__hint upsell__auto-hint" data-automatic={code}>

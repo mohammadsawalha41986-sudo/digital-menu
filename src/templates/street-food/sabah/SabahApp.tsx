@@ -31,6 +31,7 @@ import { resolveSectionLayout, type SectionLayout } from './section-layout';
 import { selectionKey, stillValid } from './choices';
 import { useMinute } from './clock';
 import { InstallPrompt } from './components/InstallPrompt';
+import { WelcomeBanner } from './components/WelcomeBanner';
 import { DEALS_ID, dealsOf } from './deals';
 import type { OfferSort } from '@/lib/discount';
 import { OffersStrip } from './components/OffersStrip';
@@ -698,6 +699,16 @@ export default function App({
           publicId={publicId}
           engaged={dishOpened || totalCartCount > 0}
           hidden={isCartOpen || activeItemForCustomization !== null || isQrOpen || isCaloriesOpen}
+        />
+      ) : null}
+
+      {/* A welcome message when the menu opens. It never blocks the menu. */}
+      {publicId ? (
+        <WelcomeBanner
+          lang={lang}
+          publicId={publicId}
+          nameAr={RESTAURANT_INFO.nameAr}
+          nameEn={RESTAURANT_INFO.nameEn}
         />
       ) : null}
 
