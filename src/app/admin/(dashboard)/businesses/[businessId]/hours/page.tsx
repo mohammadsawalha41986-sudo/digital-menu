@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { getHoursForAdmin } from '@/server/admin/business-service';
@@ -38,8 +37,7 @@ export default async function HoursPage({
         <div>
           <h1 className="admin__title">Opening hours</h1>
           <p className="admin__subtitle">
-            {business.nameEn ?? business.nameAr} ·{' '}
-            <Link href={`/admin/businesses/${business.id}`}>Back to business</Link>
+            {business.nameEn ?? business.nameAr}
           </p>
         </div>
         {state && state.status !== 'unknown' ? (

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
@@ -31,12 +30,6 @@ export default async function BranchesPage({
             The key is part of a printed code — treat it as permanent once printed.
           </p>
         </div>
-        <Link
-          href={`/admin/businesses/${business.id}`}
-          className="admin__button admin__button--secondary"
-        >
-          Back to business
-        </Link>
       </header>
 
       <BranchEditor

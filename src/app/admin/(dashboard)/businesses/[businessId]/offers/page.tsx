@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
@@ -35,12 +34,6 @@ export default async function OffersPage({
             on its own — no job has to run for that to happen.
           </p>
         </div>
-        <Link
-          href={`/admin/businesses/${business.id}`}
-          className="admin__button admin__button--secondary"
-        >
-          Back to business
-        </Link>
       </header>
 
       <OfferManager

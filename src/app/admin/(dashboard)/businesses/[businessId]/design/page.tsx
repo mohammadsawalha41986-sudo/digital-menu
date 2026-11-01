@@ -41,9 +41,6 @@ export default async function DesignPage({ params }: { params: Promise<{ busines
             this changes the QR code, the link or the menu itself.
           </p>
         </div>
-        <Link href={`/admin/businesses/${business.id}`} className="admin__button admin__button--secondary">
-          Back to restaurant
-        </Link>
       </header>
 
       <div className="design__layout">

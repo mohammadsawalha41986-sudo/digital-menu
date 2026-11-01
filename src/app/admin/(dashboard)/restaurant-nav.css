@@ -1,0 +1,158 @@
+/*
+ * The restaurant navigation strip. Uses the admin's own tokens, so its colours
+ * and contrast match the rest of the admin. Logical properties throughout, so it
+ * reads right in Arabic and English without a second stylesheet.
+ */
+
+.rnav {
+  display: grid;
+  gap: var(--sys-space-2);
+  padding-block-end: var(--sys-space-3);
+  border-block-end: 1px solid var(--admin-border);
+  margin-block-end: var(--sys-space-4);
+}
+
+.rnav__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sys-space-2) var(--sys-space-3);
+}
+
+.rnav__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-block-size: 2.5rem;
+  padding-inline: 0.9rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--sys-radius-md, 0.5rem);
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.rnav__back:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.rnav__back:focus-visible,
+.rnav__tab:focus-visible,
+.rnav__crumbs a:focus-visible {
+  outline: 3px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+/* The arrow points back in either direction: a left arrow in English, a right one in Arabic. */
+.rnav__arrow {
+  display: inline-block;
+}
+
+:dir(rtl) .rnav__arrow {
+  transform: scaleX(-1);
+}
+
+.rnav__crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--admin-muted);
+  font-size: 0.9rem;
+}
+
+.rnav__crumbs li + li::before {
+  content: '›';
+  margin-inline-end: 0.5rem;
+  color: var(--admin-muted);
+}
+
+.rnav__crumbs a {
+  color: var(--admin-accent);
+  text-decoration: none;
+}
+
+.rnav__crumbs a:hover {
+  text-decoration: underline;
+}
+
+.rnav__crumbs [aria-current='page'] {
+  color: var(--admin-ink);
+  font-weight: 600;
+}
+
+.rnav__status {
+  margin-inline-start: auto;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.rnav__status[data-live='yes'] {
+  border-color: var(--admin-ok);
+  color: var(--admin-ok);
+}
+
+/*
+ * The main areas. They wrap onto a second line rather than scrolling sideways:
+ * a tab hidden past the edge is a tab the owner never finds.
+ */
+.rnav__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rnav__tab {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.5rem;
+  padding-inline: 0.85rem;
+  border-radius: var(--sys-radius-md, 0.5rem);
+  color: var(--admin-ink);
+  text-decoration: none;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.rnav__tab:hover {
+  background: var(--admin-surface);
+}
+
+.rnav__tab[aria-current='page'] {
+  background: var(--admin-accent);
+  color: var(--admin-accent-ink);
+  font-weight: 700;
+}
+
+/* The restaurant's next step: one card, one button. */
+.hub__next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sys-space-3);
+  padding: var(--sys-space-4);
+  margin-block-end: var(--sys-space-4);
+  border: 1px solid var(--admin-border);
+  border-inline-start: 4px solid var(--admin-accent);
+  border-radius: var(--sys-radius-md, 0.5rem);
+  background: var(--admin-surface);
+}
+
+.hub__next-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}

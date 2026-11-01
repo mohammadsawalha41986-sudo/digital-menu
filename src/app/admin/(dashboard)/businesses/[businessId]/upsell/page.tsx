@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { MAX_PAIRINGS, NEW_TAG, getBusinessForAdmin } from '@/server/admin/business-service';
@@ -78,9 +77,6 @@ export default async function UpsellPage({ params }: { params: Promise<{ busines
             وحلى. · With no picks, the menu suggests by section type: a main suggests a drink, a side and a dessert.
           </p>
         </div>
-        <Link href={`/admin/businesses/${business.id}`} className="admin__button admin__button--secondary">
-          Back to restaurant
-        </Link>
       </header>
 
       <AutoUpsellSwitch

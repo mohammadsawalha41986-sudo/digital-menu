@@ -6,6 +6,7 @@ import { TenantAccessError } from '@/server/tenancy/context';
 import { updateBusinessAction } from '@/server/admin/actions';
 import { resolveTemplate } from '@/templates/registry';
 import { BusinessForm } from './business-form';
+import { nextStep } from '@/lib/admin-next-step';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,12 @@ export default async function BusinessPage({
   const base = `/admin/businesses/${business.id}`;
   const build = `/admin/build/${business.id}`;
   const { variant } = resolveTemplate(business.templateKey, business.variantKey);
+
+  // The one thing that matters most right now, read from the menu's state.
+  const live = business.status === 'ACTIVE';
+  const next = nextStep({ dishCount: itemCount, live });
+  const nextHref =
+    next.step === 'dishes' ? `${build}/builder` : next.step === 'publish' ? `${build}/review` : `${base}/qr`;
 
   // Grouped the way an owner thinks about their restaurant, not the way the
   // routes are organised. Each group answers one question.
@@ -129,6 +136,18 @@ export default async function BusinessPage({
           <span className="admin__metric-label">Photo layout</span>
           <span>{variant.label}</span>
         </div>
+      </section>
+
+      <section className="hub__next" aria-labelledby="next-step-title">
+        <div>
+          <h2 id="next-step-title" className="hub__next-title">
+            {next.title}
+          </h2>
+          <p className="admin__hint">{next.body}</p>
+        </div>
+        <Link href={nextHref} className="admin__button">
+          {next.action}
+        </Link>
       </section>
 
       <div className="hub">

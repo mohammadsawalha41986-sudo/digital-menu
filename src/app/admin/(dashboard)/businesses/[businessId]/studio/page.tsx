@@ -66,9 +66,6 @@ export default async function StudioPage({
             Build, brand and design the menus for {business.nameEn ?? business.nameAr}.
           </p>
         </div>
-        <Link href={`/admin/businesses/${business.id}`} className="admin__button admin__button--secondary">
-          Back to business
-        </Link>
       </header>
 
       <BrandIdentityPanel

@@ -5,6 +5,7 @@ import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { BuildRail } from './rail';
+import { RestaurantNav } from '../../restaurant-nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,12 @@ export default async function BuildLayout({
   });
 
   return (
+    <>
+    <RestaurantNav
+      businessId={business.id}
+      name={business.nameEn ?? business.nameAr}
+      live={business.status === 'ACTIVE'}
+    />
     <div className="build">
       <header className="build__header">
         <div>
@@ -43,12 +50,6 @@ export default async function BuildLayout({
         </div>
 
         <div className="build__header-actions">
-          <Link
-            href={`/admin/businesses/${business.id}`}
-            className="admin__button admin__button--secondary"
-          >
-            All settings
-          </Link>
           {business.status === 'ACTIVE' ? (
             <Link
               href={`/m/${business.publicId}`}
@@ -67,5 +68,6 @@ export default async function BuildLayout({
         {children}
       </div>
     </div>
+    </>
   );
 }

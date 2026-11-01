@@ -53,8 +53,7 @@ export default async function HistoryPage({
         <div>
           <h1 className="admin__title">History</h1>
           <p className="admin__subtitle">
-            Who changed what, and when.{' '}
-            <Link href={`/admin/businesses/${businessId}`}>Back to business</Link>
+            Who changed what, and when.
           </p>
         </div>
       </header>

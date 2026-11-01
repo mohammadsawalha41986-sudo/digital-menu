@@ -106,9 +106,6 @@ export default async function DiscountsPage({
           <a href={`/m/${business.publicId}`} target="_blank" rel="noreferrer" className="admin__button admin__button--secondary">
             معاينة المنيو · Preview
           </a>
-          <Link href={`/admin/businesses/${business.id}`} className="admin__button admin__button--secondary">
-            Back to restaurant
-          </Link>
         </div>
       </header>
 

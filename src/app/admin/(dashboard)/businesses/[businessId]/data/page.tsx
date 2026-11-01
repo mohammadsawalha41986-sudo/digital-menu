@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
@@ -51,12 +50,6 @@ export default async function DataPage({
             so edits update in place — and the QR never changes.
           </p>
         </div>
-        <Link
-          href={`/admin/businesses/${business.id}`}
-          className="admin__button admin__button--secondary"
-        >
-          Back to business
-        </Link>
       </header>
 
       <section className="admin__panel">

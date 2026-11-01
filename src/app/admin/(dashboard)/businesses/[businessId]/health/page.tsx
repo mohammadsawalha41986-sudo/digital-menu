@@ -92,8 +92,7 @@ export default async function HealthPage({
         <div>
           <h1 className="admin__title">Profile health</h1>
           <p className="admin__subtitle">
-            {report.businessName} ·{' '}
-            <Link href={`/admin/businesses/${businessId}`}>Back to business</Link>
+            {report.businessName}
           </p>
         </div>
         <p

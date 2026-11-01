@@ -56,8 +56,7 @@ export default async function SharePage({
         <div>
           <h1 className="admin__title">Links, QR &amp; embed</h1>
           <p className="admin__subtitle">
-            {business.nameEn ?? business.nameAr} ·{' '}
-            <Link href={`/admin/businesses/${business.id}`}>Back to business</Link>
+            {business.nameEn ?? business.nameAr}
           </p>
         </div>
         <Link

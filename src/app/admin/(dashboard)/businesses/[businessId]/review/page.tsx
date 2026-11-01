@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { listChangeRequests, listPreviewLinks } from '@/server/review/service';
@@ -41,8 +40,7 @@ export default async function ReviewPage({
         <div>
           <h1 className="admin__title">Client review</h1>
           <p className="admin__subtitle">
-            Send a link, collect a decision.{' '}
-            <Link href={`/admin/businesses/${businessId}`}>Back to business</Link>
+            Send a link, collect a decision.
           </p>
         </div>
       </header>

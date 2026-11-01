@@ -20,7 +20,8 @@ export default async function AnalyticsPage({
   const query = await searchParams;
   const user = await requireUser();
 
-  const business = await getBusinessForAdmin(user, businessId).catch((error) => {
+  // The check itself: a restaurant the user cannot see is not found.
+  await getBusinessForAdmin(user, businessId).catch((error) => {
     if (error instanceof TenantAccessError) notFound();
     throw error;
   });
@@ -42,12 +43,6 @@ export default async function AnalyticsPage({
             salted hash that rotates daily and cannot be reversed or linked across businesses.
           </p>
         </div>
-        <Link
-          href={`/admin/businesses/${business.id}`}
-          className="admin__button admin__button--secondary"
-        >
-          Back to business
-        </Link>
       </header>
 
       <nav className="admin__actions" aria-label="Time range">

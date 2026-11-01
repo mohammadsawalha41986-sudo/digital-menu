@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
@@ -52,9 +51,6 @@ export default async function OptionsPage({ params }: { params: Promise<{ busine
           <a href={`/m/${business.publicId}`} target="_blank" rel="noreferrer" className="admin__button admin__button--secondary">
             معاينة المنيو · Preview
           </a>
-          <Link href={`/admin/businesses/${business.id}`} className="admin__button admin__button--secondary">
-            Back to restaurant
-          </Link>
         </div>
       </header>
 
