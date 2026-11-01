@@ -42,6 +42,14 @@ export function suggestionGroups(dishes: MenuItem[]): SuggestionGroup[] {
   });
 }
 
+/**
+ * A dish with a choice the guest must make (a size, a rice) cannot be added
+ * with one tap: a tap opens its sheet instead, so the visitor chooses first.
+ */
+export function needsChoice(dish: MenuItem): boolean {
+  return (dish.choices ?? []).some((group) => group.min > 0);
+}
+
 /** The tab that opens first: popular when there is one, otherwise the first tab. */
 export function defaultSuggestionGroup(groups: SuggestionGroup[]): SuggestionGroupKey | undefined {
   return groups.find((group) => group.key === 'popular')?.key ?? groups[0]?.key;

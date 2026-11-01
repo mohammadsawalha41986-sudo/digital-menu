@@ -21,6 +21,8 @@ interface ItemCustomizeModalProps {
   onAddToCart: (cartItem: CartItem) => void;
   /** Adds a suggested dish as it is, without closing the sheet. */
   onQuickAdd?: (dish: MenuItem) => void;
+  /** Opens a suggested dish in its own sheet. */
+  onOpenDish?: (dish: MenuItem) => void;
 }
 
 export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
@@ -29,6 +31,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
   onClose,
   onAddToCart,
   onQuickAdd,
+  onOpenDish,
 }) => {
   const { info: { currency }, items: MENU_ITEMS } = useSabah();
   const [selectedOption, setSelectedOption] = useState(
@@ -366,6 +369,7 @@ export const ItemCustomizeModal: React.FC<ItemCustomizeModalProps> = ({
                 dishes={orderableSuggestions(item.pairsWith ?? [], MENU_ITEMS, [item.id])}
                 isAr={isAr}
                 onAdd={onQuickAdd}
+                onOpen={onOpenDish}
               />
             ) : null}
 

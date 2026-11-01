@@ -34,8 +34,10 @@ test('a dish suggests what the restaurant pairs with it, and new dishes are mark
   await card.getByRole('button').last().click();
   const suggestion = page.locator(`[data-suggestion="${secondCode}"]`);
   await expect(suggestion).toContainText(secondName);
-  await suggestion.getByRole('button').click();
-  await expect(suggestion.getByRole('button')).toContainText('أُضيف');
+  // "Add" is the suggestion's own button; the photo and name open the dish.
+  const add = suggestion.getByRole('button', { name: /^أضف/ });
+  await add.click();
+  await expect(add).toContainText('أُضيف');
 
   // Restore, so the suite is re-runnable.
   await upsellPage(page);

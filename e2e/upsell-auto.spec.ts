@@ -63,6 +63,16 @@ test('the suggestions are grouped by kind, and a tab shows only its own dishes',
   expect(after).not.toBe(before);
 });
 
+test("tapping a suggestion's photo or name opens that dish in its own sheet", async ({ page }) => {
+  await openDish(page);
+  const opener = page.locator('[data-open-dish]').first();
+  await expect(opener).toBeVisible();
+  const name = ((await opener.locator('span.block').first().textContent()) ?? '').trim();
+  expect(name.length).toBeGreaterThan(0);
+  await opener.click();
+  await expect(page.getByRole('heading', { name }).first()).toBeVisible();
+});
+
 test('switching the automatic suggestions off removes them, and on brings them back', async ({ page }) => {
   await signIn(page);
   await upsellPage(page);

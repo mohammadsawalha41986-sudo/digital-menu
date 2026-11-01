@@ -184,6 +184,11 @@ export default function App({
     setActiveItemForCustomization(dish);
   };
   const [isCartOpen, setIsCartOpen] = useState(false);
+  // A suggestion opened from the cart or from another sheet: that dish's own sheet.
+  const openSuggested = (dish: MenuItem) => {
+    setIsCartOpen(false);
+    openDish(dish);
+  };
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isCaloriesOpen, setIsCaloriesOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -412,7 +417,7 @@ export default function App({
           />
 
           {/* 5. Menu Items Display with framer-motion Scroll Reveal Entrance */}
-          <div id="menu-items-container" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+          <div id="menu-items-container" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 sm:space-y-12">
             {/* The automatic section: appears only while some dish has a live discount. */}
             {selectedCategory === 'all' && activeFilter === 'all' && searchQuery.trim() === '' && deals.length > 0 ? (
               <section id={DEALS_ID} data-deals-section aria-label={isAr ? 'العروض والتوفير' : 'Deals & savings'} className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36">
@@ -676,6 +681,7 @@ export default function App({
         onClose={() => setActiveItemForCustomization(null)}
         onAddToCart={handleAddToCart}
         onQuickAdd={quickAdd}
+        onOpenDish={openSuggested}
       />
 
       <CartDrawer
@@ -687,6 +693,7 @@ export default function App({
         onRemoveItem={handleRemoveItem}
         onClearCart={handleClearCart}
         onQuickAdd={quickAdd}
+        onOpenDish={openSuggested}
       />
 
       <QrCodeModal

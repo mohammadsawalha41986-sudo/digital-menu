@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   defaultSuggestionGroup,
+  needsChoice,
   suggestionGroups,
 } from '@/templates/street-food/sabah/components/suggestion-groups';
 import type { MenuItem } from '@/templates/street-food/sabah/data/menuData';
@@ -54,5 +55,25 @@ describe('suggestion tabs', () => {
 
   it('shows a single tab when every suggestion is of one kind, so no tab bar is needed', () => {
     expect(suggestionGroups([dish('a', 'SIDE'), dish('b', 'SIDE')]).map((group) => group.key)).toEqual(['side']);
+  });
+});
+
+describe('needsChoice', () => {
+  const choice = (min: number): NonNullable<MenuItem['choices']>[number] => ({
+    key: 'g',
+    nameAr: 'g',
+    nameEn: 'g',
+    min,
+    max: 1,
+    options: [],
+  });
+
+  it('is true when a group must have at least one pick', () => {
+    expect(needsChoice({ ...dish('x'), choices: [choice(1)] })).toBe(true);
+  });
+
+  it('is false for a dish with no choices, or only optional ones', () => {
+    expect(needsChoice(dish('x'))).toBe(false);
+    expect(needsChoice({ ...dish('x'), choices: [choice(0)] })).toBe(false);
   });
 });

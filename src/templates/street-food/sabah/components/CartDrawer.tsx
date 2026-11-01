@@ -19,6 +19,8 @@ interface CartDrawerProps {
   onClearCart: () => void;
   /** Adds a suggested dish as it is, keeping the cart open. */
   onQuickAdd?: (dish: MenuItem) => void;
+  /** Opens a suggested dish in its own sheet, closing the cart. */
+  onOpenDish?: (dish: MenuItem) => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -30,6 +32,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onRemoveItem,
   onClearCart,
   onQuickAdd,
+  onOpenDish,
 }) => {
   const { info: RESTAURANT_INFO, items: MENU_ITEMS } = useSabah();
 
@@ -340,6 +343,7 @@ ${noteInfo}
                       dishes={paired.length > 0 ? paired : fresh}
                       isAr={isAr}
                       onAdd={onQuickAdd}
+                      onOpen={onOpenDish}
                     />
                   ) : null}
                 </>
