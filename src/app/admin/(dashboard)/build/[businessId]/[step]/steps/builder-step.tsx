@@ -498,7 +498,9 @@ export function BuilderStep({
                   name="categoryKey"
                   className="admin__select"
                   defaultValue={editing.categoryKey || categories[0]?.key}
-                  key={`cat-${editing.code}`}
+                  // The saved section is the default too: keyed on it, the
+                  // select shows the new section after a save, not the old one.
+                  key={`cat-${editing.code}-${editing.categoryKey}`}
                 >
                   {categories.map((category) => (
                     <option key={category.key} value={category.key}>
@@ -517,7 +519,7 @@ export function BuilderStep({
                   name="availability"
                   className="admin__select"
                   defaultValue={editing.availability}
-                  key={`avail-${editing.code}`}
+                  key={`avail-${editing.code}-${editing.availability}`}
                 >
                   <option value="AVAILABLE">Available</option>
                   <option value="UNAVAILABLE">Temporarily unavailable</option>
