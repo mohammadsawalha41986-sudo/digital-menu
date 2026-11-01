@@ -31,6 +31,8 @@ export function profileToSabah(profile: PublicProfile): {
   menuCategories: MenuCategory[];
   menuItems: MenuItem[];
   logoUrl: string | null;
+  /** The restaurant's welcome figure, or null when it has none. */
+  welcome: { url: string; altAr: string | null; altEn: string | null } | null;
   slides: HeroSlide[];
   /** How long each hero slide stays, chosen by the restaurant. */
   heroIntervalMs: number;
@@ -197,6 +199,9 @@ export function profileToSabah(profile: PublicProfile): {
     menuCategories,
     menuItems,
     logoUrl: profile.logo?.url ?? null,
+    welcome: profile.welcome
+      ? { url: profile.welcome.url, altAr: profile.welcome.altAr, altEn: profile.welcome.altEn }
+      : null,
     offers: menuOffers(profile.offers, toAmount),
     // The restaurant's own banners, when it has chosen any, are the hero;
     // otherwise it is built from its offers and photographed dishes.

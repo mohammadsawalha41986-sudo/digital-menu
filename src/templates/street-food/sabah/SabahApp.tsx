@@ -31,7 +31,7 @@ import { resolveSectionLayout, type SectionLayout } from './section-layout';
 import { selectionKey, stillValid } from './choices';
 import { useMinute } from './clock';
 import { InstallPrompt } from './components/InstallPrompt';
-import { WelcomeBanner } from './components/WelcomeBanner';
+import { WelcomeGreeting } from './components/WelcomeGreeting';
 import { DEALS_ID, dealsOf } from './deals';
 import type { OfferSort } from '@/lib/discount';
 import { OffersStrip } from './components/OffersStrip';
@@ -51,6 +51,8 @@ export interface SabahAppProps {
   menuItems?: MenuItem[];
   initialLang?: Language;
   logoUrl?: string | null;
+  /** The restaurant's own welcome figure, if it has set one. */
+  welcome?: { url: string; altAr: string | null; altEn: string | null } | null;
   slides?: HeroSlide[];
   qrDataUri?: string | null;
   /** How dishes are laid out by default; the visitor can still switch. */
@@ -86,6 +88,7 @@ export default function App({
   menuItems,
   initialLang,
   logoUrl = null,
+  welcome = null,
   slides = [],
   qrDataUri = null,
   imageLayout = 'grid',
@@ -702,13 +705,14 @@ export default function App({
         />
       ) : null}
 
-      {/* A welcome message when the menu opens. It never blocks the menu. */}
+      {/* A welcome message when the menu opens, with the restaurant's figure when it has one. */}
       {publicId ? (
-        <WelcomeBanner
+        <WelcomeGreeting
           lang={lang}
           publicId={publicId}
           nameAr={RESTAURANT_INFO.nameAr}
           nameEn={RESTAURANT_INFO.nameEn}
+          figure={welcome}
         />
       ) : null}
 

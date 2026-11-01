@@ -54,6 +54,7 @@ function profile(items: PublicItem[]): PublicProfile {
     variantKey: 'a',
     showPlatformFooter: false,
     logo: image('/uploads/other-logo.png'),
+    welcome: null,
     brand: {} as PublicProfile['brand'],
     branches: [],
     activeBranchKey: null,

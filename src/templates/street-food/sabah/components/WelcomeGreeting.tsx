@@ -2,19 +2,19 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { Language } from '../types';
-import './welcome-banner.css';
+import './welcome-greeting.css';
 
 /**
  * A welcome message when a visitor opens the menu.
  *
- * It is a banner under the header, not a blocking popup: the menu stays under
- * the visitor's hand. Taps pass through it (see welcome-banner.css), it closes
- * with its button, and it leaves on its own after a few seconds. It is shown
- * once per browser session per restaurant, so a reload does not repeat it.
+ * It appears in the middle of the page, with the restaurant's own figure when it
+ * has set one. It leaves on its own after a few seconds, or with its button. It
+ * is shown once per browser session per restaurant, so a reload does not repeat
+ * it. Only the card takes taps: the menu around it stays usable.
  */
 
 /** How long the message stays before it leaves on its own. */
-export const WELCOME_MS = 8000;
+export const WELCOME_MS = 9000;
 
 const never = () => () => undefined;
 
@@ -31,16 +31,24 @@ function alreadyWelcomed(publicId: string): boolean {
   }
 }
 
-export function WelcomeBanner({
+export interface WelcomeFigure {
+  url: string;
+  altAr: string | null;
+  altEn: string | null;
+}
+
+export function WelcomeGreeting({
   lang,
   publicId,
   nameAr,
   nameEn,
+  figure,
 }: {
   lang: Language;
   publicId: string;
   nameAr: string;
   nameEn: string;
+  figure: WelcomeFigure | null;
 }) {
   const isAr = lang === 'ar';
   // Nothing is drawn until the page is hydrated, so the server and the first
@@ -65,26 +73,23 @@ export function WelcomeBanner({
 
   if (!mounted || !visible) return null;
 
+  const alt = (isAr ? figure?.altAr : figure?.altEn) ?? '';
+
   return (
-    // A polite live region rather than role="status": the menu's own search
-    // result is the page's status, and a second one would be ambiguous.
-    <div aria-live="polite" lang={lang} dir={isAr ? 'rtl' : 'ltr'} data-welcome className="sf-welcome">
-      <div className="sf-welcome__card">
-        <div className="sf-welcome__text">
-          <p className="sf-welcome__title">{isAr ? `أهلاً بك في ${nameAr}` : `Welcome to ${nameEn}`}</p>
-          <p className="sf-welcome__body">
-            {isAr ? 'تصفح المنيو وأضف أطباقك إلى الطلب' : 'Browse the menu and add your dishes to your order'}
-          </p>
-        </div>
-        <button
-          type="button"
-          className="sf-welcome__close"
-          aria-label={isAr ? 'إغلاق الرسالة' : 'Close message'}
-          onClick={() => setVisible(false)}
-        >
-          ×
+    <div lang={lang} dir={isAr ? 'rtl' : 'ltr'} data-welcome className="sf-welcome">
+      <section className="sf-welcome__card" aria-label={isAr ? 'رسالة الترحيب' : 'Welcome message'}>
+        {figure ? (
+          <img src={figure.url} alt={alt} className="sf-welcome__figure" data-welcome-figure />
+        ) : null}
+        <h2 className="sf-welcome__title">{isAr ? 'أهلاً بمن زارنا' : 'Welcome to everyone who visits us'}</h2>
+        <p className="sf-welcome__name">{isAr ? nameAr : nameEn}</p>
+        <p className="sf-welcome__body">
+          {isAr ? 'تفضّل، المنيو بين يديك' : 'Make yourself at home, the menu is yours'}
+        </p>
+        <button type="button" className="sf-welcome__start" onClick={() => setVisible(false)}>
+          {isAr ? 'ابدأ التصفح' : 'Start browsing'}
         </button>
-      </div>
+      </section>
     </div>
   );
 }

@@ -166,6 +166,8 @@ model Business {
   showPlatformFooter Boolean        @default(false)
 
   logoMediaId String?
+  /// The restaurant's own figure for the welcome message, shown when the menu opens.
+  welcomeMediaId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -192,6 +194,7 @@ model Business {
   previewLinks    PreviewLink[]
   changeRequests  ChangeRequest[]
   logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  welcome         Media?               @relation("BusinessWelcome", fields: [welcomeMediaId], references: [id], onDelete: SetNull)
   ogImage         Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
 
   @@index([status])
@@ -455,6 +458,7 @@ model Media {
   logoOf          Business[]      @relation("BusinessLogo")
   brandPresetLogo BrandPreset[]   @relation("BrandPresetLogo")
   ogImageOf       Business[]      @relation("BusinessOgImage")
+  welcomeOf       Business[]      @relation("BusinessWelcome")
   categoryImageOf MenuCategory[]
   offerImageOf    Offer[]
   itemImageOf     MenuItem[]

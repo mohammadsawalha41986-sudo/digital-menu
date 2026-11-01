@@ -221,6 +221,8 @@ export interface PublicProfile {
   descriptionAr: string | null;
   descriptionEn: string | null;
   logo: PublicImage | null;
+  /** The restaurant's own figure for the welcome message, if it has set one. */
+  welcome: PublicImage | null;
 
   /** Structure selection, resolved against the in-code template registry. */
   templateKey: string;

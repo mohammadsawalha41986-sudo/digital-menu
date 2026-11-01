@@ -176,6 +176,7 @@ async function loadProfile(
       metaDescriptionAr: true,
       metaDescriptionEn: true,
       logo: { select: MEDIA_SELECT },
+      welcome: { select: MEDIA_SELECT },
       ogImage: { select: MEDIA_SELECT },
       brandTheme: { select: BRAND_SELECT },
       branches: {
@@ -398,6 +399,7 @@ async function loadProfile(
     descriptionAr: business.descriptionAr,
     descriptionEn: business.descriptionEn,
     logo: toImage(business.logo),
+    welcome: toImage(business.welcome),
     templateKey: business.templateKey,
     variantKey: business.variantKey,
     brand: business.brandTheme ?? DEFAULT_BRAND,

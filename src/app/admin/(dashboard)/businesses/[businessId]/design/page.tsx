@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { WelcomeForm } from './welcome-form';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/server/auth/current-user';
 import { getBusinessForAdmin } from '@/server/admin/business-service';
@@ -28,6 +29,7 @@ export default async function DesignPage({ params }: { params: Promise<{ busines
 
   const media = await listMedia(user, business.id);
   const logo = media.find((image) => image.id === business.logoMediaId) ?? null;
+  const welcome = media.find((image) => image.id === business.welcomeMediaId) ?? null;
   const { definition, variant } = resolveTemplate(business.templateKey, business.variantKey);
   const previewUrl = `/admin/preview/${business.id}?lang=ar`;
 
@@ -50,7 +52,16 @@ export default async function DesignPage({ params }: { params: Promise<{ busines
             <div className="design__logo">
               {logo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logo.url} alt="Current logo" className="design__logo-image" />
+                <img
+                  src={logo.url}
+                  alt="Current logo"
+                  className="design__logo-image"
+                  style={{
+                    inlineSize: 'auto',
+                    blockSize: '6rem',
+                    maxInlineSize: '16rem',
+                  }}
+                />
               ) : (
                 <span className="design__logo-empty">No logo yet</span>
               )}
@@ -62,6 +73,33 @@ export default async function DesignPage({ params }: { params: Promise<{ busines
                 <Link href={`/admin/build/${business.id}/brand`} className="admin__button">
                   {logo ? 'Change logo' : 'Upload logo'}
                 </Link>
+              </div>
+            </div>
+          </section>
+
+          <section className="admin__panel">
+            <h2 className="admin__panel-title">صورة الترحيب · Welcome figure</h2>
+            <div className="design__logo">
+              {welcome ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={welcome.url}
+                  alt="Current welcome figure"
+                  className="design__logo-image"
+                  style={{
+                    inlineSize: 'auto',
+                    blockSize: '6rem',
+                    maxInlineSize: '12rem',
+                  }}
+                />
+              ) : (
+                <span className="design__logo-empty">No figure yet</span>
+              )}
+              <div>
+                <p className="admin__hint">
+                  The figure appears in the welcome message when the menu opens. It is shown as uploaded.
+                </p>
+                <WelcomeForm businessId={business.id} hasFigure={Boolean(welcome)} />
               </div>
             </div>
           </section>

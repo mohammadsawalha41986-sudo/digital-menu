@@ -2,8 +2,8 @@ import { devices, expect, test, type Page } from '@playwright/test';
 
 /**
  * The welcome message a visitor sees when the menu opens: what it says, that it
- * leaves on its own, that it never blocks the menu, and that it is shown once
- * per visit rather than on every reload.
+ * appears in the middle of the page with large text, that the menu stays usable
+ * around it, that it leaves on its own, and that it is shown once per visit.
  */
 
 const MENU = '/m/SBH001';
@@ -14,34 +14,49 @@ async function ready(page: Page) {
 }
 
 test.describe('the welcome message', () => {
-  test('greets an Arabic visitor by the restaurant name, then leaves on its own', async ({ page }) => {
+  test('greets an Arabic visitor in large text, in the middle of the page', async ({ page }) => {
     await page.goto(`${MENU}?lang=ar`);
     const welcome = page.locator('[data-welcome]');
     await expect(welcome).toBeVisible();
-    await expect(welcome).toContainText('أهلاً بك في مطعم صباح الليل');
     await expect(welcome).toHaveAttribute('dir', 'rtl');
-    await expect(welcome).toHaveCount(0, { timeout: 12_000 });
+    await expect(welcome.getByRole('heading', { name: 'أهلاً بمن زارنا' })).toBeVisible();
+    await expect(welcome).toContainText('مطعم صباح الليل');
+
+    // Large, and centred on the page.
+    const size = await welcome.getByRole('heading').evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(size).toBeGreaterThanOrEqual(28);
+    const box = await welcome.locator('.sf-welcome__card').boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(Math.abs(box!.x + box!.width / 2 - viewport!.width / 2)).toBeLessThan(4);
   });
 
   test('greets an English visitor in English, left to right', async ({ page }) => {
     await page.goto(`${MENU}?lang=en`);
     const welcome = page.locator('[data-welcome]');
     await expect(welcome).toBeVisible();
-    await expect(welcome).toContainText('Welcome to Sabah El Lail');
     await expect(welcome).toHaveAttribute('dir', 'ltr');
+    await expect(welcome.getByRole('heading', { name: 'Welcome to everyone who visits us' })).toBeVisible();
   });
 
-  test('does not block the menu: a dish opens while the message is up', async ({ page }) => {
+  test('leaves on its own after a few seconds', async ({ page }) => {
+    await page.goto(`${MENU}?lang=ar`);
+    await expect(page.locator('[data-welcome]')).toBeVisible();
+    await expect(page.locator('[data-welcome]')).toHaveCount(0, { timeout: 15_000 });
+  });
+
+  test('does not stop the visitor: a dish opens while the message is up', async ({ page }) => {
     await page.goto(`${MENU}?lang=ar`);
     await expect(page.locator('[data-welcome]')).toBeVisible();
     await page.locator('#menu-items-container [data-item]').first().getByRole('button').last().click();
     await expect(page.getByRole('button', { name: /إضافة إلى الطلب/ })).toBeVisible();
   });
 
-  test('its close button dismisses it', async ({ page }) => {
+  test('its button closes it', async ({ page }) => {
     await page.goto(`${MENU}?lang=ar`);
     await expect(page.locator('[data-welcome]')).toBeVisible();
-    await page.getByRole('button', { name: 'إغلاق الرسالة' }).click();
+    await page.getByRole('button', { name: 'ابدأ التصفح' }).click();
     await expect(page.locator('[data-welcome]')).toHaveCount(0);
   });
 
@@ -51,7 +66,7 @@ test.describe('the welcome message', () => {
     const first = await context.newPage();
     await first.goto(`${MENU}?lang=ar`);
     await expect(first.locator('[data-welcome]')).toBeVisible();
-    await first.getByRole('button', { name: 'إغلاق الرسالة' }).click();
+    await first.getByRole('button', { name: 'ابدأ التصفح' }).click();
     await first.reload();
     await ready(first);
     await expect(first.locator('[data-welcome]')).toHaveCount(0);

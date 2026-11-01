@@ -24,12 +24,12 @@ export const Footer: React.FC<FooterProps> = ({ lang, onOpenQr }) => {
           {/* Brand Info */}
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600/30 to-amber-500/20 border border-emerald-500/40 flex items-center justify-center p-1 shadow">
+              <div className="h-10 rounded-xl bg-gradient-to-br from-emerald-600/30 to-amber-500/20 border border-emerald-500/40 overflow-hidden shadow">
                 {logoUrl ? (
                   <img
                     src={logoUrl}
                     alt={RESTAURANT_INFO.nameAr}
-                    className="w-full h-full object-contain"
+                    style={{ display: 'block', height: '100%', width: 'auto', maxWidth: '10rem', objectFit: 'contain' }}
                   />
                 ) : null}
               </div>

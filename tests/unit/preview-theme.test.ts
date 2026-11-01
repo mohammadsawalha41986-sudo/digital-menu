@@ -17,6 +17,7 @@ function profileFixture(): PublicProfile {
     variantKey: 'a',
     showPlatformFooter: false,
     logo: null,
+    welcome: null,
     brand: {} as PublicProfile['brand'],
     branches: [],
     activeBranchKey: null,

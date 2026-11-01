@@ -27,7 +27,7 @@ export function StreetFoodTemplate({ profile, locale }: TemplateRenderProps) {
 }
 
 async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; locale: Locale }) {
-  const { restaurantInfo, menuCategories, menuItems, logoUrl, slides, offers, heroIntervalMs, offersSort, offersRefreshAt } =
+  const { restaurantInfo, menuCategories, menuItems, logoUrl, welcome, slides, offers, heroIntervalMs, offersSort, offersRefreshAt } =
     profileToSabah(profile);
 
   // The QR encodes the permanent `/m/{publicId}` destination — the same one
@@ -43,6 +43,7 @@ async function StreetFoodWithQr({ profile, locale }: { profile: PublicProfile; l
       menuCategories={menuCategories}
       menuItems={menuItems}
       logoUrl={logoUrl}
+      welcome={welcome}
       slides={slides}
       qrDataUri={qrDataUri}
       imageLayout={IMAGE_LAYOUTS[profile.variantKey] ?? 'grid'}

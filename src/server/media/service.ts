@@ -279,6 +279,7 @@ export async function addMediaByUrl(
 export type AssignTarget =
   | { type: 'business-logo' }
   | { type: 'business-og' }
+  | { type: 'business-welcome' }
   | { type: 'item'; itemCode: string }
   | { type: 'category'; categoryKey: string }
   | { type: 'offer'; offerKey: string };
@@ -312,6 +313,13 @@ export async function assignMedia(
       await prisma.business.update({
         where: { id: context.businessId },
         data: { logoMediaId: mediaId },
+      });
+      break;
+
+    case 'business-welcome':
+      await prisma.business.update({
+        where: { id: context.businessId },
+        data: { welcomeMediaId: mediaId },
       });
       break;
 

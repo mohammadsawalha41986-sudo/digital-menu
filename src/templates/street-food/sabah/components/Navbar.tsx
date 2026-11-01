@@ -35,12 +35,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <motion.div 
             whileHover={{ scale: 1.05, rotate: 2 }}
             whileTap={{ scale: 0.95 }}
-            className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-gradient-to-br from-emerald-600/25 via-amber-500/20 to-emerald-950/60 border border-emerald-500/50 flex items-center justify-center overflow-hidden p-1 shadow-md shadow-emerald-950/40 group-hover:border-amber-400/90 transition-colors relative"
+            className="h-9 sm:h-11 shrink-0 rounded-xl bg-gradient-to-br from-emerald-600/25 via-amber-500/20 to-emerald-950/60 border border-emerald-500/50 overflow-hidden shadow-md shadow-emerald-950/40 group-hover:border-amber-400/90 transition-colors relative" data-logo-frame
           >
             {logoUrl ? <img
               src={logoUrl}
               alt={RESTAURANT_INFO.nameAr}
-              className="w-full h-full object-contain filter drop-shadow"
+              className="filter drop-shadow"
+              style={{ display: 'block', height: '100%', width: 'auto', maxWidth: '9rem', objectFit: 'contain' }}
               referrerPolicy="no-referrer"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
