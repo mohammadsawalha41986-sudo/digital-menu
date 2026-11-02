@@ -86,6 +86,7 @@ model User {
   priceChanges    PriceHistory[]
   previewLinks       PreviewLink[]   @relation("PreviewLinkCreator")
   staffLinks         StaffLink[]     @relation("StaffLinkCreator")
+  deletedRecords     DeletedRecord[] @relation("DeletedRecordDeleter")
   completedRequests  ChangeRequest[] @relation("ChangeRequestCompleter")
 
   @@index([role])
@@ -194,6 +195,7 @@ model Business {
   brandPresets    BrandPreset[]
   previewLinks    PreviewLink[]
   staffLinks      StaffLink[]
+  deletedRecords  DeletedRecord[]
   changeRequests  ChangeRequest[]
   logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   welcome         Media?               @relation("BusinessWelcome", fields: [welcomeMediaId], references: [id], onDelete: SetNull)
@@ -1458,4 +1460,28 @@ model LinkCheck {
   @@unique([businessId, url])
   @@index([businessId, status])
   @@map("link_checks")
+}
+
+/// A copy of what a deletion removed, kept whole so it can be restored. Menu
+/// and dish deletions remove the live rows; this row is what brings them back.
+model DeletedRecord {
+  id         String @id @default(cuid())
+  businessId String
+
+  /// "MENU" or "ITEMS".
+  kind  String
+  /// What the list shows: the menu's name, or the first dish names.
+  label String
+  /// Every row the deletion removed, with its links, as plain JSON.
+  snapshot Json
+
+  deletedById String?
+  deletedAt   DateTime  @default(now())
+  restoredAt  DateTime?
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  deletedBy User?    @relation("DeletedRecordDeleter", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  @@index([businessId, deletedAt])
+  @@map("deleted_records")
 }
