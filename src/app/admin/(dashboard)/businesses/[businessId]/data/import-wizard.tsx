@@ -347,6 +347,7 @@ export function ImportWizard({
             ) : null}
 
             <input type="hidden" name="payload" value={result.payload} />
+            <input type="hidden" name="importKey" value={result.importKey} />
             <input type="hidden" name="fileName" value={result.fileName} />
             <input type="hidden" name="businessId" value={businessId} />
             <input type="hidden" name="publicId" value={publicId} />

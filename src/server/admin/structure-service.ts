@@ -1,4 +1,5 @@
 import { prisma } from '@/server/db/client';
+import type { MenuItem } from '@/generated/prisma/client';
 import { recordAudit } from '@/server/audit/log';
 import { requireTenantContext, type AuthenticatedUser } from '@/server/tenancy/context';
 import { ValidationError } from './business-service';
@@ -350,6 +351,98 @@ export async function duplicateCategory(
   return copy;
 }
 
+/** What a copy keeps from its source. A copy shares the photo; it never duplicates the file. */
+function copyableFields(source: MenuItem) {
+  return {
+    descriptionAr: source.descriptionAr,
+    descriptionEn: source.descriptionEn,
+    priceMinor: source.priceMinor,
+    currency: source.currency,
+    calories: source.calories,
+    servingSizeAr: source.servingSizeAr,
+    servingSizeEn: source.servingSizeEn,
+    allergens: source.allergens,
+    tags: source.tags,
+    isFeatured: source.isFeatured,
+    imageMediaId: source.imageMediaId,
+  };
+}
+
+/**
+ * Copies dishes into a section, in this restaurant (any of its menus).
+ *
+ * A copy starts hidden, the same as a duplicate: nothing reaches a customer
+ * until the owner shows it. Names stay as they are, because the copy is in a
+ * different place rather than a placeholder for the same dish.
+ */
+export async function copyItemsTo(
+  user: AuthenticatedUser,
+  businessId: string,
+  itemIds: string[],
+  targetCategoryId: string,
+): Promise<{ count: number; itemCodes: string[] }> {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const ids = [...new Set(itemIds)];
+  if (ids.length === 0) throw new ValidationError('Choose the dishes to copy first.');
+  if (ids.length > 200) throw new ValidationError('Copy at most 200 dishes at a time.');
+
+  const target = await prisma.menuCategory.findFirst({
+    where: { id: targetCategoryId, businessId: context.businessId },
+    select: { id: true },
+  });
+  if (!target) throw new ValidationError('That section was not found.');
+
+  const sources = await prisma.menuItem.findMany({
+    where: { id: { in: ids }, businessId: context.businessId },
+    orderBy: { sortOrder: 'asc' },
+  });
+  if (sources.length === 0) throw new ValidationError('None of those dishes were found.');
+
+  const last = await prisma.menuItem.aggregate({
+    where: { businessId: context.businessId, categoryId: targetCategoryId },
+    _max: { sortOrder: true },
+  });
+  let sortOrder = (last._max.sortOrder ?? -1) + 1;
+
+  const itemCodes: string[] = [];
+  for (const source of sources) {
+    const itemCode = await uniqueKey(source.itemCode, async (candidate) =>
+      Boolean(
+        await prisma.menuItem.findUnique({
+          where: { businessId_itemCode: { businessId: context.businessId, itemCode: candidate } },
+          select: { id: true },
+        }),
+      ),
+      'COPY',
+    );
+
+    const copy = await prisma.menuItem.create({
+      data: {
+        ...copyableFields(source),
+        businessId: context.businessId,
+        categoryId: targetCategoryId,
+        itemCode,
+        nameAr: source.nameAr,
+        nameEn: source.nameEn,
+        availability: 'HIDDEN',
+        sortOrder: sortOrder++,
+      },
+    });
+    itemCodes.push(copy.itemCode);
+  }
+
+  await recordAudit({
+    action: 'item.copied',
+    entity: 'menu_category',
+    entityId: targetCategoryId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { count: itemCodes.length, from: sources.map((item) => item.itemCode) },
+  });
+
+  return { count: itemCodes.length, itemCodes };
+}
+
 export async function duplicateItem(user: AuthenticatedUser, businessId: string, itemId: string) {
   const context = await requireTenantContext(user, businessId, 'EDITOR');
 
@@ -372,24 +465,14 @@ export async function duplicateItem(user: AuthenticatedUser, businessId: string,
   const copy = await prisma.menuItem.create({
     data: {
       businessId: context.businessId,
+      ...copyableFields(source),
       categoryId: source.categoryId,
       itemCode,
       nameAr: copyTitle(source.nameAr, true),
       nameEn: source.nameEn ? copyTitle(source.nameEn, false) : null,
-      descriptionAr: source.descriptionAr,
-      descriptionEn: source.descriptionEn,
-      priceMinor: source.priceMinor,
-      currency: source.currency,
-      calories: source.calories,
-      servingSizeAr: source.servingSizeAr,
-      servingSizeEn: source.servingSizeEn,
-      allergens: source.allergens,
-      tags: source.tags,
-      isFeatured: source.isFeatured,
       // A copy is not on the menu until someone says so: it is the *source*
       // dish with a placeholder name, and a customer should not be offered it.
       availability: 'HIDDEN',
-      imageMediaId: source.imageMediaId,
       sortOrder: source.sortOrder + 1,
     },
   });

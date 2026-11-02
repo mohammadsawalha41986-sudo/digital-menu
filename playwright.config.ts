@@ -29,7 +29,21 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-chromium',
+      testIgnore: /menu-manage\.spec\.ts/,
       use: { ...devices['Pixel 7'] },
+    },
+    {
+      // The menu and dishes manager runs on both sizes. Both projects use the
+      // same demo dish, so the desktop run waits for the phone run to finish.
+      name: 'manage-mobile',
+      testMatch: /menu-manage\.spec\.ts/,
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'manage-desktop',
+      testMatch: /menu-manage\.spec\.ts/,
+      dependencies: ['manage-mobile'],
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
   ],
   webServer: {

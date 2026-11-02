@@ -16,6 +16,7 @@ import {
   restoreDeletedRecord,
   updateDish,
 } from '@/server/menu-manage/service';
+import { copyItemsTo } from '@/server/admin/structure-service';
 import { resolveDatabase } from '../database';
 
 /**
@@ -299,6 +300,36 @@ run('order, move and add', () => {
     const row = await prisma.menuItem.findFirstOrThrow({ where: { businessId, itemCode: seeded.codes[0] }, select: { id: true } });
     await expect(moveDishes(owner, businessId, [row.id], theirs.drinksId)).rejects.toBeInstanceOf(ValidationError);
     expect((await prisma.menuItem.findUniqueOrThrow({ where: { id: row.id } })).categoryId).toBe(seeded.mainsId);
+  });
+
+  it('copies dishes into another section: the copy is hidden, keeps its name, and the source stays put', async () => {
+    const seeded = await seedMenu(businessId, 'copy-a');
+    const source = await prisma.menuItem.findFirstOrThrow({ where: { businessId, itemCode: seeded.codes[0] } });
+    const before = await prisma.menuItem.count({ where: { businessId } });
+
+    const result = await copyItemsTo(owner, businessId, [source.id], seeded.drinksId);
+
+    expect(result.count).toBe(1);
+    expect(await prisma.menuItem.count({ where: { businessId } })).toBe(before + 1);
+    const copy = await prisma.menuItem.findFirstOrThrow({
+      where: { businessId, categoryId: seeded.drinksId, itemCode: result.itemCodes[0] },
+    });
+    expect(copy.id).not.toBe(source.id);
+    expect(copy.nameAr).toBe(source.nameAr);
+    expect(copy.availability).toBe('HIDDEN');
+    const unchanged = await prisma.menuItem.findUniqueOrThrow({ where: { id: source.id } });
+    expect(unchanged.categoryId).toBe(seeded.mainsId);
+    expect(unchanged.availability).toBe(source.availability);
+  });
+
+  it('will not copy a dish into a section of another restaurant', async () => {
+    const seeded = await seedMenu(businessId, 'copy-b');
+    const theirs = await seedMenu(otherBusinessId, 'copy-theirs');
+    const source = await prisma.menuItem.findFirstOrThrow({ where: { businessId, itemCode: seeded.codes[0] } });
+    const before = await prisma.menuItem.count({ where: { businessId: otherBusinessId } });
+
+    await expect(copyItemsTo(owner, businessId, [source.id], theirs.drinksId)).rejects.toBeInstanceOf(ValidationError);
+    expect(await prisma.menuItem.count({ where: { businessId: otherBusinessId } })).toBe(before);
   });
 
   it('adds a dish with a free code, and refuses an unreadable price', async () => {

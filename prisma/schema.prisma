@@ -78,16 +78,16 @@ model User {
 
   lastLoginAt DateTime?
 
-  memberships     BusinessMembership[]
-  publishedMenues MenuVersion[]        @relation("MenuVersionPublisher")
-  auditLogs       AuditLog[]
-  uploadedFiles   PublicFileVersion[]
-  importBatches   ImportBatch[]
-  priceChanges    PriceHistory[]
-  previewLinks       PreviewLink[]   @relation("PreviewLinkCreator")
-  staffLinks         StaffLink[]     @relation("StaffLinkCreator")
-  deletedRecords     DeletedRecord[] @relation("DeletedRecordDeleter")
-  completedRequests  ChangeRequest[] @relation("ChangeRequestCompleter")
+  memberships       BusinessMembership[]
+  publishedMenues   MenuVersion[]        @relation("MenuVersionPublisher")
+  auditLogs         AuditLog[]
+  uploadedFiles     PublicFileVersion[]
+  importBatches     ImportBatch[]
+  priceChanges      PriceHistory[]
+  previewLinks      PreviewLink[]        @relation("PreviewLinkCreator")
+  staffLinks        StaffLink[]          @relation("StaffLinkCreator")
+  deletedRecords    DeletedRecord[]      @relation("DeletedRecordDeleter")
+  completedRequests ChangeRequest[]      @relation("ChangeRequestCompleter")
 
   @@index([role])
   @@map("users")
@@ -124,9 +124,9 @@ model Business {
   variantKey  String @default("a")
 
   /// Seconds each hero slide stays before the next (3-15).
-  heroIntervalSec Int @default(6)
+  heroIntervalSec         Int     @default(6)
   /// Suggest dishes automatically (by section role) where a dish has no picks.
-  autoUpsell      Boolean @default(true)
+  autoUpsell              Boolean @default(true)
   /// How the automatic "offers & savings" section orders discounted dishes:
   /// PERCENT (default), SAVING, NEWEST, ENDING or MANUAL.
   offersSort              String  @default("PERCENT")
@@ -167,7 +167,7 @@ model Business {
   /// Optional "Digital Menu by ..." footer (§147).
   showPlatformFooter Boolean        @default(false)
 
-  logoMediaId String?
+  logoMediaId    String?
   /// The restaurant's own figure for the welcome message, shown when the menu opens.
   welcomeMediaId String?
 
@@ -250,17 +250,17 @@ model BrandTheme {
   /// Menu design overrides. Null colours mean "derived from the brand"
   /// (the logo palette); a set colour wins. A light page switches the design
   /// to dark text automatically.
-  menuPage   String?
-  menuCard   String?
-  menuPrice  String?
+  menuPage         String?
+  menuCard         String?
+  menuPrice        String?
   /// Discount badge colour on dishes; null uses the default red.
-  menuSale   String?
+  menuSale         String?
   /// sm | md | lg
-  textScale  String  @default("md")
+  textScale        String   @default("md")
   /// compact | regular | airy
-  spacing    String  @default("regular")
+  spacing          String   @default("regular")
   /// landscape | square | portrait
-  imageShape String  @default("landscape")
+  imageShape       String   @default("landscape")
   /// Order of the menu page's sections: hero, menu, offers, reviews, location.
   sectionOrder     String[] @default(["hero", "menu", "offers", "reviews", "location"])
   /// Offers shown inside the menu (after the second category) rather than
@@ -313,8 +313,8 @@ model Menu {
   /// Evaluated at read time from the stored window rather than by a job
   /// flipping a flag, for the same reason offers are: a cron that fails must
   /// never leave last month's menu on a customer's phone.
-  startsAt DateTime?
-  endsAt   DateTime?
+  startsAt  DateTime?
+  endsAt    DateTime?
   /// Daily window, `HH:MM`, for a menu served only at certain hours. Both or
   /// neither; a closing time before the opening one runs past midnight.
   dailyFrom String?
@@ -431,8 +431,8 @@ model Media {
   /// uploaded file. When set it *is* the public URL: nothing is fetched,
   /// copied or resized, and the browser loads it straight from its origin.
   sourceUrl String?
-  width       Int?
-  height      Int?
+  width     Int?
+  height    Int?
 
   /// Alt text is authored per language and never machine-generated.
   altAr String?
@@ -620,30 +620,30 @@ model MenuItem {
   /// than calories, and because a field the business has not filled in must be
   /// distinguishable from one whose true value is zero. Every one is nullable
   /// for that reason: absent is absent, never 0 (§105; GOALS I9).
-  calories      Int?
+  calories       Int?
   /// Milligrams. Named in SFDA guidance alongside calories.
-  caffeineMg    Int?
-  sodiumMg      Int?
+  caffeineMg     Int?
+  sodiumMg       Int?
   /// Grams, to one decimal, stored as tenths so no float reaches the database.
-  proteinDeci   Int?
-  carbsDeci     Int?
-  fatDeci       Int?
-  fibreDeci     Int?
-  sugarDeci     Int?
+  proteinDeci    Int?
+  carbsDeci      Int?
+  fatDeci        Int?
+  fibreDeci      Int?
+  sugarDeci      Int?
   /// Set by the business when it wants the high-salt notice shown.
-  highSalt      Boolean @default(false)
+  highSalt       Boolean  @default(false)
   /// Free text the business supplies, e.g. a walking-equivalent statement.
   /// Never computed by the platform: a calorie-burn figure depends on the
   /// person, and inventing one would be a health claim (§05, §105).
   activityNoteAr String?
   activityNoteEn String?
-  servingSizeAr String?
-  servingSizeEn String?
-  ingredientsAr String?
-  ingredientsEn String?
+  servingSizeAr  String?
+  servingSizeEn  String?
+  ingredientsAr  String?
+  ingredientsEn  String?
   /// Declared allergens only; no medical claims are derived (§38).
-  allergens     String[] @default([])
-  tags          String[] @default([])
+  allergens      String[] @default([])
+  tags           String[] @default([])
 
   /// Food cost in the same minor units as `priceMinor`. Optional, and only
   /// ever entered by the business: margin is computed from it and shown only
@@ -661,7 +661,7 @@ model MenuItem {
   pairsWith String[] @default([])
   /// True when `pairsWith` was written from the automatic suggestions, not picked
   /// by the restaurant. Turning automatic suggestions off clears only these.
-  pairsAuto Boolean @default(false)
+  pairsAuto Boolean  @default(false)
 
   /// The dish's own discount. Stored as entered (a percent, an amount off,
   /// or a final price) and turned into a sale price at read time from the
@@ -981,6 +981,10 @@ model ImportBatch {
   /// The column mapping actually used, kept so a run can be explained later.
   mapping Json?
 
+  /// Set by the preview. A second confirm with the same key is refused by the
+  /// database, so a double click or a retried request can never apply twice.
+  importKey String?
+
   createdAt    DateTime  @default(now())
   completedAt  DateTime?
   rolledBackAt DateTime?
@@ -989,6 +993,7 @@ model ImportBatch {
   user     User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   rows     ImportRow[]
 
+  @@unique([businessId, importKey])
   @@index([businessId, createdAt])
   @@map("import_batches")
 }
@@ -1134,8 +1139,8 @@ model ModifierGroup {
   businessId String
   key        String
 
-  nameAr String
-  nameEn String?
+  nameAr        String
+  nameEn        String?
   /// A short line under the group name, e.g. "one drink is free with the meal".
   descriptionAr String?
   descriptionEn String?
@@ -1340,14 +1345,14 @@ model PreviewLink {
   expiresAt DateTime
   revokedAt DateTime?
 
-  state       ReviewState @default(PENDING)
-  respondedAt DateTime?
+  state        ReviewState @default(PENDING)
+  respondedAt  DateTime?
   /// The client's own words when asking for changes. Displayed to staff and
   /// never interpreted as an instruction by anything automatic.
   responseNote String?
   /// How the client identified themselves when responding. Optional and
   /// self-declared; never treated as authentication.
-  respondedBy String?
+  respondedBy  String?
 
   viewCount  Int       @default(0)
   lastViewed DateTime?
@@ -1400,15 +1405,15 @@ model StaffLink {
 /// through them (§73, §140). Deliberately not a ticketing system: a note, who
 /// it came from, and whether it is done.
 model ChangeRequest {
-  id         String  @id @default(cuid())
-  businessId String
+  id            String  @id @default(cuid())
+  businessId    String
   /// Set when the request arrived through a preview link.
   previewLinkId String?
 
   body String
 
-  isDone      Boolean   @default(false)
-  completedAt DateTime?
+  isDone        Boolean   @default(false)
+  completedAt   DateTime?
   completedById String?
 
   createdAt DateTime @default(now())
@@ -1451,7 +1456,7 @@ model LinkCheck {
   /// The status line, when there was one. Null when nothing answered.
   httpStatus Int?
   /// Short operator-facing explanation. Never carries response content.
-  reason String
+  reason     String
 
   checkedAt DateTime @default(now())
 
@@ -1469,9 +1474,9 @@ model DeletedRecord {
   businessId String
 
   /// "MENU" or "ITEMS".
-  kind  String
+  kind     String
   /// What the list shows: the menu's name, or the first dish names.
-  label String
+  label    String
   /// Every row the deletion removed, with its links, as plain JSON.
   snapshot Json
 

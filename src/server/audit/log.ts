@@ -66,6 +66,7 @@ export type AuditAction =
   | 'menu.deleted'
   | 'deleted.restored'
   | 'item.moved'
+  | 'item.copied'
   | 'item.reordered'
   | 'preview.link_created'
   | 'preview.link_revoked'

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  copyDishesAction,
   createDishAction,
   deleteDishesAction,
   moveDishesAction,
@@ -296,6 +297,20 @@ export function ManageBoard({ businessId, view, picker }: Props) {
     }
   }
 
+  async function copySelected() {
+    if (!moveTarget || selected.size === 0) return;
+    setBusy(true);
+    const result = await copyDishesAction(businessId, [...selected], moveTarget);
+    setBusy(false);
+    if (result.ok) {
+      setSelected(new Set());
+      say('ok', result.message);
+      router.refresh();
+    } else {
+      say('error', result.error);
+    }
+  }
+
   async function moveSelected() {
     if (!moveTarget || selected.size === 0) return;
     setBusy(true);
@@ -542,6 +557,7 @@ export function ManageBoard({ businessId, view, picker }: Props) {
                 </select>
               </label>
               <button type="button" className="admin__button admin__button--secondary" disabled={!moveTarget || busy} onClick={moveSelected}>نقل · Move</button>
+              <button type="button" className="admin__button admin__button--secondary" disabled={!moveTarget || busy} onClick={copySelected}>نسخ · Copy</button>
             </>
           ) : null}
           {view.canManage ? (
@@ -696,7 +712,11 @@ function PriceField({
   );
 }
 
-function AvailabilitySelect({
+/**
+ * One click turns a dish on or off the menu. Hidden and seasonal are set in the
+ * editor, where the owner can see what they mean; the toggle shows them as they are.
+ */
+function AvailabilityToggle({
   dishId,
   value,
   saves,
@@ -707,18 +727,24 @@ function AvailabilitySelect({
   saves: ReturnType<typeof useDishSaves>;
   disabled: boolean;
 }) {
+  const on = value === 'AVAILABLE';
+  const label = on
+    ? 'متوفر · Available'
+    : value === 'HIDDEN'
+      ? 'مخفي · Hidden'
+      : value === 'SEASONAL'
+        ? 'موسمي · Seasonal'
+        : 'غير متوفر · Out';
   return (
-    <select
-      className="admin__select mg__avail"
-      aria-label="Availability"
-      value={value}
+    <button
+      type="button"
+      className="mg__toggle"
+      aria-pressed={on}
       disabled={disabled}
-      onChange={(event) => saves.queue(dishId, { availability: event.target.value as 'AVAILABLE' })}
+      onClick={() => saves.queue(dishId, { availability: on ? 'UNAVAILABLE' : 'AVAILABLE' })}
     >
-      {Object.keys(AVAILABILITY_LABEL).map((key) => (
-        <option key={key} value={key}>{AVAILABILITY_LABEL[key]!.ar} · {AVAILABILITY_LABEL[key]!.en}</option>
-      ))}
-    </select>
+      {label}
+    </button>
   );
 }
 
@@ -777,7 +803,7 @@ function DishRowTable(
         <PriceField dishId={dish.id} priceMinor={dish.priceMinor} currency={currency} saves={saves} disabled={!view.canEdit} />
       </td>
       <td>
-        <AvailabilitySelect dishId={dish.id} value={dish.availability} saves={saves} disabled={!view.canEdit} />
+        <AvailabilityToggle dishId={dish.id} value={dish.availability} saves={saves} disabled={!view.canEdit} />
         <StatusBadge status={status} error={saves.errorOf(dish.id)} onRetry={() => saves.retry(dish.id)} />
         {status === 'conflict' ? <ConflictNote dishId={dish.id} saves={saves} onTake={() => props.onTakeTheirs(dish.id)} /> : null}
       </td>
@@ -819,7 +845,7 @@ function DishCard(props: RowProps) {
         <span className="mg__code">{row.sectionName} · {dish.itemCode}</span>
         <div className="mg__card-row">
           <PriceField dishId={dish.id} priceMinor={dish.priceMinor} currency={currency} saves={saves} disabled={!view.canEdit} />
-          <AvailabilitySelect dishId={dish.id} value={dish.availability} saves={saves} disabled={!view.canEdit} />
+          <AvailabilityToggle dishId={dish.id} value={dish.availability} saves={saves} disabled={!view.canEdit} />
         </div>
         <StatusBadge status={status} error={saves.errorOf(dish.id)} onRetry={() => saves.retry(dish.id)} />
         {status === 'conflict' ? <ConflictNote dishId={dish.id} saves={saves} onTake={() => props.onTakeTheirs(dish.id)} /> : null}

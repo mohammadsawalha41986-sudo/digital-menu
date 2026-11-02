@@ -23,7 +23,22 @@ import { sectionKeyFor, uniqueKey } from '@/lib/keys';
  *     changed, which is what makes a bulk price update reversible (§76).
  */
 
+/** Thrown when a confirm arrives with a key that already applied an import. */
+export class ImportAlreadyAppliedError extends Error {
+  constructor() {
+    super('This import was already applied. Nothing was changed again.');
+    this.name = 'ImportAlreadyAppliedError';
+  }
+}
+
+/** Prisma's code for a unique-index violation. */
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && (error as { code: unknown }).code === 'P2002';
+}
+
 export interface ImportOptions {
+  /** Issued by the preview. Makes a repeated confirm a no-op rather than a second import. */
+  importKey?: string | null;
   fileName: string;
   /** Menu that rows without an explicit `menu` column belong to. */
   defaultMenuKey: string;
@@ -72,15 +87,25 @@ export async function executeImport(
     select: { currency: true, publicId: true },
   });
 
-  const batch = await prisma.importBatch.create({
-    data: {
-      businessId: context.businessId,
-      userId: user.id,
-      fileName: options.fileName,
-      mapping: options.mapping as object,
-      totalRows: options.rows.length,
-    },
-  });
+  // The batch row is written first, and the unique (businessId, importKey)
+  // index refuses a second batch with the same key. Nothing below runs for a
+  // repeat, so a double click or a retried request cannot apply the rows twice.
+  let batch;
+  try {
+    batch = await prisma.importBatch.create({
+      data: {
+        businessId: context.businessId,
+        userId: user.id,
+        fileName: options.fileName,
+        mapping: options.mapping as object,
+        totalRows: options.rows.length,
+        importKey: options.importKey ?? null,
+      },
+    });
+  } catch (error) {
+    if (options.importKey && isUniqueViolation(error)) throw new ImportAlreadyAppliedError();
+    throw error;
+  }
 
   let created = 0;
   let updated = 0;

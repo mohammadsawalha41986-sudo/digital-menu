@@ -6,6 +6,7 @@ import { prisma } from '@/server/db/client';
 import { invalidateProfile } from '@/server/profile/cache';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { ValidationError } from './business-service';
+import { copyItemsTo } from './structure-service';
 import {
   createDish,
   deleteDishes,
@@ -97,6 +98,17 @@ export async function moveDishesAction(businessId: string, itemIds: string[], ta
     const count = await moveDishes(user, businessId, itemIds, targetCategoryId);
     await refresh(businessId);
     return { ok: true, message: count === 1 ? 'Moved 1 dish' : `Moved ${count} dishes`, count };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function copyDishesAction(businessId: string, itemIds: string[], targetCategoryId: string): Promise<PlainResult> {
+  const user = await requireUser();
+  try {
+    const { count } = await copyItemsTo(user, businessId, itemIds, targetCategoryId);
+    await refresh(businessId);
+    return { ok: true, message: count === 1 ? 'Copied 1 dish. The copy is hidden until you show it.' : `Copied ${count} dishes. The copies are hidden until you show them.`, count };
   } catch (error) {
     return failure(error);
   }

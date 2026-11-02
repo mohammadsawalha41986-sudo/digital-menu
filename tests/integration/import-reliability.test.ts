@@ -6,7 +6,7 @@ import { createBusiness, createCategory } from '@/server/admin/business-service'
 import { categoryCreateSchema } from '@/server/admin/validation';
 import { parseSpreadsheet } from '@/server/import/parse';
 import { validateRows } from '@/server/import/validate';
-import { executeImport } from '@/server/import/execute';
+import { executeImport, ImportAlreadyAppliedError } from '@/server/import/execute';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { resetEnvCache } from '@/lib/env';
 import { isValidKey } from '@/lib/keys';
@@ -217,5 +217,27 @@ describe.skipIf(!databaseReachable)('importing a restaurant’s own file', () =>
         rows: [],
       }),
     ).rejects.toBeInstanceOf(TenantAccessError);
+  });
+});
+
+describe.skipIf(!databaseReachable)('confirming the same preview twice', () => {
+  it('applies the rows once; the repeat is refused and changes nothing', async () => {
+    const summary = await preview(await xlsx([['', 'مشاوي', 'Grills', 'كباب مشوي', 'Grilled kebab', '', '30', RESTAURANT]]), 'menu.xlsx');
+    const key = `repeat-${Date.now()}`;
+    const request = {
+      importKey: key,
+      fileName: 'menu.xlsx',
+      defaultMenuKey: 'main',
+      mapping: {},
+      duplicateStrategy: 'update' as const,
+      rows: summary.rows,
+    };
+
+    const first = await executeImport(user, businessId, request);
+    expect(first.created).toBe(1);
+    const afterFirst = await prisma.menuItem.count({ where: { businessId } });
+
+    await expect(executeImport(user, businessId, request)).rejects.toBeInstanceOf(ImportAlreadyAppliedError);
+    expect(await prisma.menuItem.count({ where: { businessId } })).toBe(afterFirst);
   });
 });

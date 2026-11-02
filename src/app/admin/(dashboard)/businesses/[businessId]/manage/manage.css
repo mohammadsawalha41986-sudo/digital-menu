@@ -691,3 +691,24 @@
     border-radius: 14px 0 0 14px;
   }
 }
+
+/* One-click availability: pressed means the dish is on the menu. */
+.mg__toggle {
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: #7a3b16;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mg__toggle[aria-pressed="true"] {
+  background: #e7f6ee;
+  color: #14623a;
+}
+.mg__toggle:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

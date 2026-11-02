@@ -35,6 +35,12 @@ export async function parseSpreadsheet(
   const workbook = new ExcelJS.Workbook();
   const isCsv = fileName.toLowerCase().endsWith('.csv');
 
+  // Legacy binary .xls (OLE2 container) is not read by ExcelJS. Say so plainly
+  // instead of reporting a generic unreadable file.
+  if (isLegacyXls(bytes, fileName)) {
+    throw new ParseError('Legacy .xls files are not supported yet. Open the file, save it as .xlsx or .csv, and upload it again.');
+  }
+
   try {
     if (isCsv) {
       // ExcelJS reads CSV from a stream; a Buffer-backed stream keeps it in
@@ -97,6 +103,13 @@ export async function parseSpreadsheet(
     rowNumbers,
     suggestedMapping: autoMapHeaders(trimmedHeaders),
   };
+}
+
+const OLE2_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+function isLegacyXls(bytes: Uint8Array, fileName: string): boolean {
+  if (fileName.toLowerCase().endsWith('.xls')) return true;
+  return bytes.length >= OLE2_MAGIC.length && OLE2_MAGIC.every((byte, index) => bytes[index] === byte);
 }
 
 /**

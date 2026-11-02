@@ -3,12 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/server/auth/current-user';
 import { invalidateProfile } from '@/server/profile/cache';
-import { TenantAccessError } from '@/server/tenancy/context';
+import { requireTenantContext, TenantAccessError } from '@/server/tenancy/context';
 import { ParseError, parseSpreadsheet } from '@/server/import/parse';
 import { validateRows } from '@/server/import/validate';
 import { planImport, type ExistingItem } from '@/server/import/plan';
 import { IMPORT_COLUMNS } from '@/server/import/columns';
-import { executeImport, rollbackImport } from '@/server/import/execute';
+import { executeImport, ImportAlreadyAppliedError, rollbackImport } from '@/server/import/execute';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '@/server/db/client';
 import type { ActionState } from './actions';
 
@@ -67,6 +68,8 @@ export interface ImportPreviewState extends ActionState {
     availableColumns: { key: string; label: string; required: boolean }[];
     /** Encoded rows, handed back on confirmation so the file is parsed once. */
     payload: string;
+    /** One per preview. The confirm sends it back, and a repeat with it is refused. */
+    importKey: string;
   };
 }
 
@@ -84,21 +87,24 @@ export async function previewImportAction(
     return { error: 'Choose an .xlsx or .csv file' };
   }
 
-  const business = await prisma.business.findFirst({
-    where: {
-      id: businessId,
-      OR: [
-        { memberships: { some: { userId: user.id } } },
-        ...(user.role === 'SUPER_ADMIN' ? [{}] : []),
-      ],
-    },
-    select: {
-      currency: true,
-      nameAr: true,
-      nameEn: true,
-      menus: { select: { key: true, titleAr: true, titleEn: true } },
-    },
-  });
+  // The same tenancy check every other screen uses, so a super admin and a
+  // member are judged the same way.
+  let business;
+  try {
+    const context = await requireTenantContext(user, businessId, 'VIEWER');
+    business = await prisma.business.findUnique({
+      where: { id: context.businessId },
+      select: {
+        currency: true,
+        nameAr: true,
+        nameEn: true,
+        menus: { select: { key: true, titleAr: true, titleEn: true } },
+      },
+    });
+  } catch (error) {
+    if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
+    throw error;
+  }
 
   if (!business) return { error: 'Not found or access denied' };
 
@@ -228,6 +234,7 @@ export async function previewImportAction(
           required: column.required ?? false,
         })),
         payload: Buffer.from(JSON.stringify(validation.rows)).toString('base64'),
+        importKey: randomUUID(),
       },
     };
   } catch (error) {
@@ -248,6 +255,8 @@ export async function confirmImportAction(
   const fileName = String(formData.get('fileName') ?? 'import.xlsx');
   const defaultMenuKey = String(formData.get('menuKey') ?? 'main');
   const duplicateStrategy = formData.get('duplicateStrategy') === 'skip' ? 'skip' : 'update';
+  const rawKey = formData.get('importKey');
+  const importKey = typeof rawKey === 'string' && rawKey.length > 0 && rawKey.length <= 64 ? rawKey : null;
 
   if (typeof payload !== 'string' || payload === '') {
     return { error: 'Preview the file before importing' };
@@ -257,6 +266,7 @@ export async function confirmImportAction(
     const rows = JSON.parse(Buffer.from(payload, 'base64').toString());
 
     const result = await executeImport(user, businessId, {
+      importKey,
       fileName,
       defaultMenuKey,
       mapping: {},
@@ -275,6 +285,10 @@ export async function confirmImportAction(
     };
   } catch (error) {
     if (error instanceof TenantAccessError) return { error: 'Not found or access denied' };
+    // A double click or a retry: the first confirm already did the work.
+    if (error instanceof ImportAlreadyAppliedError) {
+      return { ok: true, message: 'This import was already applied. Nothing was changed again.' };
+    }
     throw error;
   }
 }
