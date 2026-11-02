@@ -1,0 +1,693 @@
+/*
+ * The menu and dishes screen. Built on the admin's own tokens, so it matches the
+ * rest of the admin in both themes. Logical properties throughout, so Arabic
+ * (right to left) and English (left to right) take the same stylesheet.
+ *
+ * Three widths:
+ *   wide (1100px and up): sections | dishes | editor, side by side;
+ *   middle (760 to 1100px): sections | dishes, and the editor covers the dishes;
+ *   phone (under 760px): one column, the sections scroll sideways, the editor
+ *   fills the screen.
+ */
+
+.mg {
+  display: grid;
+  gap: var(--sys-space-3, 12px);
+  min-inline-size: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.mg__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.mg__title h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.mg__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mg__actions .admin__button,
+.mg__bulk .admin__button,
+.mg__row-actions .admin__button,
+.mg__drawer-foot .admin__button {
+  min-block-size: 40px;
+}
+
+.mg__filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) repeat(2, minmax(140px, 1fr)) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.mg__filters label {
+  display: grid;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.mg__view {
+  display: inline-flex;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  overflow: hidden;
+  align-self: end;
+}
+
+.mg__view button {
+  min-block-size: 40px;
+  padding-inline: 12px;
+  border: 0;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mg__view button.is-on,
+.mg__view button[aria-pressed='true'] {
+  background: var(--admin-accent);
+  color: var(--admin-accent-ink);
+}
+
+.mg__banner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--admin-warning, #b45309) 14%, var(--admin-surface));
+  color: var(--admin-ink);
+  font-weight: 600;
+}
+
+.mg__notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+
+.mg__dismiss {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+/* The stage: sections, dishes and (when open) the editor. */
+.mg__body {
+  display: grid;
+  grid-template-columns: minmax(170px, 230px) minmax(0, 1fr);
+  gap: var(--sys-space-3, 12px);
+  align-items: start;
+}
+
+.mg__sections {
+  display: grid;
+  gap: 4px;
+  position: sticky;
+  top: 12px;
+  max-block-size: calc(100vh - 24px);
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface);
+}
+
+.mg__sections button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-block-size: 40px;
+  padding-inline: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--admin-ink);
+  text-align: start;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mg__sections button:hover {
+  background: color-mix(in srgb, var(--admin-accent) 8%, transparent);
+}
+
+.mg__sections button.is-on {
+  background: var(--admin-accent);
+  color: var(--admin-accent-ink);
+}
+
+.mg__sections button > span:last-child {
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.mg__en {
+  font-weight: 400;
+  color: var(--admin-muted);
+}
+
+.mg__sections .mg__en {
+  display: block;
+  font-size: 0.78rem;
+}
+
+.mg__list {
+  min-inline-size: 0;
+}
+
+/* With the editor open: on a very wide screen sections | dishes | editor, side by side. */
+@media (min-width: 1500px) {
+  .mg__body.has-drawer {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(380px, 440px);
+  }
+}
+
+/* Medium screens with the editor open: the sections become a row above the
+   dishes, and the editor takes the right-hand column, so the table has room. */
+@media (min-width: 1100px) and (max-width: 1499px) {
+  .mg__body.has-drawer {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  }
+
+  .mg__body.has-drawer > .mg__sections {
+    grid-column: 1;
+    grid-row: 1;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    position: static;
+    max-block-size: none;
+    overflow-x: auto;
+  }
+
+  .mg__body.has-drawer > .mg__list {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .mg__body.has-drawer > .mg__drawer {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  /* The section is already the row above, so the table drops its column here. */
+  .mg__body.has-drawer .mg__col-section {
+    display: none;
+  }
+}
+
+/* Table view. */
+.mg__table td {
+  vertical-align: middle;
+}
+
+.mg__table tr.is-dragging {
+  opacity: 0.5;
+}
+
+.mg__table tr.is-conflict {
+  background: color-mix(in srgb, var(--admin-warning, #b45309) 8%, transparent);
+}
+
+.mg__dish {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-inline-size: 0;
+}
+
+.mg__name {
+  display: grid;
+  gap: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--admin-ink);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mg__name-ar {
+  font-weight: 700;
+}
+
+.mg__name-en {
+  font-size: 0.85rem;
+  color: var(--admin-muted);
+}
+
+.mg__code {
+  font-size: 0.78rem;
+  color: var(--admin-muted);
+}
+
+.mg__muted {
+  color: var(--admin-muted);
+}
+
+.mg__thumb {
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--admin-surface);
+}
+
+.mg__thumb--large {
+  inline-size: 100%;
+  block-size: 160px;
+}
+
+.mg__thumb--empty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--admin-border);
+  color: var(--admin-muted);
+  font-weight: 700;
+}
+
+.mg__price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mg__price-input {
+  inline-size: 96px;
+  min-block-size: 40px;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.mg__cur {
+  font-size: 0.8rem;
+  color: var(--admin-muted);
+}
+
+.mg__avail {
+  min-block-size: 40px;
+  min-inline-size: 150px;
+}
+
+.mg__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.mg__icon {
+  min-block-size: 40px;
+  min-inline-size: 40px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.mg__icon--danger {
+  color: var(--admin-danger, #b91c1c);
+}
+
+/* Status and conflict notes. */
+.mg__status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-block-start: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-muted);
+}
+
+.mg__status--saving,
+.mg__status--pending {
+  color: var(--admin-muted);
+}
+
+.mg__status--saved {
+  color: var(--admin-ok);
+}
+
+.mg__status--error,
+.mg__status--conflict {
+  color: var(--admin-danger, #b91c1c);
+}
+
+.mg__status-detail {
+  font-weight: 400;
+}
+
+.mg__retry {
+  min-block-size: 32px;
+  padding-inline: 10px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mg__conflict {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-block-start: 6px;
+  font-size: 0.8rem;
+  color: var(--admin-danger, #b91c1c);
+}
+
+.mg__conflict-box {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--admin-danger, #b91c1c);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--admin-danger, #b91c1c) 6%, var(--admin-surface));
+}
+
+.mg__conflict-box p {
+  margin: 0;
+}
+
+/* Cards view (phones, and when chosen). */
+.mg__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mg__card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  background: var(--admin-surface);
+}
+
+.mg__card.is-selected {
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-accent) 25%, transparent);
+}
+
+.mg__card-check {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-start: 14px;
+  z-index: 1;
+  background: var(--admin-surface);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.mg__card-media {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mg__card-body {
+  display: grid;
+  gap: 6px;
+  min-inline-size: 0;
+}
+
+.mg__card-row {
+  display: grid;
+  gap: 8px;
+}
+
+/* Selection bar. */
+.mg__bulk {
+  position: sticky;
+  inset-block-end: 12px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  background: var(--admin-surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.mg__inline {
+  display: inline-flex;
+}
+
+/* The editor: beside the list on wide screens, full screen on phones. */
+.mg__drawer {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  background: var(--admin-surface);
+  position: sticky;
+  top: 12px;
+  max-block-size: calc(100vh - 24px);
+  min-inline-size: 0;
+}
+
+.mg__drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mg__drawer-head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.mg__drawer-head p {
+  margin: 0;
+}
+
+.mg__drawer-body {
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+  padding-inline-end: 4px;
+}
+
+.mg__drawer-section {
+  min-inline-size: 0;
+}
+
+.mg__fields {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+
+.mg__fields .admin__field {
+  min-inline-size: 0;
+}
+
+.mg__two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mg__drawer-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-block-start: 8px;
+  border-block-start: 1px solid var(--admin-border);
+}
+
+.mg__confirm-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+/* Overlays: the add dialog, delete confirmation, and the menus manager. */
+.mg__sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.mg__sheet-card {
+  display: grid;
+  gap: 12px;
+  inline-size: min(480px, 100%);
+  max-block-size: calc(100vh - 32px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+}
+
+.mg__sheet-card--wide {
+  inline-size: min(760px, 100%);
+}
+
+.mg__sheet-card h3,
+.mg__sheet-card h4 {
+  margin: 0;
+}
+
+.mg__names {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 2px;
+}
+
+.mg__danger {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--admin-danger, #b91c1c);
+  border-radius: 12px;
+}
+
+.mg__danger h4 {
+  margin: 0;
+}
+
+.mg__impact {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.mg__menu-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mg__menu-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+}
+
+.mg__live {
+  margin-inline-start: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-ok) 18%, transparent);
+  color: var(--admin-ok);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Phones: one column, the sections scroll sideways, the editor fills the screen. */
+@media (max-width: 1099px) {
+  .mg__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mg__sections {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    position: static;
+    max-block-size: none;
+  }
+
+  .mg__drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    border-radius: 0;
+    max-block-size: none;
+    padding: 16px;
+    overflow: auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .mg__filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .mg__search {
+    grid-column: 1 / -1;
+  }
+
+  .mg__view {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .mg__two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+}
+
+@media (min-width: 761px) and (max-width: 1099px) {
+  .mg__drawer {
+    inset-inline-start: auto;
+    inline-size: min(560px, 100vw);
+    border-inline-start: 1px solid var(--admin-border);
+    border-radius: 14px 0 0 14px;
+  }
+}

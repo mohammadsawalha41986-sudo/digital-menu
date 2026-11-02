@@ -62,8 +62,8 @@ function tabsFor(id: string): Tab[] {
     {
       key: 'dishes',
       label: 'الأطباق · Dishes',
-      href: `${build}/builder`,
-      active: (p) => within(p, `${build}/builder`) || within(p, `${build}/images`),
+      href: `${base}/manage`,
+      active: (p) => within(p, `${base}/manage`) || within(p, `${build}/builder`) || within(p, `${build}/images`),
     },
     { key: 'options', label: 'الخيارات · Options', href: `${base}/options`, active: (p) => within(p, `${base}/options`) },
     { key: 'upsell', label: 'الاقتراحات · Upsell', href: `${base}/upsell`, active: (p) => within(p, `${base}/upsell`) },
