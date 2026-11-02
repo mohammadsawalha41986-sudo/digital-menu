@@ -84,10 +84,13 @@ const SECURITY_HEADERS = [
   // The older header's equivalent of frame-ancestors 'self'.
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  // No feature here is used by either the public profile or the admin.
+  // Every feature here stays off except location, which the cart and the
+  // delivery settings use on this site's own pages.
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+    // Location is allowed for this site only: the cart asks for it to price
+    // delivery by distance, and the browser still asks the visitor first.
+    value: 'camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()',
   },
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },

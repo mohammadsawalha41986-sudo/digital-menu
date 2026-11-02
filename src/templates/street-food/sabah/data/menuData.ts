@@ -78,6 +78,11 @@ export interface RestaurantInfo {
   phone: string;
   phoneFormatted: string;
   whatsappNumber: string;
+  /**
+   * Delivery by distance. Fees are decimal amounts in the restaurant's currency,
+   * like every other price in the cart. No zones: the restaurant confirms the fee.
+   */
+  delivery: { origin: { lat: number; lng: number } | null; zones: { maxKm: number; fee: number }[] };
   addressAr: string;
   addressEn: string;
   landmarkAr: string;
@@ -108,6 +113,7 @@ export const RESTAURANT_INFO: RestaurantInfo = {
   phone: '0580060067',
   phoneFormatted: '058 006 0067',
   whatsappNumber: '966580060067',
+  delivery: { origin: null, zones: [] },
   addressAr: 'حي الصحافة، شمال الرياض، المملكة العربية السعودية',
   addressEn: 'Al-Sahafa District, North Riyadh, Saudi Arabia',
   landmarkAr: 'بالقرب من طريق أنس بن مالك وطريق الملك فهد',

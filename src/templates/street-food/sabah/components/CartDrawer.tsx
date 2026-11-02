@@ -2,12 +2,21 @@
 
 import React, { useState } from 'react';
 import { currencyUnit, formatAmount } from '../money';
-import { X, Trash2, Plus, Minus, MessageCircle, Phone, ShoppingBag, MapPin, Store, Utensils } from 'lucide-react';
+import { X, Trash2, Plus, Minus, MessageCircle, Phone, ShoppingBag, MapPin, Store, Utensils, LocateFixed } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem, Language, OrderType } from '../types';
 import { useSabah } from '../context';
 import type { MenuItem } from '../data/menuData';
 import { Suggestions, orderableSuggestions } from './Suggestions';
+import { distanceKm, isValidPhone, mapLink, quoteDelivery, toLatinDigits, type LatLng } from '@/lib/delivery';
+
+const INPUT_CLASS =
+  'w-full bg-stone-900 border border-emerald-950 rounded-xl px-3 py-2 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400 aria-[invalid=true]:border-red-400';
+
+/** One decimal under ten kilometres ("2.4"), whole kilometres beyond, and never "8.0". */
+function formatKm(km: number): string {
+  return String(km < 10 ? Math.round(km * 10) / 10 : Math.round(km));
+}
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -52,21 +61,71 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [customerName, setCustomerName] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [generalNotes, setGeneralNotes] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [apartment, setApartment] = useState('');
+  const [location, setLocation] = useState<LatLng | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
 
   if (!isOpen) return null;
 
   const isAr = lang === 'ar';
+  const unit = currencyUnit(RESTAURANT_INFO.currency, isAr);
+  const money = (amount: number) => `${formatAmount(amount, RESTAURANT_INFO.currency)} ${unit}`;
 
   const subtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
 
+  // Delivery by distance: the fee is known once the customer shares a location
+  // and the restaurant has set where it delivers from and what each distance costs.
+  const delivery = RESTAURANT_INFO.delivery;
+  const isDelivery = orderType === 'delivery';
+  const hasZones = Boolean(delivery.origin) && delivery.zones.length > 0;
+  const limitKm = hasZones ? Math.max(...delivery.zones.map((zone) => zone.maxKm)) : null;
+  const quote = isDelivery && location && delivery.origin ? quoteDelivery(delivery.zones, distanceKm(delivery.origin, location)) : null;
+  const deliveryFee = quote?.status === 'in_range' ? quote.fee : 0;
+  const outOfRange = quote?.status === 'out_of_range';
+  const total = subtotal + (isDelivery ? deliveryFee : 0);
+
+  const errors = {
+    name: isDelivery && !customerName.trim() ? (isAr ? 'أدخل الاسم' : 'Enter your name') : null,
+    phone: isDelivery && !isValidPhone(customerPhone) ? (isAr ? 'أدخل رقم جوال صحيح' : 'Enter a valid phone number') : null,
+    address: isDelivery && !deliveryAddress.trim() ? (isAr ? 'أدخل عنوان التوصيل' : 'Enter the delivery address') : null,
+  };
+  const canSend = !errors.name && !errors.phone && !errors.address && !outOfRange;
+
+  const locate = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocationError(true);
+      return;
+    }
+    setLocating(true);
+    setLocationError(false);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setLocationError(true);
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 },
+    );
+  };
+
   const handleSendWhatsAppOrder = () => {
     if (cart.length === 0) return;
+    if (!canSend) {
+      setShowErrors(true);
+      return;
+    }
 
     let orderTypeLabel = 'استلام سفري من المطعم';
     if (orderType === 'dineIn') {
       orderTypeLabel = `تناول داخل المطعم (طاولة رقم: ${tableNumber || 'غير محدد'})`;
     } else if (orderType === 'delivery') {
-      orderTypeLabel = `توصيل إلى: ${deliveryAddress || 'العنوان يحدد مع المندوب'}`;
+      orderTypeLabel = 'توصيل';
     }
 
     const itemsText = cart.map((ci, index) => {
@@ -81,8 +140,28 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       return `${index + 1}. ${ci.item.nameAr}${optionStr}${spiceStr} x ${ci.quantity} = ${formatAmount(ci.totalPrice, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}${noteStr}${choiceLines}`;
     }).join('\n');
 
-    const customerInfo = customerName.trim() ? `\n👤 الاسم: ${customerName}` : '';
+    const amountAr = (amount: number) => `${formatAmount(amount, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}`;
+    const customerInfo = isDelivery
+      ? [
+          `\n👤 الاسم: ${customerName.trim()}`,
+          `\n📞 الجوال: ${toLatinDigits(customerPhone.replace(/\s+/g, ''))}`,
+          `\n🏠 العنوان: ${deliveryAddress.trim()}`,
+          apartment.trim() ? `\n🚪 الشقة / الطابق: ${apartment.trim()}` : '',
+          location ? `\n📍 موقع العميل: ${mapLink(location)}` : '\n📍 موقع العميل: لم يُشارَك',
+          quote ? `\n📏 المسافة التقريبية: ${formatKm(quote.km)} كم` : '',
+        ].join('')
+      : customerName.trim()
+        ? `\n👤 الاسم: ${customerName}`
+        : '';
     const noteInfo = generalNotes.trim() ? `\n📝 ملاحظات عامة: ${generalNotes}` : '';
+
+    // Delivery orders carry an invoice: items, the delivery fee, and the total
+    // the customer will pay. Without a known fee, the restaurant confirms it.
+    const totals = isDelivery
+      ? `🧾 مجموع الأصناف: ${amountAr(subtotal)}
+🚚 رسوم التوصيل: ${quote?.status === 'in_range' ? (deliveryFee === 0 ? 'مجاناً' : amountAr(deliveryFee)) : 'يحددها المطعم عند التأكيد'}
+💰 *الإجمالي النهائي:* ${amountAr(total)}${quote?.status === 'in_range' ? '' : ' + رسوم التوصيل'}`
+      : `💰 *الإجمالي النهائي:* ${amountAr(subtotal)}`;
 
     const message = `السلام عليكم ورحمة الله وبركاته 🌙
 أود تأكيد طلب جديد من منيو *${RESTAURANT_INFO.nameAr}*:
@@ -92,7 +171,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 📋 *تفاصيل الطلب:*
 ${itemsText}
 
-💰 *الإجمالي النهائي:* ${formatAmount(subtotal, RESTAURANT_INFO.currency)} ${currencyUnit(RESTAURANT_INFO.currency, true)}
+${totals}
 ${noteInfo}
 شكراً لكم وفي انتظار تأكيدكم!`;
 
@@ -234,23 +313,115 @@ ${noteInfo}
                       />
                     )}
 
-                    {orderType === 'delivery' && (
+                    {orderType === 'delivery' ? (
+                      <div className="space-y-2" data-delivery-form="">
+                        <DeliveryField
+                          label={isAr ? 'الاسم' : 'Name'}
+                          error={showErrors ? errors.name : null}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="name"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            aria-invalid={showErrors && Boolean(errors.name)}
+                            placeholder={isAr ? 'اسمك الكريم' : 'Your name'}
+                            className={INPUT_CLASS}
+                          />
+                        </DeliveryField>
+                        <DeliveryField
+                          label={isAr ? 'رقم الجوال' : 'Phone number'}
+                          error={showErrors ? errors.phone : null}
+                        >
+                          <input
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            dir="ltr"
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            aria-invalid={showErrors && Boolean(errors.phone)}
+                            placeholder="05XXXXXXXX"
+                            className={`${INPUT_CLASS} text-start`}
+                          />
+                        </DeliveryField>
+                        <DeliveryField
+                          label={isAr ? 'العنوان' : 'Address'}
+                          error={showErrors ? errors.address : null}
+                        >
+                          <input
+                            type="text"
+                            autoComplete="street-address"
+                            value={deliveryAddress}
+                            onChange={(e) => setDeliveryAddress(e.target.value)}
+                            aria-invalid={showErrors && Boolean(errors.address)}
+                            placeholder={isAr ? 'الحي، الشارع، رقم المبنى' : 'District, street, building number'}
+                            className={INPUT_CLASS}
+                          />
+                        </DeliveryField>
+                        <DeliveryField label={isAr ? 'الشقة / الطابق (إن وجد)' : 'Apartment / floor (if any)'} error={null}>
+                          <input
+                            type="text"
+                            value={apartment}
+                            onChange={(e) => setApartment(e.target.value)}
+                            placeholder={isAr ? 'مثال: شقة 12، الطابق الثالث' : 'e.g. Apt 12, 3rd floor'}
+                            className={INPUT_CLASS}
+                          />
+                        </DeliveryField>
+
+                        <button
+                          type="button"
+                          onClick={locate}
+                          disabled={locating}
+                          className="w-full min-h-11 py-2 px-3 rounded-xl border border-amber-400/60 text-amber-300 hover:bg-amber-400/10 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                        >
+                          <LocateFixed className="w-4 h-4" />
+                          <span>
+                            {locating
+                              ? isAr ? 'جاري تحديد موقعك…' : 'Finding your location…'
+                              : location
+                                ? isAr ? 'تحديث موقعي' : 'Update my location'
+                                : hasZones
+                                  ? isAr ? 'حدد موقعي لحساب رسوم التوصيل' : 'Use my location for the delivery fee'
+                                  : isAr ? 'أرسل موقعي للمندوب' : 'Share my location with the driver'}
+                          </span>
+                        </button>
+
+                        <p className="text-[11px] leading-relaxed" aria-live="polite" data-delivery-status="">
+                          {quote?.status === 'in_range' ? (
+                            <span className="text-emerald-300">
+                              {isAr
+                                ? `المسافة تقريباً ${formatKm(quote.km)} كم · رسوم التوصيل ${deliveryFee === 0 ? 'مجاناً' : money(deliveryFee)}`
+                                : `About ${formatKm(quote.km)} km · delivery ${deliveryFee === 0 ? 'free' : money(deliveryFee)}`}
+                            </span>
+                          ) : quote?.status === 'out_of_range' ? (
+                            <span className="text-red-300" role="alert">
+                              {isAr
+                                ? `موقعك على بعد ${formatKm(quote.km)} كم تقريباً، والمطعم يوصّل حتى ${formatKm(quote.limitKm)} كم. اختر السفري أو تواصل مع المطعم.`
+                                : `You are about ${formatKm(quote.km)} km away; the restaurant delivers up to ${formatKm(quote.limitKm)} km. Choose takeaway or contact the restaurant.`}
+                            </span>
+                          ) : locationError ? (
+                            <span className="text-amber-200">
+                              {isAr
+                                ? 'تعذّر تحديد موقعك. يمكنك إرسال الطلب وسيحدد المطعم رسوم التوصيل.'
+                                : 'We could not get your location. You can still send the order; the restaurant will confirm the delivery fee.'}
+                            </span>
+                          ) : location ? (
+                            <span className="text-emerald-300">{isAr ? 'تم تحديد موقعك وسيُرسل مع الطلب.' : 'Your location will be sent with the order.'}</span>
+                          ) : limitKm !== null ? (
+                            <span className="text-stone-400">{isAr ? `يوصّل المطعم حتى ${formatKm(limitKm)} كم.` : `The restaurant delivers up to ${formatKm(limitKm)} km.`}</span>
+                          ) : null}
+                        </p>
+                      </div>
+                    ) : (
                       <input
                         type="text"
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        placeholder={isAr ? 'عنوان التوصيل (الحي، الشارع، رقم المبنى)' : 'Delivery address'}
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder={isAr ? 'اسمك الكريم (اختياري)' : 'Your name (Optional)'}
                         className="w-full bg-stone-900 border border-emerald-950 rounded-xl px-3 py-1.5 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400"
                       />
                     )}
-
-                    <input
-                      type="text"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder={isAr ? 'اسمك الكريم (اختياري)' : 'Your name (Optional)'}
-                      className="w-full bg-stone-900 border border-emerald-950 rounded-xl px-3 py-1.5 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400"
-                    />
                   </div>
 
                   {/* Items */}
@@ -358,15 +529,35 @@ ${noteInfo}
                 <div className="space-y-1.5 text-xs text-stone-300">
                   <div className="flex justify-between">
                     <span>{isAr ? 'مجموع الأصناف' : 'Subtotal'}</span>
-                    <span className="tabular-nums font-semibold">{formatAmount(subtotal, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}</span>
+                    <span className="tabular-nums font-semibold">{money(subtotal)}</span>
                   </div>
+                  {isDelivery ? (
+                    <div className="flex justify-between" data-delivery-fee="">
+                      <span>{isAr ? 'رسوم التوصيل' : 'Delivery fee'}</span>
+                      <span className="tabular-nums font-semibold">
+                        {quote?.status === 'in_range'
+                          ? deliveryFee === 0
+                            ? isAr ? 'مجاناً' : 'Free'
+                            : money(deliveryFee)
+                          : isAr ? 'يحددها المطعم' : 'Confirmed by the restaurant'}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex justify-between text-base font-black text-white pt-1.5 border-t border-emerald-950">
                     <span>{isAr ? 'الإجمالي النهائي' : 'Total Amount'}</span>
-                    <span className="text-amber-400 tabular-nums font-black text-lg">
-                      {formatAmount(subtotal, RESTAURANT_INFO.currency)} {currencyUnit(RESTAURANT_INFO.currency, isAr)}
+                    <span className="text-amber-400 tabular-nums font-black text-lg" data-order-total="">
+                      {money(total)}
                     </span>
                   </div>
                 </div>
+
+                {showErrors && !canSend ? (
+                  <p className="text-[11px] text-red-300 text-center" role="alert">
+                    {outOfRange
+                      ? isAr ? 'العنوان خارج نطاق التوصيل.' : 'This address is outside the delivery area.'
+                      : isAr ? 'أكمل بيانات التوصيل المطلوبة أعلاه.' : 'Complete the delivery details above.'}
+                  </p>
+                ) : null}
 
                 {/* Send WhatsApp Order Button with Motion */}
 
@@ -408,3 +599,32 @@ ${noteInfo}
     </AnimatePresence>
   );
 };
+
+/**
+ * A labelled field with its error underneath. The error sits outside the label
+ * so the field keeps its own name, and is tied to the input as its description.
+ */
+function DeliveryField({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error: string | null;
+  children: React.ReactElement<{ 'aria-describedby'?: string }>;
+}) {
+  const errorId = React.useId();
+  return (
+    <div className="space-y-1">
+      <label className="block space-y-1">
+        <span className="text-[11px] font-bold text-emerald-200">{label}</span>
+        {error ? React.cloneElement(children, { 'aria-describedby': errorId }) : children}
+      </label>
+      {error ? (
+        <span id={errorId} className="block text-[11px] text-red-300">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}

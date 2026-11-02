@@ -209,6 +209,12 @@ export interface PublicSeo {
   ogImage: PublicImage | null;
 }
 
+export interface PublicDelivery {
+  origin: { lat: number; lng: number } | null;
+  /** Nearest first. The farthest band is the delivery limit. */
+  zones: { maxKm: number; feeMinor: number }[];
+}
+
 export interface PublicProfile {
   /** The permanent public identifier the QR encodes. */
   publicId: string;
@@ -250,6 +256,11 @@ export interface PublicProfile {
   heroBanners: PublicHeroBanner[];
   /** Seconds each hero slide stays. */
   heroIntervalSec: number;
+  /**
+   * Delivery by distance. `origin` is null until the restaurant sets it; no
+   * zones means the cart adds no fee and the restaurant confirms it.
+   */
+  delivery?: PublicDelivery;
   /** How the automatic offers section orders discounted dishes. */
   offersSort?: 'PERCENT' | 'SAVING' | 'NEWEST' | 'ENDING' | 'MANUAL';
   /** Suggest dishes automatically where a dish has no picks of its own. */

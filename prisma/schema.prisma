@@ -200,6 +200,11 @@ model Business {
   logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
   welcome         Media?               @relation("BusinessWelcome", fields: [welcomeMediaId], references: [id], onDelete: SetNull)
   ogImage         Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
+  /// Where delivery distance is measured from. Null until the restaurant sets it.
+  deliveryLat     Decimal?             @db.Decimal(9, 6)
+  deliveryLng     Decimal?             @db.Decimal(9, 6)
+  /// Distance bands and their fees, nearest first. Empty means no automatic fee.
+  deliveryZones   DeliveryZone[]
 
   @@index([status])
   @@index([createdAt])
@@ -1489,4 +1494,19 @@ model DeletedRecord {
 
   @@index([businessId, deletedAt])
   @@map("deleted_records")
+}
+
+/// A delivery distance band: an order up to `maxMeters` (straight line) from
+/// the restaurant costs `feeMinor`. The farthest band is the delivery limit.
+model DeliveryZone {
+  id         String   @id @default(cuid())
+  businessId String
+  maxMeters  Int
+  feeMinor   Int
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, maxMeters])
+  @@map("delivery_zones")
 }

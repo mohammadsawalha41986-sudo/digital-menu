@@ -133,6 +133,9 @@ async function loadProfile(
       templateKey: true,
       variantKey: true,
       heroIntervalSec: true,
+      deliveryLat: true,
+      deliveryLng: true,
+      deliveryZones: { orderBy: { maxMeters: 'asc' }, select: { maxMeters: true, feeMinor: true } },
       offersSort: true,
       autoUpsell: true,
       discountIncludesOptions: true,
@@ -456,6 +459,13 @@ async function loadProfile(
       .filter((menu) => !activeMenuKey || menu.key === activeMenuKey)
       .map((menu): PublicMenu => toMenu(menu, overrides, business.currency, sale)),
     heroIntervalSec: business.heroIntervalSec,
+    delivery: {
+      origin:
+        business.deliveryLat !== null && business.deliveryLng !== null
+          ? { lat: Number(business.deliveryLat), lng: Number(business.deliveryLng) }
+          : null,
+      zones: business.deliveryZones.map((zone) => ({ maxKm: zone.maxMeters / 1000, feeMinor: zone.feeMinor })),
+    },
     offersSort: isOfferSort(business.offersSort) ? business.offersSort : 'PERCENT',
     autoUpsell: business.autoUpsell,
     offersRefreshAt: await nextDiscountChange(business.id, sale.now),

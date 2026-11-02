@@ -67,6 +67,7 @@ function tabsFor(id: string): Tab[] {
     },
     { key: 'options', label: 'الخيارات · Options', href: `${base}/options`, active: (p) => within(p, `${base}/options`) },
     { key: 'upsell', label: 'الاقتراحات · Upsell', href: `${base}/upsell`, active: (p) => within(p, `${base}/upsell`) },
+    { key: 'delivery', label: 'التوصيل · Delivery', href: `${base}/delivery`, active: (p) => within(p, `${base}/delivery`) },
     { key: 'sections', label: 'الأقسام · Sections', href: `${base}/sections`, active: (p) => within(p, `${base}/sections`) },
     { key: 'design', label: 'التصميم · Design', href: `${base}/design`, active: (p) => within(p, `${base}/design`) },
     { key: 'publish', label: 'النشر · Publish', href: `${build}/review`, active: (p) => within(p, `${build}/review`) },

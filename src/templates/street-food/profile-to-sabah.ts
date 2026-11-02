@@ -165,6 +165,10 @@ export function profileToSabah(profile: PublicProfile): {
     phone,
     phoneFormatted: phone,
     whatsappNumber: whatsapp,
+    delivery: {
+      origin: profile.delivery?.origin ?? null,
+      zones: (profile.delivery?.zones ?? []).map((zone) => ({ maxKm: zone.maxKm, fee: toAmount(zone.feeMinor) })),
+    },
     addressAr: profile.contact.addressAr ?? '',
     addressEn: profile.contact.addressEn ?? profile.contact.addressAr ?? '',
     // Landmark text is a Sabah-specific nicety that the platform does not
