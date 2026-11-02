@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
 import { signIn } from './support/admin';
 
 /**
@@ -80,4 +80,140 @@ test('a dish can be added into a new section named in the same dialog', async ({
   await page.getByRole('dialog', { name: 'Confirm delete' }).getByRole('button', { name: /^حذف · Delete$/ }).click();
   await expect(page.locator('[data-dish-row]', { hasText: dish })).toHaveCount(0);
   await deleteEmptySection(page, section);
+});
+
+/**
+ * The last two sections of one menu, by key and name. The tests below arrange
+ * and hide these, not the first ones, because other suites read the menu's
+ * first dish while they run.
+ */
+async function lastTwoSections(page: Page) {
+  const rows = page.locator('[data-drop-section]');
+  const all = await rows.evaluateAll((elements) =>
+    elements.map((element) => ({
+      key: element.getAttribute('data-drop-section') ?? '',
+      menu: element.getAttribute('data-section-menu') ?? '',
+    })),
+  );
+  const menu = all[all.length - 1]!.menu;
+  const inMenu = all.filter((section) => section.menu === menu);
+  expect(inMenu.length).toBeGreaterThan(1);
+  return { last: inMenu[inMenu.length - 1]!.key, beforeLast: inMenu[inMenu.length - 2]!.key };
+}
+
+async function sectionName(page: Page, key: string): Promise<string> {
+  return (await page.locator(`[data-section-row="${key}"]`).getAttribute('data-section-name')) ?? '';
+}
+
+async function arrangeOrder(page: Page): Promise<string[]> {
+  return page.locator('[data-section-row]').evaluateAll((elements) => elements.map((element) => element.getAttribute('data-section-row') ?? ''));
+}
+
+/** A dish in the section that is on the public menu now. */
+async function shownDishIn(page: Page, key: string): Promise<string> {
+  await page.locator(`[data-drop-section="${key}"]`).click();
+  const row = page.locator('[data-dish-row]').filter({ has: page.locator('.mg__eye[data-hidden="false"]') }).first();
+  const code = await row.getAttribute('data-dish-row');
+  expect(code).toBeTruthy();
+  return code!;
+}
+
+async function publicMenu(browser: Browser) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto('/m/SBH001?lang=ar');
+  return { context, page };
+}
+
+test('sections can be put in a new order, and the order is kept after a reload', async ({ page }) => {
+  test.setTimeout(120_000);
+  const url = await manageHref(page);
+  await page.goto(url);
+  const { last, beforeLast } = await lastTwoSections(page);
+
+  await page.getByRole('button', { name: /ترتيب وإظهار الأقسام/ }).click();
+  const name = await sectionName(page, last);
+  await page.getByRole('button', { name: `Move ${name} up`, exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Section order saved');
+
+  await page.reload();
+  await page.getByRole('button', { name: /ترتيب وإظهار الأقسام/ }).click();
+  const order = await arrangeOrder(page);
+  expect(order.indexOf(last)).toBe(order.indexOf(beforeLast) - 1);
+
+  // Put it back.
+  await page.getByRole('button', { name: `Move ${name} down`, exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Section order saved');
+  const restored = await arrangeOrder(page);
+  expect(restored.indexOf(last)).toBe(restored.indexOf(beforeLast) + 1);
+});
+
+test('a hidden section leaves the public menu with its dishes, and comes back when shown', async ({ page, browser }) => {
+  test.setTimeout(120_000);
+  await page.goto(await manageHref(page));
+  const { last } = await lastTwoSections(page);
+  const code = await shownDishIn(page, last);
+
+  await page.getByRole('button', { name: /ترتيب وإظهار الأقسام/ }).click();
+  const name = await sectionName(page, last);
+  const visitor = await publicMenu(browser);
+  try {
+    await page.getByRole('button', { name: `Hide ${name}`, exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('مخفي من المنيو');
+    await visitor.page.reload();
+    await expect(visitor.page.locator(`#menu-items-container [data-item="${code}"]`)).toHaveCount(0);
+  } finally {
+    await page.getByRole('button', { name: `Show ${name}`, exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('ظاهر الآن');
+  }
+  await visitor.page.reload();
+  await expect(visitor.page.locator(`#menu-items-container [data-item="${code}"]`)).toHaveCount(1);
+  await visitor.context.close();
+});
+
+test('a dish is hidden and shown again with one button', async ({ page, browser }) => {
+  test.setTimeout(120_000);
+  await page.goto(await manageHref(page));
+  const { last } = await lastTwoSections(page);
+  const code = await shownDishIn(page, last);
+  const row = page.locator(`[data-dish-row="${code}"]`).first();
+  const visitor = await publicMenu(browser);
+  try {
+    await row.getByRole('button', { name: 'إخفاء · Hide' }).click();
+    await expect(row.getByRole('button', { name: 'إظهار · Show' })).toBeVisible();
+    await visitor.page.reload();
+    await expect(visitor.page.locator(`#menu-items-container [data-item="${code}"]`)).toHaveCount(0);
+  } finally {
+    await row.getByRole('button', { name: 'إظهار · Show' }).click();
+    await expect(row.getByRole('button', { name: 'إخفاء · Hide' })).toBeVisible();
+  }
+  await visitor.page.reload();
+  await expect(visitor.page.locator(`#menu-items-container [data-item="${code}"]`)).toHaveCount(1);
+  await visitor.context.close();
+});
+
+test('a dish dragged onto another section moves there, and can be dragged back', async ({ browser }) => {
+  test.setTimeout(120_000);
+  // Dragging is a mouse gesture: a laptop-sized window.
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  try {
+    await signIn(page);
+    await page.goto(await manageHref(page));
+    const { last, beforeLast } = await lastTwoSections(page);
+    const code = await shownDishIn(page, last);
+
+    await page.locator(`[data-dish-row="${code}"] .mg__code`).first().dragTo(page.locator(`[data-drop-section="${beforeLast}"]`));
+    await expect(page.getByRole('status')).toContainText('Moved');
+    await page.locator(`[data-drop-section="${beforeLast}"]`).click();
+    await expect(page.locator(`[data-dish-row="${code}"]`)).toHaveCount(1);
+
+    // And back where it was.
+    await page.locator(`[data-dish-row="${code}"] .mg__code`).first().dragTo(page.locator(`[data-drop-section="${last}"]`));
+    await expect(page.getByRole('status')).toContainText('Moved');
+    await page.locator(`[data-drop-section="${last}"]`).click();
+    await expect(page.locator(`[data-dish-row="${code}"]`)).toHaveCount(1);
+  } finally {
+    await context.close();
+  }
 });

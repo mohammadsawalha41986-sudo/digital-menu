@@ -749,3 +749,120 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Arranging sections: a panel in place of the dish list, one row per section. */
+.mg__sections .mg__arrange {
+  font-weight: 600;
+}
+.mg__sections .mg__arrange[aria-pressed="true"] {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+.mg__arranger {
+  display: grid;
+  gap: 16px;
+}
+.mg__arranger-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mg__arranger-head h3 {
+  margin: 0 0 4px;
+}
+.mg__arranger-menu {
+  display: grid;
+  gap: 8px;
+}
+.mg__arranger-menu h4 {
+  margin: 0;
+}
+.mg__arranger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.mg__section-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(127, 127, 127, 0.35);
+  border-radius: 12px;
+  background: rgba(127, 127, 127, 0.04);
+  cursor: grab;
+}
+.mg__section-row.is-dragging {
+  opacity: 0.5;
+}
+.mg__section-row.is-hidden .mg__section-label,
+.mg__sections button.is-hidden {
+  opacity: 0.6;
+}
+.mg__grip {
+  opacity: 0.6;
+  letter-spacing: -2px;
+}
+.mg__section-label {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+.mg__section-meta {
+  font-size: 0.82em;
+  opacity: 0.7;
+}
+.mg__section-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mg__section-tools .mg__icon:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.mg__hidden-tag {
+  font-style: normal;
+  font-size: 0.85em;
+}
+.mg__eye {
+  min-height: 36px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mg__eye[data-hidden="true"] {
+  font-weight: 600;
+}
+.mg__sections button.is-drop {
+  outline: 2px dashed currentColor;
+  outline-offset: -2px;
+}
+.mg__drop-hint {
+  margin: 0;
+  font-size: 0.82em;
+  opacity: 0.75;
+  line-height: 1.6;
+}
+
+@media (max-width: 560px) {
+  .mg__section-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .mg__section-tools {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}

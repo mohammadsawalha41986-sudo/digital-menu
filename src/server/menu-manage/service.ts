@@ -711,3 +711,63 @@ export async function deleteSection(user: AuthenticatedUser, businessId: string,
     metadata: { key: section.key, nameAr: section.nameAr },
   });
 }
+
+/**
+ * Sets the order of a menu's sections. The whole order is written at once, so
+ * a replayed request cannot drift it, and a list that no longer matches the
+ * menu (a section added or removed meanwhile) is refused rather than guessed at.
+ */
+export async function reorderSections(
+  user: AuthenticatedUser,
+  businessId: string,
+  menuId: string,
+  orderedIds: string[],
+): Promise<void> {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const sections = await prisma.menuCategory.findMany({ where: { menuId, ...tenantScope(context) }, select: { id: true } });
+  if (sections.length === 0) throw new ValidationError('That menu was not found.');
+
+  const known = new Set(sections.map((section) => section.id));
+  const complete =
+    orderedIds.length === sections.length &&
+    new Set(orderedIds).size === orderedIds.length &&
+    orderedIds.every((id) => known.has(id));
+  if (!complete) throw new ValidationError('The sections changed on another screen. Reload the page and arrange them again.');
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) => prisma.menuCategory.update({ where: { id }, data: { sortOrder: index } })),
+  );
+  await recordAudit({
+    action: 'category.updated',
+    entity: 'menu',
+    entityId: menuId,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { reordered: orderedIds.length },
+  });
+}
+
+/**
+ * Shows or hides a section on the public menu. A hidden section keeps its
+ * dishes, its order and its layout; customers simply do not see it.
+ */
+export async function setSectionVisible(
+  user: AuthenticatedUser,
+  businessId: string,
+  categoryId: string,
+  visible: boolean,
+): Promise<{ nameAr: string }> {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const section = await prisma.menuCategory.findFirst({ where: { id: categoryId, ...tenantScope(context) }, select: { id: true, nameAr: true } });
+  if (!section) throw new ValidationError('That section was not found.');
+  await prisma.menuCategory.update({ where: { id: section.id }, data: { isActive: visible } });
+  await recordAudit({
+    action: 'category.updated',
+    entity: 'menu_category',
+    entityId: section.id,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { visible },
+  });
+  return { nameAr: section.nameAr };
+}

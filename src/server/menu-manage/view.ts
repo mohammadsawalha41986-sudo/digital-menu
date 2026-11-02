@@ -31,6 +31,8 @@ export interface SectionView {
   key: string;
   nameAr: string;
   nameEn: string | null;
+  /** False when the section is hidden from the public menu. */
+  visible: boolean;
   dishes: DishRowView[];
 }
 
@@ -76,6 +78,7 @@ export async function loadManageView(user: AuthenticatedUser, businessId: string
             key: true,
             nameAr: true,
             nameEn: true,
+            isActive: true,
             items: {
               orderBy: { sortOrder: 'asc' },
               select: {
@@ -133,6 +136,7 @@ export async function loadManageView(user: AuthenticatedUser, businessId: string
         key: category.key,
         nameAr: category.nameAr,
         nameEn: category.nameEn,
+        visible: category.isActive,
         dishes: category.items.map((item) => ({
           id: item.id,
           itemCode: item.itemCode,

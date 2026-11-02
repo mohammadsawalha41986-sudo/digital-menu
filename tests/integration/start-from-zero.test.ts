@@ -5,7 +5,15 @@ import { PrismaClient } from '@/generated/prisma/client';
 import { createBusiness, ValidationError } from '@/server/admin/business-service';
 import { TenantAccessError } from '@/server/tenancy/context';
 import { resetEnvCache } from '@/lib/env';
-import { createDish, createSection, deleteMenu, deleteSection, restoreDeletedRecord } from '@/server/menu-manage/service';
+import {
+  createDish,
+  createSection,
+  deleteMenu,
+  deleteSection,
+  reorderSections,
+  restoreDeletedRecord,
+  setSectionVisible,
+} from '@/server/menu-manage/service';
 import { parseSpreadsheet } from '@/server/import/parse';
 import { validateRows } from '@/server/import/validate';
 import { executeImport } from '@/server/import/execute';
@@ -179,5 +187,44 @@ run('starting from a restaurant with no menu', () => {
     expect(menus).toHaveLength(1);
     expect(menus[0]!.currentVersionId).not.toBeNull();
     expect(menus[0]!.categories.flatMap((category) => category.items.map((item) => item.nameAr)).sort()).toEqual(['شيش طاووق', 'عصير برتقال']);
+  });
+});
+
+run('arranging sections and showing or hiding them', () => {
+  it('saves a new section order, and refuses a list that does not match the menu', async () => {
+    const a = await createSection(owner, businessId, { nameAr: 'أول' });
+    const b = await createSection(owner, businessId, { nameAr: 'ثاني' });
+    const c = await createSection(owner, businessId, { nameAr: 'ثالث' });
+
+    await reorderSections(owner, businessId, a.menuId, [c.id, a.id, b.id]);
+    const ordered = await prisma.menuCategory.findMany({ where: { menuId: a.menuId }, orderBy: { sortOrder: 'asc' }, select: { id: true } });
+    expect(ordered.map((section) => section.id)).toEqual([c.id, a.id, b.id]);
+
+    // A section missing from the list, or one repeated, is refused and nothing moves.
+    await expect(reorderSections(owner, businessId, a.menuId, [a.id, b.id])).rejects.toBeInstanceOf(ValidationError);
+    await expect(reorderSections(owner, businessId, a.menuId, [a.id, a.id, b.id])).rejects.toBeInstanceOf(ValidationError);
+    const unchanged = await prisma.menuCategory.findMany({ where: { menuId: a.menuId }, orderBy: { sortOrder: 'asc' }, select: { id: true } });
+    expect(unchanged.map((section) => section.id)).toEqual([c.id, a.id, b.id]);
+  });
+
+  it('cannot order or hide another restaurant’s sections', async () => {
+    const theirs = await createSection(owner, otherBusinessId, { nameAr: `قسمهم ${Date.now()}` });
+    await expect(reorderSections(owner, businessId, theirs.menuId, [theirs.id])).rejects.toBeInstanceOf(ValidationError);
+    await expect(setSectionVisible(owner, businessId, theirs.id, false)).rejects.toBeInstanceOf(ValidationError);
+    expect((await prisma.menuCategory.findUniqueOrThrow({ where: { id: theirs.id } })).isActive).toBe(true);
+  });
+
+  it('a hidden section leaves the public menu with its dishes, and comes back when shown', async () => {
+    await createDish(owner, businessId, { newSection: 'المقبلات', nameAr: 'حمص', price: '8' });
+    const section = await prisma.menuCategory.findFirstOrThrow({ where: { businessId, nameAr: 'المقبلات' } });
+    const publicNames = async () =>
+      (await getPublicProfile(publicId))?.menus.flatMap((menu) => menu.categories.flatMap((category) => category.items.map((item) => item.nameAr))) ?? [];
+
+    await setSectionVisible(owner, businessId, section.id, false);
+    expect(await publicNames()).not.toContain('حمص');
+    expect(await prisma.menuItem.count({ where: { categoryId: section.id } })).toBe(1);
+
+    await setSectionVisible(owner, businessId, section.id, true);
+    expect(await publicNames()).toContain('حمص');
   });
 });

@@ -11,6 +11,8 @@ import {
   createDish,
   createSection,
   deleteSection,
+  reorderSections,
+  setSectionVisible,
   deleteDishes,
   deleteMenu,
   ItemConflictError,
@@ -104,6 +106,31 @@ export async function createSectionAction(
       message: section.menuCreated
         ? `Added the section “${section.nameAr}”, and created your menu for it.`
         : `Added the section “${section.nameAr}”.`,
+    };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function reorderSectionsAction(businessId: string, menuId: string, orderedIds: string[]): Promise<PlainResult> {
+  const user = await requireUser();
+  try {
+    await reorderSections(user, businessId, menuId, orderedIds);
+    await refresh(businessId);
+    return { ok: true, message: 'Section order saved.' };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function setSectionVisibleAction(businessId: string, categoryId: string, visible: boolean): Promise<PlainResult> {
+  const user = await requireUser();
+  try {
+    const { nameAr } = await setSectionVisible(user, businessId, categoryId, visible);
+    await refresh(businessId);
+    return {
+      ok: true,
+      message: visible ? `«${nameAr}» ظاهر الآن في المنيو · Shown on the menu` : `«${nameAr}» مخفي من المنيو · Hidden from the menu`,
     };
   } catch (error) {
     return failure(error);

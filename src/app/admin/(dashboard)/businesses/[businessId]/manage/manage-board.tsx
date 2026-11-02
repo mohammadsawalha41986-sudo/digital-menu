@@ -11,6 +11,8 @@ import {
   deleteSectionAction,
   moveDishesAction,
   reorderDishesAction,
+  reorderSectionsAction,
+  setSectionVisibleAction,
 } from '@/server/admin/manage-actions';
 import type { ManageView, DishRowView } from '@/server/menu-manage/view';
 import type { ItemView } from '@/server/menu-manage/service';
@@ -86,6 +88,11 @@ export function ManageBoard({ businessId, view, picker }: Props) {
   const [addingSection, setAddingSection] = useState(false);
   /** The add-dish dialog's section: an existing one, or NEW_SECTION to name a new one. */
   const [dishSection, setDishSection] = useState('');
+  /** Arranging sections: drag or ▲▼ to order them, and hide or show each. */
+  const [arranging, setArranging] = useState(false);
+  const [dragSection, setDragSection] = useState<string | null>(null);
+  /** The section a dragged dish is over, so it can light up as the drop target. */
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [menuManagerOpen, setMenuManagerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -414,6 +421,100 @@ export function ManageBoard({ businessId, view, picker }: Props) {
     setCreating(true);
   }
 
+  /** Saves a menu's section order, showing it at once and putting it back if the save fails. */
+  async function saveSectionOrder(menuId: string, ids: string[]) {
+    const previous = menus;
+    setMenus((current) =>
+      current.map((menu) =>
+        menu.id !== menuId
+          ? menu
+          : { ...menu, sections: ids.flatMap((id) => menu.sections.filter((section) => section.id === id)) },
+      ),
+    );
+    const result = await reorderSectionsAction(businessId, menuId, ids);
+    if (!result.ok) {
+      setMenus(previous);
+      say('error', `${result.error} The order was put back.`);
+    } else {
+      say('ok', 'ترتيب الأقسام محفوظ · Section order saved');
+    }
+  }
+
+  function moveSection(sectionId: string, delta: -1 | 1) {
+    const menu = menus.find((candidate) => candidate.sections.some((section) => section.id === sectionId));
+    if (!menu) return;
+    const ids = menu.sections.map((section) => section.id);
+    const index = ids.indexOf(sectionId);
+    const target = index + delta;
+    if (target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+    void saveSectionOrder(menu.id, ids);
+  }
+
+  /** Drops the dragged section in the place of the one it lands on. */
+  function dropSectionOn(targetId: string) {
+    const dragged = dragSection;
+    setDragSection(null);
+    if (!dragged || dragged === targetId) return;
+    const menu = menus.find((candidate) => candidate.sections.some((section) => section.id === targetId));
+    if (!menu || !menu.sections.some((section) => section.id === dragged)) {
+      say('error', 'الأقسام تُرتب داخل المنيو نفسه · Sections are arranged within their own menu.');
+      return;
+    }
+    const ids = menu.sections.map((section) => section.id).filter((id) => id !== dragged);
+    ids.splice(ids.indexOf(targetId), 0, dragged);
+    void saveSectionOrder(menu.id, ids);
+  }
+
+  async function toggleSection(sectionId: string, visible: boolean) {
+    const flip = (value: boolean) =>
+      setMenus((current) =>
+        current.map((menu) => ({
+          ...menu,
+          sections: menu.sections.map((section) => (section.id === sectionId ? { ...section, visible: value } : section)),
+        })),
+      );
+    flip(visible);
+    const result = await setSectionVisibleAction(businessId, sectionId, visible);
+    if (result.ok) {
+      say('ok', result.message);
+    } else {
+      flip(!visible);
+      say('error', result.error);
+    }
+  }
+
+  /** A dish dragged onto a section in the list moves there. */
+  async function moveDishToSection(dishId: string, sectionId: string) {
+    setDragId(null);
+    setDropTarget(null);
+    const from = allSections.find((section) => section.dishes.some((dish) => dish.id === dishId));
+    const to = allSections.find((section) => section.id === sectionId);
+    if (!from || !to || from.id === to.id) return;
+    const moved = from.dishes.find((dish) => dish.id === dishId)!;
+    setBusy(true);
+    const result = await moveDishesAction(businessId, [dishId], sectionId);
+    setBusy(false);
+    if (!result.ok) {
+      say('error', result.error);
+      return;
+    }
+    setMenus((current) =>
+      current.map((menu) => ({
+        ...menu,
+        sections: menu.sections.map((section) =>
+          section.id === from.id
+            ? { ...section, dishes: section.dishes.filter((dish) => dish.id !== dishId) }
+            : section.id === to.id
+              ? { ...section, dishes: [...section.dishes, { ...moved, categoryId: to.id }] }
+              : section,
+        ),
+      })),
+    );
+    say('ok', `نُقل «${moved.nameAr}» إلى «${to.nameAr}» · Moved`);
+    router.refresh();
+  }
+
   return (
     <div className="mg" data-manage>
       {!online ? (
@@ -494,16 +595,35 @@ export function ManageBoard({ businessId, view, picker }: Props) {
           <button type="button" className={activeSection === 'all' ? 'is-on' : ''} onClick={() => setActiveSection('all')}>
             كل الأقسام · All sections <span>{visible.length}</span>
           </button>
+          {view.canEdit && allSections.length > 0 ? (
+            <button type="button" className="mg__arrange" aria-pressed={arranging} onClick={() => setArranging((on) => !on)}>
+              {arranging ? 'تم · Done' : 'ترتيب وإظهار الأقسام · Arrange sections'}
+            </button>
+          ) : null}
           {sections.map((section) => {
             const count = rows.filter((row) => row.dish && section.dishes.some((d) => d.id === row.dish.id)).length;
             return (
-              <button key={section.id} type="button" className={activeSection === section.id ? 'is-on' : ''} onClick={() => setActiveSection(section.id)}>
+              <button
+                key={section.id}
+                type="button"
+                className={`${activeSection === section.id ? 'is-on' : ''}${dragId && dropTarget === section.id ? ' is-drop' : ''}${section.visible ? '' : ' is-hidden'}`}
+                onClick={() => setActiveSection(section.id)}
+                onDragOver={(event) => { if (dragId) { event.preventDefault(); setDropTarget(section.id); } }}
+                onDragLeave={() => setDropTarget((current) => (current === section.id ? null : current))}
+                onDrop={(event) => { event.preventDefault(); if (dragId) void moveDishToSection(dragId, section.id); }}
+                data-drop-section={section.key}
+                data-section-menu={section.menuId}
+              >
                 {section.nameAr}
                 {section.nameEn ? <span className="mg__en"> · {section.nameEn}</span> : null}
+                {section.visible ? null : <em className="mg__hidden-tag"> · مخفي</em>}
                 <span>{count}</span>
               </button>
             );
           })}
+          {reorderOn && view.canEdit && !arranging ? (
+            <p className="mg__drop-hint">لنقل صنف إلى قسم آخر، اسحبه إلى اسم القسم هنا. · To move a dish, drag it onto a section here.</p>
+          ) : null}
           {view.canEdit ? (
             <button type="button" className="mg__add-section" onClick={() => setAddingSection(true)}>
               + قسم جديد · New section
@@ -522,7 +642,60 @@ export function ManageBoard({ businessId, view, picker }: Props) {
         </nav>
 
         <section className="mg__list" aria-label="Dishes">
-          {noSections ? (
+          {arranging ? (
+            <div className="mg__arranger" data-arranger="">
+              <div className="mg__arranger-head">
+                <div>
+                  <h3>ترتيب الأقسام وإظهارها · Arrange sections</h3>
+                  <p className="admin__hint">
+                    اسحب القسم إلى مكانه أو استخدم ▲▼. القسم المخفي لا يراه العملاء ويبقى بأطباقه. · Drag a section or use ▲▼.
+                    A hidden section keeps its dishes.
+                  </p>
+                </div>
+                <button type="button" className="admin__button" onClick={() => setArranging(false)}>تم · Done</button>
+              </div>
+              {menus
+                .filter((menu) => activeMenu === 'all' || menu.id === activeMenu)
+                .map((menu) => (
+                  <div key={menu.id} className="mg__arranger-menu">
+                    {menus.length > 1 ? <h4>{menu.title}</h4> : null}
+                    <ol className="mg__arranger-list">
+                      {menu.sections.map((section, index) => (
+                        <li
+                          key={section.id}
+                          className={`mg__section-row${dragSection === section.id ? ' is-dragging' : ''}${section.visible ? '' : ' is-hidden'}`}
+                          draggable
+                          onDragStart={() => setDragSection(section.id)}
+                          onDragEnd={() => setDragSection(null)}
+                          onDragOver={(event) => { if (dragSection) event.preventDefault(); }}
+                          onDrop={(event) => { event.preventDefault(); dropSectionOn(section.id); }}
+                          data-section-row={section.key}
+                          data-section-menu={menu.id}
+                          data-section-name={section.nameAr}
+                        >
+                          <span className="mg__grip" aria-hidden="true">⋮⋮</span>
+                          <span className="mg__section-label">
+                            <strong>{section.nameAr}</strong>
+                            {section.nameEn ? <span className="mg__en">{section.nameEn}</span> : null}
+                            <span className="mg__section-meta">
+                              {section.dishes.length} {section.dishes.length === 1 ? 'صنف' : 'أصناف'}
+                              {section.visible ? '' : ' · مخفي من المنيو'}
+                            </span>
+                          </span>
+                          <span className="mg__section-tools">
+                            <button type="button" className="mg__icon" aria-label={`Move ${section.nameAr} up`} disabled={index === 0} onClick={() => moveSection(section.id, -1)}>▲</button>
+                            <button type="button" className="mg__icon" aria-label={`Move ${section.nameAr} down`} disabled={index === menu.sections.length - 1} onClick={() => moveSection(section.id, 1)}>▼</button>
+                            <button type="button" className="mg__eye" data-hidden={section.visible ? 'false' : 'true'} aria-label={`${section.visible ? 'Hide' : 'Show'} ${section.nameAr}`} onClick={() => void toggleSection(section.id, !section.visible)}>
+                              {section.visible ? 'إخفاء · Hide' : 'إظهار · Show'}
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+            </div>
+          ) : noSections ? (
             <div className="mg__start" data-manage-start="">
               <h3>ابدأ منيو مطعمك · Start your menu</h3>
               <p className="admin__hint">
@@ -963,6 +1136,7 @@ function DishRowTable(
             <>
               <button type="button" className="mg__icon" onClick={() => onMove(-1)} aria-label="Move up">▲</button>
               <button type="button" className="mg__icon" onClick={() => onMove(1)} aria-label="Move down">▼</button>
+              <HideButton dishId={dish.id} availability={dish.availability} saves={saves} />
             </>
           ) : null}
           {view.canManage ? (
@@ -1004,6 +1178,7 @@ function DishCard(props: RowProps) {
             <>
               <button type="button" className="mg__icon" onClick={() => onMove(-1)} aria-label="Move up">▲</button>
               <button type="button" className="mg__icon" onClick={() => onMove(1)} aria-label="Move down">▼</button>
+              <HideButton dishId={dish.id} availability={dish.availability} saves={saves} />
             </>
           ) : null}
           {view.canManage ? (
@@ -1063,5 +1238,28 @@ function DeleteConfirm({
         </div>
       </div>
     </div>
+  );
+}
+
+/** One click takes a dish off the public menu, or puts it back on. */
+function HideButton({
+  dishId,
+  availability,
+  saves,
+}: {
+  dishId: string;
+  availability: string;
+  saves: ReturnType<typeof useDishSaves>;
+}) {
+  const hidden = availability === 'HIDDEN';
+  return (
+    <button
+      type="button"
+      className="mg__eye"
+      data-hidden={hidden ? 'true' : 'false'}
+      onClick={() => saves.queue(dishId, { availability: hidden ? 'AVAILABLE' : 'HIDDEN' })}
+    >
+      {hidden ? 'إظهار · Show' : 'إخفاء · Hide'}
+    </button>
   );
 }
