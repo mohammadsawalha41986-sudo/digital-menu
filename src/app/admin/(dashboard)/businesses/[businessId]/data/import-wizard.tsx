@@ -355,18 +355,27 @@ export function ImportWizard({
             <div className="admin__grid">
               <div className="admin__field">
                 <label className="admin__label" htmlFor="import-menu">
-                  Import into menu
+                  الاستيراد إلى المنيو · Import into menu
                 </label>
-                <select id="import-menu" name="menuKey" className="admin__select">
-                  {menuKeys.map((key) => (
-                    <option key={key} value={key}>
-                      {key}
-                    </option>
-                  ))}
-                </select>
-                <span className="admin__hint">
-                  Rows with their own menu column override this.
-                </span>
+                {menuKeys.length > 0 ? (
+                  <>
+                    <select id="import-menu" name="menuKey" className="admin__select">
+                      {menuKeys.map((key) => (
+                        <option key={key} value={key}>
+                          {key}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="admin__hint">
+                      Rows with their own menu column override this.
+                    </span>
+                  </>
+                ) : (
+                  <span className="admin__hint" id="import-menu" data-import-new-menu="">
+                    لا يوجد منيو بعد: سيُنشأ منيو باسم «المنيو» تلقائياً، وتدخل فيه كل الأصناف بأقسامها. · No menu yet: one is
+                    created for this import, and every row goes into it with its sections.
+                  </span>
+                )}
               </div>
 
               <div className="admin__field">

@@ -1,7 +1,9 @@
 import { prisma } from '@/server/db/client';
 import { recordAudit } from '@/server/audit/log';
 import { requireTenantContext, tenantScope, type AuthenticatedUser } from '@/server/tenancy/context';
-import { ValidationError, newItemCode } from '@/server/admin/business-service';
+import { ValidationError, createCategory, createMenu, newItemCode, publishMenu } from '@/server/admin/business-service';
+import { categoryCreateSchema } from '@/server/admin/validation';
+import { uniqueKey } from '@/lib/keys';
 import { parsePriceToMinor } from '@/lib/money';
 import {
   bundleDishes,
@@ -563,10 +565,24 @@ export async function moveDishes(
 export async function createDish(
   user: AuthenticatedUser,
   businessId: string,
-  input: { categoryId: string; nameAr: string; nameEn?: string; price?: string; availability?: ItemAvailability },
+  input: {
+    categoryId?: string | null;
+    /** A section to create for this dish, when the owner names a new one instead of choosing. */
+    newSection?: string | null;
+    nameAr: string;
+    nameEn?: string;
+    price?: string;
+    availability?: ItemAvailability;
+  },
 ): Promise<ItemView> {
   const context = await requireTenantContext(user, businessId, 'EDITOR');
-  const category = await prisma.menuCategory.findFirst({ where: { id: input.categoryId, ...tenantScope(context) }, select: { id: true } });
+  let categoryId = input.categoryId ?? '';
+  if (!categoryId) {
+    const sectionName = (input.newSection ?? '').trim();
+    if (!sectionName) throw new ValidationError('Choose a section, or name a new one.');
+    categoryId = (await createSection(user, businessId, { nameAr: sectionName })).id;
+  }
+  const category = await prisma.menuCategory.findFirst({ where: { id: categoryId, ...tenantScope(context) }, select: { id: true } });
   if (!category) throw new ValidationError('Choose a section first.');
 
   const itemCode = await newItemCode(user, businessId);
@@ -579,7 +595,7 @@ export async function createDish(
   const created = await prisma.menuItem.create({
     data: {
       businessId: context.businessId,
-      categoryId: input.categoryId,
+      categoryId,
       itemCode,
       nameAr: String(cleaned.nameAr),
       nameEn: (cleaned.nameEn as string | null) ?? null,
@@ -595,8 +611,103 @@ export async function createDish(
     entityId: created.id,
     businessId: context.businessId,
     userId: user.id,
-    metadata: { itemCode, categoryId: input.categoryId },
+    metadata: { itemCode, categoryId },
   });
 
   return viewOf(created);
+}
+
+/**
+ * The menu new sections and dishes go into: the one named, else the first.
+ *
+ * A restaurant with no menu at all gets one, created and published at once,
+ * so its first section, dish or import works from zero and reaches the public
+ * menu as soon as it is saved. The key avoids the key of any deleted menu, so
+ * that menu can still be restored later without a clash.
+ */
+export async function ensureMenu(
+  user: AuthenticatedUser,
+  businessId: string,
+  menuId?: string | null,
+): Promise<{ id: string; key: string; created: boolean }> {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  if (menuId) {
+    const named = await prisma.menu.findFirst({ where: { id: menuId, ...tenantScope(context) }, select: { id: true, key: true } });
+    if (!named) throw new ValidationError('That menu was not found.');
+    return { ...named, created: false };
+  }
+  const first = await prisma.menu.findFirst({
+    where: tenantScope(context),
+    orderBy: [{ sortOrder: 'asc' }, { key: 'asc' }],
+    select: { id: true, key: true },
+  });
+  if (first) return { ...first, created: false };
+
+  const deleted = await prisma.deletedRecord.findMany({
+    where: { businessId: context.businessId, kind: 'MENU', restoredAt: null },
+    select: { snapshot: true },
+  });
+  const takenByDeleted = deleted
+    .map((record) => (record.snapshot as { bundle?: { menu?: { key?: unknown } } } | null)?.bundle?.menu?.key)
+    .filter((key): key is string => typeof key === 'string');
+
+  const menu = await createMenu(user, businessId, {
+    key: uniqueKey('main', takenByDeleted),
+    titleAr: 'المنيو',
+    titleEn: 'Menu',
+    status: 'ACTIVE',
+    sortOrder: 0,
+  });
+  await publishMenu(user, businessId, menu.id);
+  return { id: menu.id, key: menu.key, created: true };
+}
+
+/** Adds a section, creating the restaurant's first menu if it has none. */
+export async function createSection(
+  user: AuthenticatedUser,
+  businessId: string,
+  input: { nameAr: string; nameEn?: string | null; menuId?: string | null },
+): Promise<{ id: string; nameAr: string; menuId: string; menuCreated: boolean }> {
+  await requireTenantContext(user, businessId, 'EDITOR');
+  const nameAr = input.nameAr.trim();
+  if (!nameAr) throw new ValidationError('Give the section a name.');
+  if (nameAr.length > 120) throw new ValidationError('A section name can be at most 120 characters.');
+  const nameEn = (input.nameEn ?? '').trim();
+
+  const menu = await ensureMenu(user, businessId, input.menuId);
+  const category = await createCategory(
+    user,
+    businessId,
+    menu.id,
+    categoryCreateSchema.parse({ nameAr, ...(nameEn ? { nameEn } : {}) }),
+  );
+  return { id: category.id, nameAr: category.nameAr, menuId: menu.id, menuCreated: menu.created };
+}
+
+/**
+ * Removes an empty section. A section with dishes or sub-sections is refused:
+ * removing it would take them with it, and dishes are removed on their own,
+ * where they can be restored.
+ */
+export async function deleteSection(user: AuthenticatedUser, businessId: string, categoryId: string): Promise<void> {
+  const context = await requireTenantContext(user, businessId, 'EDITOR');
+  const section = await prisma.menuCategory.findFirst({
+    where: { id: categoryId, ...tenantScope(context) },
+    select: { id: true, key: true, nameAr: true, _count: { select: { items: true, children: true } } },
+  });
+  if (!section) throw new ValidationError('That section was not found.');
+  if (section._count.items > 0) {
+    throw new ValidationError('This section still has dishes. Move them to another section or delete them first.');
+  }
+  if (section._count.children > 0) throw new ValidationError('This section has sub-sections. Remove those first.');
+
+  await prisma.menuCategory.delete({ where: { id: section.id } });
+  await recordAudit({
+    action: 'category.deleted',
+    entity: 'menu_category',
+    entityId: section.id,
+    businessId: context.businessId,
+    userId: user.id,
+    metadata: { key: section.key, nameAr: section.nameAr },
+  });
 }

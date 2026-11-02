@@ -403,11 +403,19 @@ async function renderStep(context: StepContext) {
       if (!menu) {
         return (
           <div className="build__card">
-            <h2 className="build__step-title">Add your menu first</h2>
+            <h2 className="build__step-title">لا توجد أقسام بعد · No sections yet</h2>
             <p className="admin__hint">
-              <Link href={`/admin/build/${business.id}/menu`}>Go back a step</Link> to paste or
-              import it — then everything is editable here.
+              أضف أقسامك وأطباقك من شاشة الأطباق، أو ارفع ملف إكسل. يُنشأ المنيو تلقائياً. · Add sections and dishes on
+              the Dishes screen, or upload a spreadsheet; the menu is created for you.
             </p>
+            <div className="admin__actions">
+              <Link className="admin__button" href={`/admin/businesses/${business.id}/manage`}>
+                الأقسام والأطباق · Sections &amp; dishes
+              </Link>
+              <Link className="admin__button admin__button--secondary" href={`/admin/businesses/${business.id}/data`}>
+                رفع ملف إكسل · Upload Excel
+              </Link>
+            </div>
           </div>
         );
       }

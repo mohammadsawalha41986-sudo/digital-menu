@@ -712,3 +712,40 @@
   opacity: 0.55;
   cursor: default;
 }
+
+/* Adding and removing sections from the sections list. */
+.mg__sections .mg__add-section {
+  border-style: dashed;
+  font-weight: 600;
+}
+.mg__sections .mg__remove-section {
+  color: #b42318;
+  font-size: 0.85em;
+}
+
+/* A restaurant with no sections yet: one clear place to start. */
+.mg__start {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  border: 1px dashed currentColor;
+  border-radius: 12px;
+  text-align: center;
+  justify-items: center;
+}
+.mg__start h3 {
+  margin: 0;
+}
+.mg__start-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.mg__linkish {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

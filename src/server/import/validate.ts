@@ -315,7 +315,10 @@ export function validateRows(options: ValidateOptions): ValidationSummary {
 
     const rawMenu = get('menu').trim();
     let menuKey: string | null = rawMenu ? rawMenu.toLowerCase() : null;
-    if (rawMenu && options.menus) {
+    if (rawMenu && options.menus && options.menus.length === 0) {
+      // No menu yet: every row goes into the one the import creates.
+      menuKey = null;
+    } else if (rawMenu && options.menus) {
       const match = resolveMenuCell(rawMenu, options.menus, options.businessNames ?? []);
       if (match.kind === 'menu') menuKey = match.key;
       else if (match.kind === 'default') menuKey = null;

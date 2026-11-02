@@ -9,6 +9,7 @@ import {
 } from '@/server/tenancy/context';
 import type { ValidatedRow } from './validate';
 import { sectionKeyFor, uniqueKey } from '@/lib/keys';
+import { ensureMenu } from '@/server/menu-manage/service';
 
 /**
  * Import execution (master spec §64, §65, §66, §75, §76, §77).
@@ -112,6 +113,14 @@ export async function executeImport(
   let skipped = 0;
   let errors = 0;
 
+  // A restaurant with no menu yet: the import creates one (and publishes it), so
+  // the rows have somewhere to go instead of each failing on an unknown menu.
+  let rowOptions = options;
+  if ((await prisma.menu.count({ where: { businessId: context.businessId } })) === 0) {
+    const menu = await ensureMenu(user, context.businessId);
+    rowOptions = { ...options, defaultMenuKey: menu.key };
+  }
+
   for (const row of options.rows) {
     // The rows come back from the browser between preview and import, so a
     // row marked valid is checked again for what makes it importable: never
@@ -123,7 +132,7 @@ export async function executeImport(
     }
 
     try {
-      const outcome = await importRow(context, business.currency, batch.id, options, row, user.id);
+      const outcome = await importRow(context, business.currency, batch.id, rowOptions, row, user.id);
 
       if (outcome === 'CREATED') created += 1;
       else if (outcome === 'UPDATED') updated += 1;

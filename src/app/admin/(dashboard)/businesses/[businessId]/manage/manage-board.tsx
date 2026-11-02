@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import {
   copyDishesAction,
   createDishAction,
+  createSectionAction,
   deleteDishesAction,
+  deleteSectionAction,
   moveDishesAction,
   reorderDishesAction,
 } from '@/server/admin/manage-actions';
@@ -17,6 +19,9 @@ import { DishDrawer, type DrawerActions } from './dish-drawer';
 import { MenuManager } from './menu-manager';
 import { useDishSaves, type SaveStatus } from './use-dish-saves';
 import './manage.css';
+
+/** The add-dish dialog's choice for "name a new section instead". */
+const NEW_SECTION = '__new';
 
 const AVAILABILITY_LABEL: Record<string, { ar: string; en: string }> = {
   AVAILABLE: { ar: 'متوفر', en: 'Available' },
@@ -78,6 +83,9 @@ export function ManageBoard({ businessId, view, picker }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [addingSection, setAddingSection] = useState(false);
+  /** The add-dish dialog's section: an existing one, or NEW_SECTION to name a new one. */
+  const [dishSection, setDishSection] = useState('');
   const [menuManagerOpen, setMenuManagerOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -332,10 +340,12 @@ export function ManageBoard({ businessId, view, picker }: Props) {
     say('ok', `Set ${selected.size} ${selected.size === 1 ? 'dish' : 'dishes'} to ${AVAILABILITY_LABEL[status]?.en ?? status}`);
   }
 
-  async function addDish(name: string, price: string, availability: string, categoryId: string) {
+  async function addDish(name: string, price: string, availability: string, categoryId: string, newSection: string) {
+    const withNewSection = categoryId === NEW_SECTION;
     setBusy(true);
     const result = await createDishAction(businessId, {
-      categoryId,
+      categoryId: withNewSection ? null : categoryId,
+      newSection: withNewSection ? newSection : null,
       nameAr: name,
       price,
       availability: availability as 'AVAILABLE',
@@ -345,25 +355,64 @@ export function ManageBoard({ businessId, view, picker }: Props) {
       say('error', result.error);
       return;
     }
-    setMenus((current) =>
-      current.map((menu) => ({
-        ...menu,
-        sections: menu.sections.map((section) =>
-          section.id === categoryId
-            ? { ...section, dishes: [...section.dishes, { ...result.item, imageUrl: null, choices: 0 }] }
-            : section,
-        ),
-      })),
-    );
+    // A new section arrives with the refresh; an existing one shows the dish at once.
+    if (!withNewSection) {
+      setMenus((current) =>
+        current.map((menu) => ({
+          ...menu,
+          sections: menu.sections.map((section) =>
+            section.id === categoryId
+              ? { ...section, dishes: [...section.dishes, { ...result.item, imageUrl: null, choices: 0 }] }
+              : section,
+          ),
+        })),
+      );
+    }
     saves.seed(result.item.id, result.item.updatedAt);
     setCreating(false);
     setNewDishName('');
     setDrawerId(result.item.id);
-    say('ok', 'Dish added. Fill in the rest on the right.');
+    say('ok', withNewSection ? 'Dish and section added. Fill in the rest on the right.' : 'Dish added. Fill in the rest on the right.');
     router.refresh();
   }
 
-  const firstSectionId = menus[0]?.sections[0]?.id ?? '';
+  async function addSection(nameAr: string, nameEn: string, menuId: string) {
+    setBusy(true);
+    const result = await createSectionAction(businessId, { nameAr, nameEn, menuId: menuId || null });
+    setBusy(false);
+    if (!result.ok) {
+      say('error', result.error);
+      return;
+    }
+    setAddingSection(false);
+    say('ok', result.message);
+    router.refresh();
+  }
+
+  async function removeSection(sectionId: string, name: string) {
+    if (!window.confirm(`حذف القسم «${name}»؟ · Delete the section “${name}”?`)) return;
+    setBusy(true);
+    const result = await deleteSectionAction(businessId, sectionId);
+    setBusy(false);
+    if (!result.ok) {
+      say('error', result.error);
+      return;
+    }
+    setActiveSection('all');
+    say('ok', result.message);
+    router.refresh();
+  }
+
+  const allSections = menus.flatMap((menu) => menu.sections);
+  const firstSectionId = allSections[0]?.id ?? '';
+  const noSections = allSections.length === 0;
+  const activeSectionRow = activeSection !== 'all' ? allSections.find((section) => section.id === activeSection) : undefined;
+  const hasDeletedMenu = view.deleted.some((record) => record.kind === 'MENU' && !record.restoredAt);
+
+  function openAddDish() {
+    setDishSection(activeSection !== 'all' && activeSectionRow ? activeSection : firstSectionId || NEW_SECTION);
+    setCreating(true);
+  }
 
   return (
     <div className="mg" data-manage>
@@ -380,9 +429,14 @@ export function ManageBoard({ businessId, view, picker }: Props) {
         </div>
         <div className="mg__actions">
           {view.canEdit ? (
-            <button type="button" className="admin__button" onClick={() => setCreating(true)}>
-              + إضافة صنف · Add dish
-            </button>
+            <>
+              <button type="button" className="admin__button" onClick={openAddDish}>
+                + إضافة صنف · Add dish
+              </button>
+              <button type="button" className="admin__button admin__button--secondary" onClick={() => setAddingSection(true)}>
+                + إضافة قسم · Add section
+              </button>
+            </>
           ) : null}
           <Link className="admin__button admin__button--secondary" href={`/admin/businesses/${businessId}/data`}>
             استيراد من إكسل · Import from Excel
@@ -450,10 +504,54 @@ export function ManageBoard({ businessId, view, picker }: Props) {
               </button>
             );
           })}
+          {view.canEdit ? (
+            <button type="button" className="mg__add-section" onClick={() => setAddingSection(true)}>
+              + قسم جديد · New section
+            </button>
+          ) : null}
+          {view.canEdit && activeSectionRow && activeSectionRow.dishes.length === 0 ? (
+            <button
+              type="button"
+              className="mg__remove-section"
+              disabled={busy}
+              onClick={() => void removeSection(activeSectionRow.id, activeSectionRow.nameAr)}
+            >
+              حذف هذا القسم الفارغ · Delete this empty section
+            </button>
+          ) : null}
         </nav>
 
         <section className="mg__list" aria-label="Dishes">
-          {visible.length === 0 ? (
+          {noSections ? (
+            <div className="mg__start" data-manage-start="">
+              <h3>ابدأ منيو مطعمك · Start your menu</h3>
+              <p className="admin__hint">
+                أضف قسماً ثم أطباقه، أو ارفع ملف إكسل فيه كل الأصناف بأقسامها. لا تحتاج لإنشاء منيو أولاً: يُنشأ تلقائياً.
+                · Add a section and its dishes, or upload a spreadsheet. The menu is created for you.
+              </p>
+              {view.canEdit ? (
+                <div className="admin__actions mg__start-actions">
+                  <button type="button" className="admin__button" onClick={() => setAddingSection(true)}>
+                    + أضف قسماً · Add a section
+                  </button>
+                  <button type="button" className="admin__button admin__button--secondary" onClick={openAddDish}>
+                    + أضف صنفاً · Add a dish
+                  </button>
+                  <Link className="admin__button admin__button--secondary" href={`/admin/businesses/${businessId}/data`}>
+                    ارفع ملف إكسل · Upload Excel
+                  </Link>
+                </div>
+              ) : null}
+              {hasDeletedMenu ? (
+                <p className="admin__hint">
+                  حذفت منيو سابقاً؟ يمكن استعادته كما كان. · Deleted a menu before? It can be restored as it was.{' '}
+                  <button type="button" className="mg__linkish" onClick={() => setMenuManagerOpen(true)}>
+                    استعادة المنيو · Restore it
+                  </button>
+                </p>
+              ) : null}
+            </div>
+          ) : visible.length === 0 ? (
             <p className="admin__empty">
               {rows.length === 0 ? 'No dishes yet. Add one, or import a spreadsheet.' : 'No dish matches these filters.'}
             </p>
@@ -585,12 +683,12 @@ export function ManageBoard({ businessId, view, picker }: Props) {
             onSubmit={(event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
-              const section = String(form.get('section') ?? firstSectionId);
               void addDish(
                 String(form.get('nameAr') ?? '').trim(),
                 String(form.get('price') ?? ''),
                 String(form.get('availability') ?? 'AVAILABLE'),
-                section,
+                dishSection || NEW_SECTION,
+                String(form.get('newSection') ?? '').trim(),
               );
             }}
           >
@@ -605,12 +703,19 @@ export function ManageBoard({ businessId, view, picker }: Props) {
             </label>
             <label className="admin__field">
               <span className="admin__label">القسم · Section</span>
-              <select name="section" className="admin__select" defaultValue={activeSection !== 'all' ? activeSection : firstSectionId}>
-                {menus.flatMap((menu) => menu.sections).map((section) => (
+              <select name="section" className="admin__select" value={dishSection || NEW_SECTION} onChange={(event) => setDishSection(event.target.value)}>
+                {allSections.map((section) => (
                   <option key={section.id} value={section.id}>{section.nameAr}{section.nameEn ? ` · ${section.nameEn}` : ''}</option>
                 ))}
+                <option value={NEW_SECTION}>＋ قسم جديد… · New section…</option>
               </select>
             </label>
+            {(dishSection || NEW_SECTION) === NEW_SECTION ? (
+              <label className="admin__field">
+                <span className="admin__label">اسم القسم الجديد · New section name</span>
+                <input name="newSection" className="admin__input" required maxLength={120} placeholder="مثال: المشويات · e.g. Grills" />
+              </label>
+            ) : null}
             <label className="admin__field">
               <span className="admin__label">التوفر · Availability</span>
               <select name="availability" className="admin__select" defaultValue="AVAILABLE">
@@ -627,6 +732,50 @@ export function ManageBoard({ businessId, view, picker }: Props) {
         </div>
       ) : null}
 
+
+      {addingSection ? (
+        <div className="mg__sheet" role="dialog" aria-modal="true" aria-label="Add a section" onKeyDown={(event) => { if (event.key === 'Escape') setAddingSection(false); }}>
+          <form
+            className="mg__sheet-card"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              void addSection(
+                String(form.get('sectionAr') ?? '').trim(),
+                String(form.get('sectionEn') ?? '').trim(),
+                String(form.get('sectionMenu') ?? ''),
+              );
+            }}
+          >
+            <h3>إضافة قسم · Add a section</h3>
+            <p className="admin__hint">
+              مثل: المشويات، المشروبات، الحلويات.{menus.length === 0 ? ' سيُنشأ المنيو تلقائياً.' : ''} · For example: Grills, Drinks, Desserts.
+            </p>
+            <label className="admin__field">
+              <span className="admin__label">اسم القسم بالعربي · Section name (Arabic)</span>
+              <input name="sectionAr" className="admin__input" required maxLength={120} />
+            </label>
+            <label className="admin__field">
+              <span className="admin__label">بالإنجليزي (اختياري) · English (optional)</span>
+              <input name="sectionEn" className="admin__input" maxLength={120} />
+            </label>
+            {menus.length > 1 ? (
+              <label className="admin__field">
+                <span className="admin__label">المنيو · Menu</span>
+                <select name="sectionMenu" className="admin__select" defaultValue={activeMenu !== 'all' ? activeMenu : menus[0]?.id}>
+                  {menus.map((menu) => (
+                    <option key={menu.id} value={menu.id}>{menu.title}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <div className="admin__actions">
+              <button type="button" className="admin__button admin__button--secondary" onClick={() => setAddingSection(false)}>إلغاء · Cancel</button>
+              <button type="submit" className="admin__button" disabled={busy}>إضافة القسم · Add section</button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       {menuManagerOpen ? (
         <MenuManager

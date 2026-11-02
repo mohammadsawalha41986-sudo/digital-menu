@@ -9,6 +9,8 @@ import { ValidationError } from './business-service';
 import { copyItemsTo } from './structure-service';
 import {
   createDish,
+  createSection,
+  deleteSection,
   deleteDishes,
   deleteMenu,
   ItemConflictError,
@@ -69,13 +71,51 @@ export async function saveDishAction(
 
 export async function createDishAction(
   businessId: string,
-  input: { categoryId: string; nameAr: string; nameEn?: string; price?: string; availability?: 'AVAILABLE' | 'UNAVAILABLE' | 'HIDDEN' | 'SEASONAL' },
+  input: {
+    categoryId?: string | null;
+    newSection?: string | null;
+    nameAr: string;
+    nameEn?: string;
+    price?: string;
+    availability?: 'AVAILABLE' | 'UNAVAILABLE' | 'HIDDEN' | 'SEASONAL';
+  },
 ): Promise<{ ok: true; item: ItemView } | { ok: false; error: string }> {
   const user = await requireUser();
   try {
     const item = await createDish(user, businessId, input);
     await refresh(businessId);
     return { ok: true, item };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function createSectionAction(
+  businessId: string,
+  input: { nameAr: string; nameEn?: string; menuId?: string | null },
+): Promise<PlainResult> {
+  const user = await requireUser();
+  try {
+    const section = await createSection(user, businessId, input);
+    await refresh(businessId);
+    revalidatePath(`/admin/build/${businessId}`, 'layout');
+    return {
+      ok: true,
+      message: section.menuCreated
+        ? `Added the section “${section.nameAr}”, and created your menu for it.`
+        : `Added the section “${section.nameAr}”.`,
+    };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function deleteSectionAction(businessId: string, categoryId: string): Promise<PlainResult> {
+  const user = await requireUser();
+  try {
+    await deleteSection(user, businessId, categoryId);
+    await refresh(businessId);
+    return { ok: true, message: 'Section removed.' };
   } catch (error) {
     return failure(error);
   }
