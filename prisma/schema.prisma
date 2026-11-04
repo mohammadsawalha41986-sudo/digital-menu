@@ -174,37 +174,42 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships     BusinessMembership[]
-  brandTheme      BrandTheme?
-  linkChecks      LinkCheck[]
-  menus           Menu[]
-  branches        Branch[]
-  categories      MenuCategory[]
-  items           MenuItem[]
-  media           Media[]
-  qrCodes         QrCode[]
-  auditLogs       AuditLog[]
-  publicFiles     PublicFile[]
-  offers          Offer[]
-  heroBanners     HeroBanner[]
-  importBatches   ImportBatch[]
-  priceHistory    PriceHistory[]
-  analyticsEvents AnalyticsEvent[]
-  modifierGroups  ModifierGroup[]
-  menuDesigns     MenuDesign[]
-  brandPresets    BrandPreset[]
-  previewLinks    PreviewLink[]
-  staffLinks      StaffLink[]
-  deletedRecords  DeletedRecord[]
-  changeRequests  ChangeRequest[]
-  logo            Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
-  welcome         Media?               @relation("BusinessWelcome", fields: [welcomeMediaId], references: [id], onDelete: SetNull)
-  ogImage         Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
+  memberships         BusinessMembership[]
+  brandTheme          BrandTheme?
+  linkChecks          LinkCheck[]
+  menus               Menu[]
+  branches            Branch[]
+  categories          MenuCategory[]
+  items               MenuItem[]
+  media               Media[]
+  qrCodes             QrCode[]
+  auditLogs           AuditLog[]
+  publicFiles         PublicFile[]
+  offers              Offer[]
+  heroBanners         HeroBanner[]
+  importBatches       ImportBatch[]
+  priceHistory        PriceHistory[]
+  analyticsEvents     AnalyticsEvent[]
+  modifierGroups      ModifierGroup[]
+  menuDesigns         MenuDesign[]
+  brandPresets        BrandPreset[]
+  previewLinks        PreviewLink[]
+  staffLinks          StaffLink[]
+  deletedRecords      DeletedRecord[]
+  changeRequests      ChangeRequest[]
+  logo                Media?               @relation("BusinessLogo", fields: [logoMediaId], references: [id], onDelete: SetNull)
+  welcome             Media?               @relation("BusinessWelcome", fields: [welcomeMediaId], references: [id], onDelete: SetNull)
+  ogImage             Media?               @relation("BusinessOgImage", fields: [ogMediaId], references: [id], onDelete: SetNull)
   /// Where delivery distance is measured from. Null until the restaurant sets it.
-  deliveryLat     Decimal?             @db.Decimal(9, 6)
-  deliveryLng     Decimal?             @db.Decimal(9, 6)
+  deliveryLat         Decimal?             @db.Decimal(9, 6)
+  deliveryLng         Decimal?             @db.Decimal(9, 6)
   /// Distance bands and their fees, nearest first. Empty means no automatic fee.
-  deliveryZones   DeliveryZone[]
+  deliveryZones       DeliveryZone[]
+  /// Shows "get our offers" on the public menu and the opt-in box in the cart.
+  /// Off until the restaurant turns it on: it is a visible change to its menu.
+  offersSignupEnabled Boolean              @default(false)
+  customers           Customer[]
+  customerOrders      CustomerOrder[]
 
   @@index([status])
   @@index([createdAt])
@@ -1509,4 +1514,99 @@ model DeliveryZone {
 
   @@index([businessId, maxMeters])
   @@map("delivery_zones")
+}
+
+// ---------------------------------------------------------------------------
+// Customers and orders sent from the menu.
+// ---------------------------------------------------------------------------
+
+/// Orders leave the menu as a WhatsApp message; the restaurant confirms them
+/// there. SENT is what the menu knows; staff mark the rest.
+enum CustomerOrderStatus {
+  SENT
+  CONFIRMED
+  CANCELLED
+}
+
+/// A restaurant's customer, one per phone number. Created by an order that
+/// carries a phone, or by signing up for offers. Offers go only to customers
+/// who said yes (marketingOptIn), and saying no later is kept (optOutAt).
+model Customer {
+  id         String  @id @default(cuid())
+  businessId String
+  /// International digits only, e.g. 9665XXXXXXXX.
+  phone      String
+  name       String?
+
+  marketingOptIn Boolean   @default(false)
+  optInAt        DateTime?
+  /// "cart" or "signup".
+  optInSource    String?
+  optOutAt       DateTime?
+
+  orderCount      Int       @default(0)
+  /// Sum of non-cancelled orders, in minor units of the business currency.
+  totalSpentMinor Int       @default(0)
+  lastOrderAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  orders   CustomerOrder[]
+
+  @@unique([businessId, phone])
+  @@index([businessId, marketingOptIn])
+  @@index([businessId, lastOrderAt])
+  @@map("customers")
+}
+
+/// One order as the customer sent it from the menu. Amounts are what the cart
+/// showed the customer; they are not re-priced here.
+model CustomerOrder {
+  id         String              @id @default(cuid())
+  businessId String
+  customerId String?
+  status     CustomerOrderStatus @default(SENT)
+
+  /// takeaway, dineIn or delivery.
+  orderType     String
+  customerName  String?
+  customerPhone String?
+  tableNumber   String?
+  locale        String?
+
+  currency         String
+  subtotalMinor    Int
+  deliveryFeeMinor Int    @default(0)
+  totalMinor       Int
+  itemCount        Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  business Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    CustomerOrderItem[]
+
+  @@index([businessId, createdAt])
+  @@index([customerId])
+  @@map("customer_orders")
+}
+
+model CustomerOrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  businessId     String
+  itemCode       String
+  nameAr         String
+  nameEn         String?
+  quantity       Int
+  lineTotalMinor Int
+
+  order CustomerOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([businessId, itemCode])
+  @@map("customer_order_items")
 }

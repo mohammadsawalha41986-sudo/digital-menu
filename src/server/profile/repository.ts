@@ -136,6 +136,7 @@ async function loadProfile(
       deliveryLat: true,
       deliveryLng: true,
       deliveryZones: { orderBy: { maxMeters: 'asc' }, select: { maxMeters: true, feeMinor: true } },
+      offersSignupEnabled: true,
       offersSort: true,
       autoUpsell: true,
       discountIncludesOptions: true,
@@ -468,6 +469,7 @@ async function loadProfile(
     },
     offersSort: isOfferSort(business.offersSort) ? business.offersSort : 'PERCENT',
     autoUpsell: business.autoUpsell,
+    offersSignup: business.offersSignupEnabled,
     offersRefreshAt: await nextDiscountChange(business.id, sale.now),
     heroBanners: business.heroBanners.flatMap((banner) => {
       const image = toImage(banner.media);

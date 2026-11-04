@@ -261,6 +261,8 @@ export interface PublicProfile {
    * zones means the cart adds no fee and the restaurant confirms it.
    */
   delivery?: PublicDelivery;
+  /** The restaurant collects sign-ups for its offers on the menu. */
+  offersSignup?: boolean;
   /** How the automatic offers section orders discounted dishes. */
   offersSort?: 'PERCENT' | 'SAVING' | 'NEWEST' | 'ENDING' | 'MANUAL';
   /** Suggest dishes automatically where a dish has no picks of its own. */

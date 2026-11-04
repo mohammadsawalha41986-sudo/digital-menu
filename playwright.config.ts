@@ -29,7 +29,16 @@ export default defineConfig({
   projects: [
     {
       name: 'mobile-chromium',
-      testIgnore: /menu-manage\.spec\.ts/,
+      testIgnore: [/menu-manage\.spec\.ts/, /customers\.spec\.ts/],
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      // Turns the demo restaurant's offers sign-up on for a moment, which
+      // changes its public menu and cart: it runs after the phone suite, not
+      // beside it.
+      name: 'customers-mobile',
+      testMatch: /customers\.spec\.ts/,
+      dependencies: ['mobile-chromium'],
       use: { ...devices['Pixel 7'] },
     },
     {

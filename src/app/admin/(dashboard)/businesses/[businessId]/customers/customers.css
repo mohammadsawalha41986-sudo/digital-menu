@@ -1,0 +1,104 @@
+.cu__panel {
+  margin-block-end: 1rem;
+}
+
+.cu__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  margin-block-end: 1rem;
+}
+
+.cu__grid .cu__panel {
+  margin-block-end: 0;
+}
+
+.cu__notes {
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cu__bars td:first-child {
+  white-space: nowrap;
+}
+
+.cu__bar-cell {
+  inline-size: 50%;
+}
+
+.cu__bar {
+  display: block;
+  block-size: 0.5rem;
+  min-inline-size: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.cu__who {
+  display: block;
+  font-weight: 600;
+}
+
+.cu__phone {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.cu__items {
+  min-inline-size: 12rem;
+}
+
+.cu__status {
+  min-inline-size: 9rem;
+}
+
+.cu__orders tr[data-status='CANCELLED'] td {
+  opacity: 0.55;
+}
+
+.cu__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-block-end: 0.75rem;
+}
+
+.cu__search {
+  flex: 1 1 14rem;
+  margin: 0;
+}
+
+.cu__check,
+.cu__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-block-size: 44px;
+  cursor: pointer;
+}
+
+.cu__switch input,
+.cu__check input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
+.cu__row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+@media (max-width: 560px) {
+  .cu .admin__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cu .admin__metric {
+    font-size: 1.35rem;
+  }
+}

@@ -40,6 +40,7 @@ import { GoogleLocationSection } from './components/GoogleLocationSection';
 import { CaloriesTableModal } from './components/CaloriesTableModal';
 import { ItemCustomizeModal } from './components/ItemCustomizeModal';
 import { CartDrawer } from './components/CartDrawer';
+import { OffersSignup } from './components/OffersSignup';
 import { QrCodeModal } from './components/QrCodeModal';
 import { Footer } from './components/Footer';
 import { ShoppingBag, MessageCircle, Phone, ArrowUp } from 'lucide-react';
@@ -590,6 +591,16 @@ export default function App({
         ))}
       </main>
 
+      {/* Offers sign-up, when the restaurant collects it. */}
+      {publicId && RESTAURANT_INFO.offersSignup ? (
+        <OffersSignup
+          lang={lang}
+          publicId={publicId}
+          restaurantNameAr={RESTAURANT_INFO.nameAr}
+          restaurantNameEn={RESTAURANT_INFO.nameEn}
+        />
+      ) : null}
+
       {/* 8. Footer */}
       <Footer
         lang={lang}
@@ -694,6 +705,7 @@ export default function App({
         onClearCart={handleClearCart}
         onQuickAdd={quickAdd}
         onOpenDish={openSuggested}
+        publicId={publicId}
       />
 
       <QrCodeModal

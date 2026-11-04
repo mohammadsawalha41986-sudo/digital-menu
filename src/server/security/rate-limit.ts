@@ -109,6 +109,10 @@ export function clientIdentity(source: Request | Headers): string {
 export const RULES = {
   /** Analytics beacons: generous, since one visitor legitimately sends several. */
   events: { namespace: 'events', windowMs: 60_000, max: 60 },
+  /** Orders sent from a menu, per visitor and menu. A table orders a few times an evening, not twenty. */
+  menuOrders: { namespace: 'menu-orders', windowMs: 10 * 60_000, max: 20 },
+  /** Offers sign-ups, per visitor and menu: one person, a handful of tries. */
+  offersSignup: { namespace: 'offers-signup', windowMs: 10 * 60_000, max: 8 },
   /** Password attempts per account. Slow enough to make guessing useless. */
   loginAccount: { namespace: 'login:account', windowMs: 15 * 60_000, max: 8 },
   /** Password attempts per client, so one source cannot spray many accounts. */

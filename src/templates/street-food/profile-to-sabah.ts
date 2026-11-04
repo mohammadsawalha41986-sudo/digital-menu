@@ -169,6 +169,7 @@ export function profileToSabah(profile: PublicProfile): {
       origin: profile.delivery?.origin ?? null,
       zones: (profile.delivery?.zones ?? []).map((zone) => ({ maxKm: zone.maxKm, fee: toAmount(zone.feeMinor) })),
     },
+    offersSignup: profile.offersSignup === true,
     addressAr: profile.contact.addressAr ?? '',
     addressEn: profile.contact.addressEn ?? profile.contact.addressAr ?? '',
     // Landmark text is a Sabah-specific nicety that the platform does not

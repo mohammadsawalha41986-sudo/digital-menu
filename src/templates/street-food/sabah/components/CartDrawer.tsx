@@ -30,6 +30,8 @@ interface CartDrawerProps {
   onQuickAdd?: (dish: MenuItem) => void;
   /** Opens a suggested dish in its own sheet, closing the cart. */
   onOpenDish?: (dish: MenuItem) => void;
+  /** The menu's public id: orders sent from the cart are recorded for the restaurant under it. */
+  publicId?: string;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -42,6 +44,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClearCart,
   onQuickAdd,
   onOpenDish,
+  publicId,
 }) => {
   const { info: RESTAURANT_INFO, items: MENU_ITEMS } = useSabah();
 
@@ -67,6 +70,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [wantsOffers, setWantsOffers] = useState(false);
 
   if (!isOpen) return null;
 
@@ -93,6 +97,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     address: isDelivery && !deliveryAddress.trim() ? (isAr ? 'أدخل عنوان التوصيل' : 'Enter the delivery address') : null,
   };
   const canSend = !errors.name && !errors.phone && !errors.address && !outOfRange;
+  const phoneGiven = isValidPhone(customerPhone);
+  const offersBox = RESTAURANT_INFO.offersSignup && Boolean(publicId) && phoneGiven;
 
   const locate = () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -150,9 +156,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           location ? `\n📍 موقع العميل: ${mapLink(location)}` : '\n📍 موقع العميل: لم يُشارَك',
           quote ? `\n📏 المسافة التقريبية: ${formatKm(quote.km)} كم` : '',
         ].join('')
-      : customerName.trim()
-        ? `\n👤 الاسم: ${customerName}`
-        : '';
+      : [
+          customerName.trim() ? `\n👤 الاسم: ${customerName.trim()}` : '',
+          phoneGiven ? `\n📞 الجوال: ${toLatinDigits(customerPhone.replace(/\s+/g, ''))}` : '',
+        ].join('');
     const noteInfo = generalNotes.trim() ? `\n📝 ملاحظات عامة: ${generalNotes}` : '';
 
     // Delivery orders carry an invoice: items, the delivery fee, and the total
@@ -178,6 +185,33 @@ ${noteInfo}
     const encoded = encodeURIComponent(message);
     const waUrl = `https://wa.me/${RESTAURANT_INFO.whatsappNumber}?text=${encoded}`;
     window.open(waUrl, '_blank');
+    recordOrder();
+  };
+
+  // The restaurant's copy of the order, for its order log. Sent after WhatsApp
+  // opens and never awaited: recording must not hold up or block an order.
+  const recordOrder = () => {
+    if (!publicId) return;
+    try {
+      void fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          publicId,
+          locale: lang,
+          orderType,
+          name: customerName,
+          phone: phoneGiven ? customerPhone : '',
+          table: tableNumber,
+          offers: offersBox && wantsOffers,
+          deliveryFee: isDelivery ? deliveryFee : 0,
+          items: cart.map((line) => ({ code: line.item.id, qty: line.quantity, total: line.totalPrice })),
+        }),
+      }).catch(() => undefined);
+    } catch {
+      // Never in the way of the order itself.
+    }
   };
 
   return (
@@ -414,14 +448,43 @@ ${noteInfo}
                         </p>
                       </div>
                     ) : (
-                      <input
-                        type="text"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder={isAr ? 'اسمك الكريم (اختياري)' : 'Your name (Optional)'}
-                        className="w-full bg-stone-900 border border-emerald-950 rounded-xl px-3 py-1.5 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400"
-                      />
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          placeholder={isAr ? 'اسمك الكريم (اختياري)' : 'Your name (Optional)'}
+                          aria-label={isAr ? 'الاسم (اختياري)' : 'Name (optional)'}
+                          className="w-full bg-stone-900 border border-emerald-950 rounded-xl px-3 py-1.5 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400"
+                        />
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          dir="ltr"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder={isAr ? 'رقم جوالك (اختياري) 05xxxxxxxx' : 'Your phone (Optional)'}
+                          aria-label={isAr ? 'رقم الجوال (اختياري)' : 'Phone (optional)'}
+                          className="w-full bg-stone-900 border border-emerald-950 rounded-xl px-3 py-1.5 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-emerald-400 rtl:text-right"
+                        />
+                      </div>
                     )}
+                    {offersBox ? (
+                      <label className="flex items-start gap-2 text-[11px] leading-5 text-stone-300 cursor-pointer" data-offers-optin="">
+                        <input
+                          type="checkbox"
+                          checked={wantsOffers}
+                          onChange={(e) => setWantsOffers(e.target.checked)}
+                          className="mt-1 h-4 w-4 accent-emerald-500"
+                        />
+                        <span>
+                          {isAr
+                            ? `أرغب باستلام عروض ${RESTAURANT_INFO.nameAr} على هذا الرقم (واتساب أو رسالة). يمكنني الإلغاء في أي وقت.`
+                            : `Send me ${RESTAURANT_INFO.nameEn}'s offers on this number (WhatsApp or SMS). I can stop any time.`}
+                        </span>
+                      </label>
+                    ) : null}
                   </div>
 
                   {/* Items */}
@@ -573,6 +636,13 @@ ${noteInfo}
                   <MessageCircle className="w-5 h-5 fill-white" />
                   <span>{isAr ? 'إرسال الطلب عبر واتساب الآن' : 'Send Order via WhatsApp'}</span>
                 </motion.button>
+                ) : null}
+                {RESTAURANT_INFO.whatsappNumber && publicId ? (
+                  <p className="text-[10px] leading-4 text-stone-500 text-center" data-order-privacy="">
+                    {isAr
+                      ? 'يحتفظ المطعم بنسخة من طلبك، وباسمك ورقمك إن أدخلتهما، لمتابعة طلبك وخدمتك.'
+                      : 'The restaurant keeps a copy of your order, with your name and number if you give them, to follow it up.'}
+                  </p>
                 ) : null}
 
                 {/* Call Cashier Option */}

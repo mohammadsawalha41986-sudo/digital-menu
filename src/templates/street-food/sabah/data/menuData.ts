@@ -83,6 +83,8 @@ export interface RestaurantInfo {
    * like every other price in the cart. No zones: the restaurant confirms the fee.
    */
   delivery: { origin: { lat: number; lng: number } | null; zones: { maxKm: number; fee: number }[] };
+  /** The restaurant collects sign-ups for its offers: the sign-up card and the cart's opt-in box. */
+  offersSignup: boolean;
   addressAr: string;
   addressEn: string;
   landmarkAr: string;
@@ -114,6 +116,7 @@ export const RESTAURANT_INFO: RestaurantInfo = {
   phoneFormatted: '058 006 0067',
   whatsappNumber: '966580060067',
   delivery: { origin: null, zones: [] },
+  offersSignup: false,
   addressAr: 'حي الصحافة، شمال الرياض، المملكة العربية السعودية',
   addressEn: 'Al-Sahafa District, North Riyadh, Saudi Arabia',
   landmarkAr: 'بالقرب من طريق أنس بن مالك وطريق الملك فهد',

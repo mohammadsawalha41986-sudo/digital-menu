@@ -40,6 +40,7 @@ const PAGE_LABELS: Record<string, string> = {
   quick: 'وضع الخدمة · Service mode',
   studio: 'الاستوديو · Studio',
   template: 'القالب · Template',
+  customers: 'العملاء والطلبات · Customers',
 };
 
 interface Tab {
@@ -73,6 +74,7 @@ function tabsFor(id: string): Tab[] {
     { key: 'publish', label: 'النشر · Publish', href: `${build}/review`, active: (p) => within(p, `${build}/review`) },
     { key: 'qr', label: 'QR', href: `${base}/qr`, active: (p) => within(p, `${base}/qr`) },
     { key: 'analytics', label: 'الإحصائيات · Analytics', href: `${base}/analytics`, active: (p) => within(p, `${base}/analytics`) },
+    { key: 'customers', label: 'العملاء والطلبات · Customers', href: `${base}/customers`, active: (p) => within(p, `${base}/customers`) },
   ];
 }
 
