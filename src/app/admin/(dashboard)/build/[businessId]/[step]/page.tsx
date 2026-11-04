@@ -282,7 +282,7 @@ async function renderStep(context: StepContext) {
         <MenuStep
           businessId={business.id}
           itemCount={context.items.length}
-          templateUrl={`/admin/businesses/${business.id}/data/template`}
+          templateUrl={`/admin/businesses/${business.id}/data/download?kind=template`}
         />
       );
 
