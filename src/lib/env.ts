@@ -93,7 +93,7 @@ export type Env = z.infer<typeof schema>;
 
 /** Exported for tests: validate an arbitrary source without touching process.env. */
 export function parseEnv(source: NodeJS.ProcessEnv | Record<string, unknown>): Env {
-  const result = schema.safeParse(source);
+  const result = schema.safeParse(withSafeStorage(source));
 
   if (!result.success) {
     const detail = result.error.issues
@@ -104,6 +104,46 @@ export function parseEnv(source: NodeJS.ProcessEnv | Record<string, unknown>): E
   }
 
   return result.data;
+}
+
+const BUCKET_KEYS = [
+  'STORAGE_BUCKET',
+  'STORAGE_ENDPOINT',
+  'STORAGE_ACCESS_KEY',
+  'STORAGE_SECRET_KEY',
+  'STORAGE_PUBLIC_BASE_URL',
+  'STORAGE_REGION',
+] as const;
+
+function isUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * While the old volume is still mounted (STORAGE_LOCAL_FALLBACK=1), an
+ * incomplete bucket configuration must not take the site down: the site stays
+ * on the volume and says why, by key name only. Without the volume there is
+ * nothing to fall back to, and the configuration error stands.
+ */
+function withSafeStorage(source: NodeJS.ProcessEnv | Record<string, unknown>) {
+  if (source.STORAGE_PROVIDER !== 'r2' || source.STORAGE_LOCAL_FALLBACK !== '1') return source;
+  const missing = BUCKET_KEYS.filter((key) => {
+    const value = source[key];
+    if (key === 'STORAGE_REGION') return value !== undefined && (typeof value !== 'string' || value.trim() === '');
+    if (key === 'STORAGE_ENDPOINT' || key === 'STORAGE_PUBLIC_BASE_URL') return !isUrl(value);
+    return typeof value !== 'string' || value.trim() === '';
+  });
+  if (missing.length === 0) return source;
+  console.error(`STORAGE_CONFIG_INCOMPLETE ${missing.join(',')}: staying on the local volume`);
+  const safe: Record<string, unknown> = { ...source, STORAGE_PROVIDER: 'local', STORAGE_COPY_FROM_LOCAL: '0' };
+  for (const key of BUCKET_KEYS) delete safe[key];
+  return safe;
 }
 
 let cached: Env | undefined;

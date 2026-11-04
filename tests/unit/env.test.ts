@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseEnv } from '@/lib/env';
 
 const base = {
@@ -86,5 +86,35 @@ describe('environment validation', () => {
       expect(String(error)).toContain('AUTH_SECRET');
       expect(String(error)).not.toContain(secret);
     }
+  });
+});
+
+describe('moving images to a bucket', () => {
+  const bucket = {
+    STORAGE_PROVIDER: 'r2',
+    STORAGE_BUCKET: 'menu-images-abc',
+    STORAGE_ENDPOINT: 'https://t3.storageapi.dev',
+    STORAGE_ACCESS_KEY: 'key',
+    STORAGE_SECRET_KEY: 'secret',
+    STORAGE_PUBLIC_BASE_URL: 'https://menu.example.com/uploads',
+    STORAGE_REGION: 'auto',
+    STORAGE_URL_STYLE: 'virtual',
+  };
+
+  it('uses the bucket when its configuration is complete', () => {
+    const env = parseEnv({ ...base, ...bucket, STORAGE_LOCAL_FALLBACK: '1' });
+    expect(env).toMatchObject({ STORAGE_PROVIDER: 'r2', STORAGE_URL_STYLE: 'virtual', STORAGE_REGION: 'auto' });
+  });
+
+  it('stays on the volume, rather than failing, when a bucket value did not arrive and the volume is still there', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const env = parseEnv({ ...base, ...bucket, STORAGE_ENDPOINT: '', STORAGE_SECRET_KEY: '', STORAGE_LOCAL_FALLBACK: '1', STORAGE_COPY_FROM_LOCAL: '1' });
+    expect(env).toMatchObject({ STORAGE_PROVIDER: 'local', STORAGE_COPY_FROM_LOCAL: '0' });
+    expect(errors.mock.calls[0]?.[0]).toBe('STORAGE_CONFIG_INCOMPLETE STORAGE_ENDPOINT,STORAGE_SECRET_KEY: staying on the local volume');
+    errors.mockRestore();
+  });
+
+  it('without the volume behind it, an incomplete bucket configuration is an error', () => {
+    expect(() => parseEnv({ ...base, ...bucket, STORAGE_ENDPOINT: '' })).toThrow(/STORAGE_ENDPOINT/);
   });
 });
