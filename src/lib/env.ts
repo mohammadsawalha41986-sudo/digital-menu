@@ -31,6 +31,18 @@ const baseSchema = z.object({
   STORAGE_ACCESS_KEY: z.string().min(1).optional(),
   STORAGE_SECRET_KEY: z.string().min(1).optional(),
   STORAGE_PUBLIC_BASE_URL: url.optional(),
+  /** S3 signing region. Cloudflare R2 and Railway buckets both use "auto". */
+  STORAGE_REGION: z.string().min(1).default('auto'),
+  /** "path": {endpoint}/{bucket}/{key} (R2). "virtual": {bucket}.{endpoint host}/{key} (Railway buckets). */
+  STORAGE_URL_STYLE: z.enum(['path', 'virtual']).default('path'),
+  /**
+   * While moving off a local volume: anything the bucket does not have yet is
+   * read from the volume (and copied up), and an upload the bucket refuses is
+   * kept on the volume. Off once the volume is detached.
+   */
+  STORAGE_LOCAL_FALLBACK: z.enum(['0', '1']).default('0'),
+  /** Copy every file on the local volume into the bucket once, after the server starts. */
+  STORAGE_COPY_FROM_LOCAL: z.enum(['0', '1']).default('0'),
 
   AUTH_SECRET: z.string().min(1).optional(),
   REDIS_URL: z.string().optional(),

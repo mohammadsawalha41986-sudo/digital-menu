@@ -15,6 +15,10 @@ export interface R2StorageOptions {
   secretKey: string;
   /** Public custom domain/base used for visitor-facing media. */
   publicBaseUrl: string;
+  /** Signing region; "auto" for R2 and Railway buckets. */
+  region?: string;
+  /** "path" puts the bucket in the path (R2); "virtual" in the host name (Railway buckets). */
+  urlStyle?: 'path' | 'virtual';
 }
 
 /**
@@ -30,6 +34,8 @@ export class R2StorageProvider implements StorageProvider {
   private readonly accessKey: string;
   private readonly secretKey: string;
   private readonly publicBaseUrl: string;
+  private readonly region: string;
+  private readonly urlStyle: 'path' | 'virtual';
 
   constructor(options: R2StorageOptions) {
     this.bucket = options.bucket.trim();
@@ -37,6 +43,8 @@ export class R2StorageProvider implements StorageProvider {
     this.accessKey = options.accessKey.trim();
     this.secretKey = options.secretKey;
     this.publicBaseUrl = options.publicBaseUrl.replace(/\/$/, '');
+    this.region = options.region?.trim() || 'auto';
+    this.urlStyle = options.urlStyle ?? 'path';
 
     if (!this.bucket || !this.accessKey || !this.secretKey) {
       throw new StorageError('R2 storage credentials are incomplete');
@@ -109,7 +117,7 @@ export class R2StorageProvider implements StorageProvider {
     const now = new Date();
     const amzDate = formatAmzDate(now);
     const dateStamp = amzDate.slice(0, 8);
-    const scope = `${dateStamp}/auto/s3/aws4_request`;
+    const scope = `${dateStamp}/${this.region}/s3/aws4_request`;
     const url = this.objectUrl(key);
 
     url.searchParams.set('X-Amz-Algorithm', 'AWS4-HMAC-SHA256');
@@ -132,7 +140,7 @@ export class R2StorageProvider implements StorageProvider {
       scope,
       sha256(canonicalRequest),
     ].join('\n');
-    const signature = signingKey(this.secretKey, dateStamp, 'auto', 's3', stringToSign);
+    const signature = signingKey(this.secretKey, dateStamp, this.region, 's3', stringToSign);
     url.searchParams.set('X-Amz-Signature', signature);
     return url.toString();
   }
@@ -154,6 +162,12 @@ export class R2StorageProvider implements StorageProvider {
   private objectUrl(key: string): URL {
     assertSafeKey(key);
     const prefix = this.endpoint.pathname.replace(/\/$/, '');
+    if (this.urlStyle === 'virtual') {
+      const url = new URL(this.endpoint.origin);
+      url.hostname = `${this.bucket}.${this.endpoint.hostname}`;
+      url.pathname = `${prefix}/${encodeKey(key)}`;
+      return url;
+    }
     const path = `${prefix}/${encodeURIComponent(this.bucket)}/${encodeKey(key)}`.replace(/^\/\//, '/');
     const url = new URL(this.endpoint.origin);
     url.pathname = path;
@@ -178,7 +192,7 @@ export class R2StorageProvider implements StorageProvider {
     };
     const signedNames = Object.keys(signedHeaderValues).sort();
     const canonicalHeaders = signedNames.map((name) => `${name}:${signedHeaderValues[name]}\n`).join('');
-    const scope = `${dateStamp}/auto/s3/aws4_request`;
+    const scope = `${dateStamp}/${this.region}/s3/aws4_request`;
     const canonicalRequest = [
       method,
       canonicalUri(url),
@@ -193,7 +207,7 @@ export class R2StorageProvider implements StorageProvider {
       scope,
       sha256(canonicalRequest),
     ].join('\n');
-    const signature = signingKey(this.secretKey, dateStamp, 'auto', 's3', stringToSign);
+    const signature = signingKey(this.secretKey, dateStamp, this.region, 's3', stringToSign);
     const authorization =
       `AWS4-HMAC-SHA256 Credential=${this.accessKey}/${scope}, ` +
       `SignedHeaders=${signedNames.join(';')}, Signature=${signature}`;
