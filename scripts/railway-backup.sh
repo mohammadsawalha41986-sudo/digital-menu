@@ -1,0 +1,75 @@
+#!/bin/bash
+# Verified backup (daily by cron, or on redeploy) of the Digital Menu production data, run inside the
+# Railway project over the private network. Writes to /backup (its own volume).
+# Deployed as the start command of the Railway "db-backup" service (image
+# postgres:18, volume at /backup, cron 17 0 * * * UTC), base64-encoded:
+#   bash -c "echo <base64 of this file> | base64 -d > /tmp/backup.sh && bash /tmp/backup.sh"
+# Needs DATABASE_URL (private network) and BASE (the public site, for images).
+set -uo pipefail
+TS=$(date -u +%Y%m%dT%H%M%SZ)
+OUT=/backup/$TS
+mkdir -p "$OUT/storage"
+echo "BACKUP_START $TS script=v3"
+q() { psql -d "$DATABASE_URL" -Atc "$1"; }
+
+# 1. Database: custom-format dump (restorable with pg_restore).
+if ! pg_dump --no-owner --no-privileges -Fc -d "$DATABASE_URL" -f "$OUT/db.dump"; then echo "DB_DUMP FAILED"; exit 1; fi
+sha256sum "$OUT/db.dump" | tee "$OUT/db.dump.sha256" | sed 's/^/DUMP_SHA256 /'
+echo "DUMP_BYTES $(stat -c %s "$OUT/db.dump")"
+
+# 2. Prove it restores: a private, temporary server inside this container.
+PGV=/tmp/verify; mkdir -p $PGV; chown postgres:postgres $PGV
+gosu postgres initdb -D $PGV -A trust -U postgres >/dev/null
+gosu postgres pg_ctl -D $PGV -o "-p 5499 -k /tmp -c listen_addresses=''" -w start >/dev/null
+createdb -h /tmp -p 5499 -U postgres verify
+if ! pg_restore --no-owner --no-privileges --exit-on-error -h /tmp -p 5499 -U postgres -d verify "$OUT/db.dump"; then echo "DB_RESTORE FAILED"; exit 1; fi
+CORE="users businesses business_memberships brand_themes menus menu_versions menu_categories menu_items menu_item_images media public_files public_file_versions offers modifier_groups modifier_options menu_item_modifier_groups qr_codes branches price_history _prisma_migrations"
+FAIL=0
+for t in $(q "select tablename from pg_tables where schemaname='public' order by 1"); do
+  a=$(q "select count(*) from public.\"$t\""); b=$(psql -h /tmp -p 5499 -U postgres -d verify -Atc "select count(*) from public.\"$t\"")
+  echo "TABLE $t prod=$a restored=$b"
+  if [[ " $CORE " == *" $t "* ]] && [ "$a" != "$b" ]; then FAIL=1; fi
+  if [ "$b" -gt "$a" ]; then FAIL=1; fi
+done
+gosu postgres pg_ctl -D $PGV -m fast stop >/dev/null; rm -rf $PGV
+if [ $FAIL = 0 ]; then echo "DB_VERIFY OK"; else echo "DB_VERIFY MISMATCH"; exit 1; fi
+
+# 3. Stored files. First, are there any this method cannot reach?
+apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
+INACTIVE=$(q "select count(*) from media m join businesses b on b.id=m.\"businessId\" where m.\"sourceUrl\" is null and b.status<>'ACTIVE'")
+PDFS=$(q "select count(*) from public_file_versions")
+echo "UNREACHABLE media_of_inactive=$INACTIVE pdf_versions=$PDFS"
+q "select m.\"storageKey\"||'|'||m.\"sizeBytes\"||'|'||array_to_string(m.\"derivativeWidths\",',') from media m join businesses b on b.id=m.\"businessId\" where m.\"sourceUrl\" is null and b.status='ACTIVE' order by 1" > "$OUT/media.txt"
+ok=0; miss=0; der=0
+while IFS='|' read -r key size widths; do
+  [ -z "$key" ] && continue
+  mkdir -p "$OUT/storage/$(dirname "$key")"
+  code=$(curl -s -o "$OUT/storage/$key" -w '%{http_code}' "$BASE/uploads/$key")
+  got=$(stat -c %s "$OUT/storage/$key" 2>/dev/null || echo 0)
+  if [ "$code" = 200 ] && [ "$got" = "$size" ]; then ok=$((ok+1)); else miss=$((miss+1)); echo "MISS $key http=$code bytes=$got/$size"; rm -f "$OUT/storage/$key"; fi
+  for w in ${widths//,/ }; do
+    stem="${key%.*}"
+    c=$(curl -s -o "$OUT/storage/${stem}@${w}.webp" -w '%{http_code}' "$BASE/uploads/$key?w=$w"); [ "$c" = 200 ] && der=$((der+1)) || rm -f "$OUT/storage/${stem}@${w}.webp"
+  done
+done < "$OUT/media.txt"
+echo "IMAGES originals_ok=$ok originals_missing=$miss derivatives_ok=$der"
+(cd "$OUT/storage" && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$OUT/storage.sha256"
+echo "STORAGE_FILES $(wc -l < "$OUT/storage.sha256") STORAGE_BYTES $(du -sb "$OUT/storage" | cut -f1)"
+echo "BACKUP_DONE $TS"
+
+# 4. Retention, only after a verified backup (every failure above exits first).
+# A backup counts as complete only with its marker; folders without one
+# (older manual backups, or a failed run) are never touched here.
+echo "RETENTION_START keep=14"
+touch "$OUT/BACKUP_OK"
+KEEP=14
+complete() { for d in $(ls -1d /backup/20*Z 2>/dev/null | sort); do [ -f "$d/BACKUP_OK" ] && echo "$d"; done; }
+for d in $(complete | head -n -$KEEP); do echo "PRUNE $d"; rm -rf "$d"; done
+# Never let the volume fill: past 80%, drop the oldest complete backups, keeping at least 3.
+while [ "$(df --output=pcent /backup | tail -1 | tr -dc 0-9)" -gt 80 ]; do
+  [ "$(complete | wc -l)" -le 3 ] && { echo "DISK_WARN backup volume over 80% with 3 backups left"; break; }
+  d=$(complete | head -1); echo "PRUNE_SPACE $d"; rm -rf "$d"
+done
+echo "BACKUPS_KEPT $(complete | wc -l) DISK $(df -h --output=used,size,pcent /backup | tail -1)"
+# Let the log collector read the last lines before the container exits.
+sleep 5
