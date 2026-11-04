@@ -13,8 +13,19 @@ import { countryCodeFor, isOrderType, normalizePhone, toMinorUnits } from '@/lib
 
 const MAX_LINES = 50;
 const MAX_QTY = 99;
-/** A ceiling on any one amount, in minor units: 1,000,000.00. */
-const MAX_AMOUNT_MINOR = 100_000_000;
+/**
+ * What one unit of a dish can come to with its options: three times its price
+ * plus room for paid extras. A line above that is not a real order line and is
+ * dropped. A dish with no price gets a flat allowance per unit.
+ */
+const EXTRAS_PER_UNIT_MINOR = 10_000;
+const UNPRICED_UNIT_MINOR = 50_000;
+/** No menu order is worth more than this (50,000.00); anything above is refused. */
+const MAX_ORDER_MINOR = 5_000_000;
+
+function unitCeiling(priceMinor: number | null): number {
+  return priceMinor && priceMinor > 0 ? priceMinor * 3 + EXTRAS_PER_UNIT_MINOR : UNPRICED_UNIT_MINOR;
+}
 
 export interface MenuOrderLine {
   code: unknown;
@@ -45,7 +56,12 @@ export async function recordMenuOrder(publicId: string, input: MenuOrderInput): 
 
   const business = await prisma.business.findFirst({
     where: { publicId, status: 'ACTIVE' },
-    select: { id: true, currency: true, offersSignupEnabled: true },
+    select: {
+      id: true,
+      currency: true,
+      offersSignupEnabled: true,
+      deliveryZones: { orderBy: { feeMinor: 'desc' }, take: 1, select: { feeMinor: true } },
+    },
   });
   if (!business) return null;
   const { currency } = business;
@@ -57,22 +73,26 @@ export async function recordMenuOrder(publicId: string, input: MenuOrderInput): 
       qty: typeof line?.qty === 'number' && Number.isInteger(line.qty) ? line.qty : 0,
       totalMinor: toMinorUnits(line?.total, currency),
     }))
-    .filter((line) => line.code && line.qty >= 1 && line.qty <= MAX_QTY && line.totalMinor !== null && line.totalMinor <= MAX_AMOUNT_MINOR);
+    .filter((line) => line.code && line.qty >= 1 && line.qty <= MAX_QTY && line.totalMinor !== null);
   if (lines.length === 0) return null;
 
   const dishes = await prisma.menuItem.findMany({
     where: { businessId: business.id, itemCode: { in: Array.from(new Set(lines.flatMap((line) => [line.code, line.code.toUpperCase()]))) } },
-    select: { itemCode: true, nameAr: true, nameEn: true },
+    select: { itemCode: true, nameAr: true, nameEn: true, priceMinor: true },
   });
   const byCode = new Map(dishes.map((dish) => [dish.itemCode, dish]));
   const known = lines
     .map((line) => ({ ...line, dish: byCode.get(line.code) ?? byCode.get(line.code.toUpperCase()) }))
-    .filter((line): line is typeof line & { dish: NonNullable<typeof line.dish> } => Boolean(line.dish));
+    .filter((line): line is typeof line & { dish: NonNullable<typeof line.dish> } => Boolean(line.dish))
+    .filter((line) => (line.totalMinor ?? 0) <= unitCeiling(line.dish.priceMinor) * line.qty);
   if (known.length === 0) return null;
 
   const subtotalMinor = known.reduce((sum, line) => sum + (line.totalMinor ?? 0), 0);
-  const feeMinor = input.orderType === 'delivery' ? Math.min(toMinorUnits(input.deliveryFee, currency) ?? 0, MAX_AMOUNT_MINOR) : 0;
+  // A delivery fee is at most the restaurant's own highest fee; with no zones the restaurant sets it later.
+  const highestFee = business.deliveryZones[0]?.feeMinor ?? 0;
+  const feeMinor = input.orderType === 'delivery' ? Math.min(toMinorUnits(input.deliveryFee, currency) ?? 0, highestFee) : 0;
   const totalMinor = subtotalMinor + feeMinor;
+  if (totalMinor > MAX_ORDER_MINOR) return null;
   const name = text(input.name, 80);
   const phone = typeof input.phone === 'string' ? normalizePhone(input.phone, countryCodeFor(currency)) : null;
   const optIn = input.offers === true && business.offersSignupEnabled && phone !== null;
@@ -89,18 +109,17 @@ export async function recordMenuOrder(publicId: string, input: MenuOrderInput): 
             orderCount: 1,
             totalSpentMinor: totalMinor,
             lastOrderAt: now,
-            ...(optIn ? { marketingOptIn: true, optInAt: now, optInSource: 'cart' } : {}),
           },
           update: {
             ...(name ? { name } : {}),
             orderCount: { increment: 1 },
             totalSpentMinor: { increment: totalMinor },
             lastOrderAt: now,
-            ...(optIn ? { marketingOptIn: true, optInAt: now, optInSource: 'cart', optOutAt: null } : {}),
           },
           select: { id: true },
         })
       : null;
+    if (customer && optIn) await markOptedIn(tx, customer.id, now, 'cart');
 
     return tx.customerOrder.create({
       data: {
@@ -136,7 +155,7 @@ export async function recordMenuOrder(publicId: string, input: MenuOrderInput): 
 
 /**
  * A customer asking for the restaurant's offers. Only when the restaurant has
- * turned sign-up on; saying yes again after opting out is new consent.
+ * turned sign-up on, and never over an opt-out the restaurant recorded.
  */
 export async function subscribeToOffers(publicId: string, input: { name?: unknown; phone?: unknown }): Promise<boolean> {
   const business = await prisma.business.findFirst({
@@ -150,10 +169,30 @@ export async function subscribeToOffers(publicId: string, input: { name?: unknow
   const name = text(input.name, 80);
   const now = new Date();
 
-  await prisma.customer.upsert({
-    where: { businessId_phone: { businessId: business.id, phone } },
-    create: { businessId: business.id, phone, name, marketingOptIn: true, optInAt: now, optInSource: 'signup' },
-    update: { ...(name ? { name } : {}), marketingOptIn: true, optInAt: now, optInSource: 'signup', optOutAt: null },
+  await prisma.$transaction(async (tx) => {
+    const customer = await tx.customer.upsert({
+      where: { businessId_phone: { businessId: business.id, phone } },
+      create: { businessId: business.id, phone, name },
+      update: { ...(name ? { name } : {}) },
+      select: { id: true },
+    });
+    await markOptedIn(tx, customer.id, now, 'signup');
   });
+  // The same answer whether or not the number had opted out: the menu must
+  // not reveal what the restaurant holds about a number.
   return true;
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/**
+ * Adds a customer to the offers list, unless the restaurant recorded that
+ * they asked to stop. A public request carries no proof of who owns the
+ * number, so it can never undo an opt-out; only the restaurant can.
+ */
+async function markOptedIn(tx: Tx, customerId: string, now: Date, source: 'cart' | 'signup') {
+  await tx.customer.updateMany({
+    where: { id: customerId, optOutAt: null, marketingOptIn: false },
+    data: { marketingOptIn: true, optInAt: now, optInSource: source },
+  });
 }

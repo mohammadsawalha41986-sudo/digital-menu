@@ -117,15 +117,17 @@ run('recording an order sent from the menu', () => {
     const saved = await prisma.customerOrder.findUniqueOrThrow({ where: { id: id! }, include: { items: true, customer: true } });
     expect(saved).toMatchObject({ orderType: 'takeaway', customerName: 'أحمد', customerPhone: '966551234567', subtotalMinor: 3350, totalMinor: 3350, itemCount: 3, status: 'SENT' });
     expect(saved.items.map((line) => [line.nameAr, line.quantity, line.lineTotalMinor]).sort()).toEqual([['شاورما', 2, 2400], ['عصير', 1, 950]]);
-    expect(saved.customer).toMatchObject({ phone: '966551234567', orderCount: 1, totalSpentMinor: 3350, marketingOptIn: false });
+    expect(saved.customer).toMatchObject({ phone: '966551234567', orderCount: 1, totalSpentMinor: 3350n, marketingOptIn: false });
 
     // The same person typing the number differently is the same customer.
     await recordMenuOrder(publicId, order({ phone: '+966 55 123 4567', items: [{ code: juice, qty: 1, total: 9.5 }] }));
     const customer = await prisma.customer.findUniqueOrThrow({ where: { businessId_phone: { businessId, phone: '966551234567' } } });
-    expect(customer).toMatchObject({ orderCount: 2, totalSpentMinor: 4300 });
+    expect(customer).toMatchObject({ orderCount: 2, totalSpentMinor: 4300n });
   });
 
   it('drops dishes the restaurant does not have, and adds a delivery fee only to delivery', async () => {
+    await prisma.deliveryZone.deleteMany({ where: { businessId } });
+    await prisma.deliveryZone.create({ data: { businessId, maxMeters: 5000, feeMinor: 700 } });
     const id = await recordMenuOrder(publicId, order({
       orderType: 'delivery',
       deliveryFee: 7,
@@ -136,6 +138,36 @@ run('recording an order sent from the menu', () => {
 
     const takeaway = await recordMenuOrder(publicId, order({ deliveryFee: 7 }));
     expect((await prisma.customerOrder.findUniqueOrThrow({ where: { id: takeaway! } })).deliveryFeeMinor).toBe(0);
+
+    // A fee above the restaurant's own highest fee is not believed.
+    const inflated = await recordMenuOrder(publicId, order({ orderType: 'delivery', deliveryFee: 5000 }));
+    expect((await prisma.customerOrder.findUniqueOrThrow({ where: { id: inflated! } })).deliveryFeeMinor).toBe(700);
+    await prisma.deliveryZone.deleteMany({ where: { businessId } });
+  });
+
+  it('a line worth far more than its dish is dropped, and an order beyond any real order is refused', async () => {
+    // Shawarma costs 12: two of them cannot come to 100,000.
+    const id = await recordMenuOrder(publicId, order({ items: [{ code: shawarma, qty: 2, total: 100_000 }, { code: juice, qty: 1, total: 9.5 }] }));
+    expect(await prisma.customerOrder.findUniqueOrThrow({ where: { id: id! } })).toMatchObject({ subtotalMinor: 950, itemCount: 1 });
+    // With extras a line may be a few times the price.
+    const extras = await recordMenuOrder(publicId, order({ items: [{ code: shawarma, qty: 1, total: 30 }] }));
+    expect((await prisma.customerOrder.findUniqueOrThrow({ where: { id: extras! } })).subtotalMinor).toBe(3000);
+
+    const dish = await prisma.menuItem.findFirstOrThrow({ where: { businessId, itemCode: shawarma } });
+    await prisma.menuItem.update({ where: { id: dish.id }, data: { priceMinor: 1_000_000 } });
+    try {
+      const huge = Array.from({ length: 50 }, () => ({ code: shawarma, qty: 99, total: 99 * 10_000 }));
+      expect(await recordMenuOrder(publicId, order({ items: huge }))).toBeNull();
+    } finally {
+      await prisma.menuItem.update({ where: { id: dish.id }, data: { priceMinor: dish.priceMinor } });
+    }
+  });
+
+  it('two orders from the same number at the same moment are both kept, on one customer', async () => {
+    const [a, b] = await Promise.all([recordMenuOrder(publicId, order()), recordMenuOrder(publicId, order({ phone: '+966551234567' }))]);
+    expect(a).not.toBeNull();
+    expect(b).not.toBeNull();
+    expect(await prisma.customer.findFirstOrThrow({ where: { businessId } })).toMatchObject({ orderCount: 2, totalSpentMinor: 6700n });
   });
 
   it('records nothing for an unknown order type, no known dishes, another restaurant’s dishes, or an inactive restaurant', async () => {
@@ -164,7 +196,7 @@ run('consent for offers', () => {
     expect(await prisma.customer.findFirstOrThrow({ where: { businessId } })).toMatchObject({ marketingOptIn: true, optInSource: 'cart' });
   });
 
-  it('sign-up from the menu needs sign-up turned on and a real number; opting out is kept until they sign up again', async () => {
+  it('sign-up from the menu needs sign-up turned on and a real number; an opt-out the restaurant recorded is never undone from the menu', async () => {
     expect(await subscribeToOffers(publicId, { name: 'سارة', phone: '0559876543' })).toBe(false);
     await setOffersSignup(owner, businessId, true);
     expect(await subscribeToOffers(publicId, { name: 'سارة', phone: 'not a number' })).toBe(false);
@@ -179,8 +211,13 @@ run('consent for offers', () => {
     await recordMenuOrder(publicId, order({ phone: '0559876543' }));
     expect((await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).marketingOptIn).toBe(false);
 
+    // Nor does anyone signing the number up again, or ticking the cart's box:
+    // nothing proves who owns the number.
     expect(await subscribeToOffers(publicId, { phone: '0559876543' })).toBe(true);
-    expect(await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } })).toMatchObject({ marketingOptIn: true, optOutAt: null });
+    await recordMenuOrder(publicId, order({ phone: '0559876543', offers: true }));
+    const after = await prisma.customer.findUniqueOrThrow({ where: { id: customer.id } });
+    expect(after.marketingOptIn).toBe(false);
+    expect(after.optOutAt).not.toBeNull();
   });
 });
 
@@ -204,9 +241,24 @@ run('the restaurant’s dashboard', () => {
 
     // A cancelled order leaves its customer's totals, and comes back if un-cancelled.
     const cancelledCustomer = await prisma.customer.findFirstOrThrow({ where: { businessId, phone: '966500000002' } });
-    expect(cancelledCustomer).toMatchObject({ orderCount: 0, totalSpentMinor: 0 });
+    expect(cancelledCustomer).toMatchObject({ orderCount: 0, totalSpentMinor: 0n });
     await setOrderStatus(owner, businessId, cancelled!, 'SENT');
-    expect(await prisma.customer.findUniqueOrThrow({ where: { id: cancelledCustomer.id } })).toMatchObject({ orderCount: 1, totalSpentMinor: 9500 });
+    expect(await prisma.customer.findUniqueOrThrow({ where: { id: cancelledCustomer.id } })).toMatchObject({ orderCount: 1, totalSpentMinor: 9500n });
+  });
+
+  it('two people cancelling the same order at once count it once', async () => {
+    const id = await recordMenuOrder(publicId, order());
+    await Promise.all([
+      setOrderStatus(owner, businessId, id!, 'CANCELLED'),
+      setOrderStatus(owner, businessId, id!, 'CANCELLED'),
+      setOrderStatus(owner, businessId, id!, 'CANCELLED'),
+    ]);
+    expect(await prisma.customer.findFirstOrThrow({ where: { businessId } })).toMatchObject({ orderCount: 0, totalSpentMinor: 0n });
+  });
+
+  it('a customer is found by the number as they would type it locally', async () => {
+    await recordMenuOrder(publicId, order());
+    expect((await listCustomers(owner, businessId, { query: '0551234' })).map((row) => row.phone)).toEqual(['966551234567']);
   });
 
   it('phone numbers are for a manager or the owner: an editor and a stranger are refused', async () => {

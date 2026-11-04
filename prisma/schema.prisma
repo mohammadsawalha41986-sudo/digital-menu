@@ -1546,7 +1546,8 @@ model Customer {
 
   orderCount      Int       @default(0)
   /// Sum of non-cancelled orders, in minor units of the business currency.
-  totalSpentMinor Int       @default(0)
+  /// BIGINT: a running total, so it never overflows however long it runs.
+  totalSpentMinor BigInt    @default(0)
   lastOrderAt     DateTime?
 
   createdAt DateTime @default(now())

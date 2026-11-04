@@ -67,22 +67,28 @@ export async function getCustomerDashboard(user: AuthenticatedUser, businessId: 
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const live = { businessId: id, createdAt: { gte: since }, status: { not: 'CANCELLED' as const } };
 
+  // Sums are taken as BIGINT and read back as numbers: a total over many
+  // orders must never overflow a 32-bit column type. The window start is
+  // compared in UTC whatever the database session's time zone is.
+  const from = Prisma.sql`(${since}::timestamptz AT TIME ZONE 'UTC')`;
+  const liveSql = Prisma.sql`o."businessId" = ${id} AND o."createdAt" >= ${from} AND o.status <> 'CANCELLED'`;
+
   const [business, sums, cancelled, phones, subscribers, newSubscribers, dishes, byType, recent, byDay, byHour] = await Promise.all([
     prisma.business.findUniqueOrThrow({ where: { id }, select: { publicId: true, currency: true, offersSignupEnabled: true } }),
-    prisma.customerOrder.aggregate({ where: live, _count: { _all: true }, _sum: { totalMinor: true } }),
+    prisma.$queryRaw<{ orders: bigint; sales: bigint }[]>(Prisma.sql`
+      SELECT count(*) AS orders, coalesce(sum(o."totalMinor"), 0)::bigint AS sales FROM customer_orders o WHERE ${liveSql}`),
     prisma.customerOrder.count({ where: { businessId: id, createdAt: { gte: since }, status: 'CANCELLED' } }),
     prisma.customerOrder.groupBy({ by: ['customerPhone'], where: { ...live, customerPhone: { not: null } }, _count: { _all: true } }),
     prisma.customer.count({ where: { businessId: id, marketingOptIn: true } }),
     prisma.customer.count({ where: { businessId: id, marketingOptIn: true, optInAt: { gte: since } } }),
-    prisma.customerOrderItem.groupBy({
-      by: ['itemCode'],
-      where: { businessId: id, order: live },
-      _sum: { quantity: true, lineTotalMinor: true },
-      _count: { _all: true },
-      orderBy: { _sum: { quantity: 'desc' } },
-      take: 10,
-    }),
-    prisma.customerOrder.groupBy({ by: ['orderType'], where: live, _count: { _all: true }, _sum: { totalMinor: true } }),
+    prisma.$queryRaw<{ code: string; quantity: bigint; sales: bigint; orders: bigint }[]>(Prisma.sql`
+      SELECT i."itemCode" AS code, sum(i.quantity)::bigint AS quantity, sum(i."lineTotalMinor")::bigint AS sales, count(DISTINCT i."orderId") AS orders
+      FROM customer_order_items i JOIN customer_orders o ON o.id = i."orderId"
+      WHERE i."businessId" = ${id} AND ${liveSql}
+      GROUP BY i."itemCode" ORDER BY 2 DESC, 3 DESC LIMIT 10`),
+    prisma.$queryRaw<{ type: string; orders: bigint; sales: bigint }[]>(Prisma.sql`
+      SELECT o."orderType" AS type, count(*) AS orders, coalesce(sum(o."totalMinor"), 0)::bigint AS sales
+      FROM customer_orders o WHERE ${liveSql} GROUP BY 1 ORDER BY 2 DESC`),
     prisma.customerOrder.findMany({
       where: { businessId: id },
       orderBy: { createdAt: 'desc' },
@@ -100,21 +106,19 @@ export async function getCustomerDashboard(user: AuthenticatedUser, businessId: 
         items: { select: { nameAr: true, quantity: true } },
       },
     }),
-    prisma.$queryRaw<{ day: string; orders: number; sales: number }[]>(Prisma.sql`
-      SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${ZONE}, 'YYYY-MM-DD') AS day,
-             count(*)::int AS orders, coalesce(sum("totalMinor"), 0)::int AS sales
-      FROM customer_orders
-      WHERE "businessId" = ${id} AND "createdAt" >= ${since} AND status <> 'CANCELLED'
+    prisma.$queryRaw<{ day: string; orders: bigint; sales: bigint }[]>(Prisma.sql`
+      SELECT to_char((o."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${ZONE}, 'YYYY-MM-DD') AS day,
+             count(*) AS orders, coalesce(sum(o."totalMinor"), 0)::bigint AS sales
+      FROM customer_orders o WHERE ${liveSql}
       GROUP BY 1 ORDER BY 1`),
-    prisma.$queryRaw<{ hour: number; orders: number }[]>(Prisma.sql`
-      SELECT extract(hour FROM ("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${ZONE})::int AS hour, count(*)::int AS orders
-      FROM customer_orders
-      WHERE "businessId" = ${id} AND "createdAt" >= ${since} AND status <> 'CANCELLED'
+    prisma.$queryRaw<{ hour: number; orders: bigint }[]>(Prisma.sql`
+      SELECT extract(hour FROM (o."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${ZONE})::int AS hour, count(*) AS orders
+      FROM customer_orders o WHERE ${liveSql}
       GROUP BY 1 ORDER BY 1`),
   ]);
 
   // Dish names as the menu has them now; an order's own copy when the dish is gone.
-  const codes = dishes.map((row) => row.itemCode);
+  const codes = dishes.map((row) => row.code);
   const [current, recorded] = await Promise.all([
     prisma.menuItem.findMany({ where: { businessId: id, itemCode: { in: codes } }, select: { itemCode: true, nameAr: true, nameEn: true } }),
     prisma.customerOrderItem.findMany({
@@ -126,8 +130,8 @@ export async function getCustomerDashboard(user: AuthenticatedUser, businessId: 
   ]);
   const names = new Map([...recorded, ...current].map((row) => [row.itemCode, row]));
 
-  const orders = sums._count._all;
-  const salesMinor = sums._sum.totalMinor ?? 0;
+  const orders = Number(sums[0]?.orders ?? 0);
+  const salesMinor = Number(sums[0]?.sales ?? 0);
 
   return {
     businessId: id,
@@ -146,18 +150,16 @@ export async function getCustomerDashboard(user: AuthenticatedUser, businessId: 
       newSubscribers,
     },
     topDishes: dishes.map((row) => ({
-      code: row.itemCode,
-      nameAr: names.get(row.itemCode)?.nameAr ?? row.itemCode,
-      nameEn: names.get(row.itemCode)?.nameEn ?? null,
-      quantity: row._sum.quantity ?? 0,
-      salesMinor: row._sum.lineTotalMinor ?? 0,
-      orders: row._count._all,
+      code: row.code,
+      nameAr: names.get(row.code)?.nameAr ?? row.code,
+      nameEn: names.get(row.code)?.nameEn ?? null,
+      quantity: Number(row.quantity),
+      salesMinor: Number(row.sales),
+      orders: Number(row.orders),
     })),
-    byDay: byDay.map((row) => ({ day: row.day, orders: row.orders, salesMinor: row.sales })),
-    byHour: byHour.map((row) => ({ hour: row.hour, orders: row.orders })),
-    byType: byType
-      .map((row) => ({ type: row.orderType, orders: row._count._all, salesMinor: row._sum.totalMinor ?? 0 }))
-      .sort((a, b) => b.orders - a.orders),
+    byDay: byDay.map((row) => ({ day: row.day, orders: Number(row.orders), salesMinor: Number(row.sales) })),
+    byHour: byHour.map((row) => ({ hour: row.hour, orders: Number(row.orders) })),
+    byType: byType.map((row) => ({ type: row.type, orders: Number(row.orders), salesMinor: Number(row.sales) })),
     recentOrders: recent,
   };
 }
@@ -172,6 +174,8 @@ export interface CustomerRow {
   createdAt: Date;
   marketingOptIn: boolean;
   optInSource: string | null;
+  /** Set when the customer asked the restaurant to stop offers. */
+  optOutAt: Date | null;
 }
 
 export async function listCustomers(
@@ -181,8 +185,9 @@ export async function listCustomers(
 ): Promise<CustomerRow[]> {
   const context = await requireTenantContext(user, businessId, 'MANAGER');
   const query = options.query?.trim().slice(0, 60);
-  const digits = query?.replace(/\D/g, '');
-  return prisma.customer.findMany({
+  // "055…" finds "96655…": the local leading zero is not part of the stored number.
+  const digits = query?.replace(/\D/g, '').replace(/^0+/, '');
+  const rows = await prisma.customer.findMany({
     where: {
       businessId: context.businessId,
       ...(options.subscribersOnly ? { marketingOptIn: true } : {}),
@@ -202,8 +207,10 @@ export async function listCustomers(
       createdAt: true,
       marketingOptIn: true,
       optInSource: true,
+      optOutAt: true,
     },
   });
+  return rows.map((row) => ({ ...row, totalSpentMinor: Number(row.totalSpentMinor) }));
 }
 
 const STATUSES = ['SENT', 'CONFIRMED', 'CANCELLED'] as const;
@@ -226,14 +233,17 @@ export async function setOrderStatus(user: AuthenticatedUser, businessId: string
     if (!order) throw new ValidationError('That order was not found.');
     if (order.status === next) return;
 
-    await tx.customerOrder.update({ where: { id: order.id }, data: { status: next } });
+    // Changed only from the status just read: of two changes made at once, one
+    // wins and the other changes nothing, so a cancellation is counted once.
+    const { count } = await tx.customerOrder.updateMany({ where: { id: order.id, status: order.status }, data: { status: next } });
+    if (count === 0) return;
     const leaving = next === 'CANCELLED' && order.status !== 'CANCELLED';
     const returning = order.status === 'CANCELLED' && next !== 'CANCELLED';
     if (order.customerId && (leaving || returning)) {
       const sign = leaving ? -1 : 1;
       await tx.customer.update({
         where: { id: order.customerId },
-        data: { orderCount: { increment: sign }, totalSpentMinor: { increment: sign * order.totalMinor } },
+        data: { orderCount: { increment: sign }, totalSpentMinor: { increment: BigInt(sign * order.totalMinor) } },
       });
     }
   });
@@ -325,7 +335,7 @@ export async function exportCustomersCsv(
       `${row.phone.slice(0, 3)} ${row.phone.slice(3)}`,
       whatsappChatLink(row.phone),
       row.orderCount,
-      (row.totalSpentMinor / 10 ** digits).toFixed(digits),
+      (Number(row.totalSpentMinor) / 10 ** digits).toFixed(digits),
       row.lastOrderAt?.toISOString().slice(0, 10) ?? '',
       row.marketingOptIn ? 'yes' : 'no',
       row.optInAt?.toISOString().slice(0, 10) ?? '',

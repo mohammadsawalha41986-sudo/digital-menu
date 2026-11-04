@@ -371,6 +371,10 @@ export default async function CustomersPage({
                     <td>
                       {customer.marketingOptIn ? (
                         <span className="admin__badge admin__badge--active">مشترك · Yes</span>
+                      ) : customer.optOutAt ? (
+                        <span className="admin__badge admin__badge--draft" title={dateOnly.format(customer.optOutAt)}>
+                          أوقفها بطلبه · Opted out
+                        </span>
                       ) : (
                         <span className="admin__badge admin__badge--inactive">لا · No</span>
                       )}

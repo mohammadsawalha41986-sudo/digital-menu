@@ -32,6 +32,11 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 429 });
   }
 
-  await recordMenuOrder(publicId, body as unknown as MenuOrderInput);
+  try {
+    await recordMenuOrder(publicId, body as unknown as MenuOrderInput);
+  } catch (error) {
+    // The customer's order already went to WhatsApp; a failed copy is logged, never surfaced.
+    console.error('menu order not recorded', error instanceof Error ? error.message : error);
+  }
   return new NextResponse(null, { status: 204 });
 }

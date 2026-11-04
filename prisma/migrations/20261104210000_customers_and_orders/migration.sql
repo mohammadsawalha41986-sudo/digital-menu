@@ -18,7 +18,7 @@ CREATE TABLE "customers" (
     "optInSource" TEXT,
     "optOutAt" TIMESTAMP(3),
     "orderCount" INTEGER NOT NULL DEFAULT 0,
-    "totalSpentMinor" INTEGER NOT NULL DEFAULT 0,
+    "totalSpentMinor" BIGINT NOT NULL DEFAULT 0,
     "lastOrderAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
