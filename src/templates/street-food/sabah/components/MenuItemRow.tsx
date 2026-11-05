@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { currencyUnit, formatAmount } from '../money';
 import { useSabah } from '../context';
-import { Plus, Flame, Sparkles } from 'lucide-react';
+import { Plus, UtensilsCrossed } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { MenuItem } from '../data/menuData';
 import type { Language } from '../types';
@@ -22,6 +22,8 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
 }) => {
   const { currency } = useSabah().info;
   const isAr = lang === 'ar';
+  // A photo that cannot be loaded gives way to a plain brand-tinted frame.
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   return (
     <motion.div
@@ -35,17 +37,28 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
       {/* Thumbnail */}
       {item.image && (
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-stone-900 shrink-0 border border-emerald-950 group-hover:border-amber-400/40 transition-colors">
+          {photoFailed ? (
+            <div aria-hidden="true" className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-950 to-stone-900">
+              <UtensilsCrossed className="w-6 h-6 text-emerald-400/40" strokeWidth={1.5} />
+            </div>
+          ) : (
           <img
+            // An image that failed before the page became interactive never fires onError.
+            ref={(img) => {
+              if (img && img.complete && img.naturalWidth === 0) setPhotoFailed(true);
+            }}
             src={item.image}
             srcSet={item.imageSrcSet}
             sizes="80px"
             style={{ objectPosition: item.imagePosition }}
             loading="lazy"
             decoding="async"
-            alt=""
-            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
+            alt={isAr ? item.nameAr : item.nameEn}
+            className={`w-full h-full object-cover text-transparent group-hover:scale-105 transition-transform duration-300 ${item.isUnavailable ? 'grayscale opacity-60' : ''}`}
             referrerPolicy="no-referrer"
+            onError={() => setPhotoFailed(true)}
           />
+          )}
         </div>
       )}
 

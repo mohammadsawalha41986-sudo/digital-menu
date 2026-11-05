@@ -553,3 +553,8 @@
     aspect-ratio: auto;
   }
 }
+
+/* Scroll targets clear the sticky header and category bar, measured live (SabahApp sets --sf-sticky). */
+.sf-scroll-target {
+  scroll-margin-top: var(--sf-sticky, 9rem);
+}

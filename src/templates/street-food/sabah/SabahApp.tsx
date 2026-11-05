@@ -33,6 +33,7 @@ import { useMinute } from './clock';
 import { InstallPrompt } from './components/InstallPrompt';
 import { WelcomeGreeting } from './components/WelcomeGreeting';
 import { DEALS_ID, dealsOf } from './deals';
+import { matchesSearch } from '@/lib/search-text';
 import type { OfferSort } from '@/lib/discount';
 import { OffersStrip } from './components/OffersStrip';
 import { CustomerReviewsSection } from './components/CustomerReviewsSection';
@@ -117,7 +118,7 @@ export default function App({
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('focus') !== 'dishes') return;
     const dishes = document.getElementById('menu-items-container');
-    if (dishes) window.scrollTo(0, dishes.getBoundingClientRect().top + window.scrollY - 120);
+    if (dishes) window.scrollTo(0, dishes.getBoundingClientRect().top + window.scrollY - stickyOffset());
   }, []);
 
   // Opening hours depend on the visitor's "now", so they are worked out in
@@ -227,6 +228,17 @@ export default function App({
   // them, so there is nothing to mutate here. Kept as a no-op comment so a
   // reader can see the deliberate omission.
 
+  // The sticky header and category bar change height with the width, the
+  // language and the restaurant's name: measure them, and let every scroll
+  // target clear them (`--sf-sticky` feeds `scroll-margin-top`).
+  useEffect(() => {
+    const update = () => document.documentElement.style.setProperty('--sf-sticky', `${stickyOffset()}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    document.querySelectorAll('[data-sticky-bar]').forEach((bar) => observer.observe(bar));
+    return () => observer.disconnect();
+  }, []);
+
   // Track scroll position for Back to Top button
   useEffect(() => {
     const handleScroll = () => {
@@ -276,7 +288,16 @@ export default function App({
     });
   };
 
+  // A brief, polite "added" for screen readers and a bump on the cart badge.
+  const [addedTick, setAddedTick] = useState(0);
+  useEffect(() => {
+    if (!addedTick) return;
+    const id = setTimeout(() => setAddedTick(0), 2500);
+    return () => clearTimeout(id);
+  }, [addedTick]);
+
   const handleAddToCart = (newItem: CartItem) => {
+    setAddedTick((tick) => tick + 1);
     setCart((prev) => {
       const existingIndex = prev.findIndex(
         (ci) =>
@@ -346,11 +367,9 @@ export default function App({
         return false;
       }
 
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const matchAr = item.nameAr.toLowerCase().includes(query) || (item.descriptionAr && item.descriptionAr.toLowerCase().includes(query));
-        const matchEn = item.nameEn.toLowerCase().includes(query) || (item.descriptionEn && item.descriptionEn.toLowerCase().includes(query));
-        if (!matchAr && !matchEn) return false;
+      // Spelling-tolerant: أ/ا, ة/ه, ى/ي, tashkeel and digits all fold together.
+      if (searchQuery.trim() && !matchesSearch(searchQuery, [item.nameAr, item.nameEn, item.descriptionAr, item.descriptionEn])) {
+        return false;
       }
 
       if (activeFilter === 'popular' && !item.isPopular) return false;
@@ -407,7 +426,8 @@ export default function App({
               setSelectedCategory(id);
               const el = document.getElementById('menu-items-container');
               if (el) {
-                el.scrollIntoView({ behavior: 'smooth' });
+                const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - stickyOffset(), behavior: reduce ? 'auto' : 'smooth' });
               }
             }}
           />
@@ -431,7 +451,7 @@ export default function App({
           <div id="menu-items-container" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 sm:space-y-12">
             {/* The automatic section: appears only while some dish has a live discount. */}
             {showDeals ? (
-              <section id={DEALS_ID} data-deals-section aria-label={isAr ? 'العروض والتوفير' : 'Deals & savings'} className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36">
+              <section id={DEALS_ID} data-deals-section aria-label={isAr ? 'العروض والتوفير' : 'Deals & savings'} className="space-y-4 sm:space-y-6 sf-scroll-target">
                 <div className="flex items-end justify-between gap-2 pb-3.5 border-b border-amber-500/40">
                   <div className="flex items-center gap-2.5">
                     <span aria-hidden="true" className="text-xl">🔥</span>
@@ -469,17 +489,18 @@ export default function App({
                 <section
                   id={cat.id}
                   data-category={cat.id}
-                  className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36"
+                  className="space-y-4 sm:space-y-6 sf-scroll-target"
                 >
                   {/* Category Header with Scroll Reveal */}
-                  <div className="flex items-end justify-between gap-2 pb-3.5 border-b border-emerald-950/80">
-                    <div>
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50" />
-                        <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  {/* The title takes the room it needs and wraps; the switch keeps its own size beside it. */}
+                  <div className="flex items-end justify-between gap-x-3 gap-y-2 pb-3.5 border-b border-emerald-950/80">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span aria-hidden="true" className="w-2.5 h-2.5 shrink-0 self-center rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50" />
+                        <h2 className="min-w-0 text-xl sm:text-3xl font-black text-white tracking-tight leading-tight break-words">
                           {isAr ? cat.nameAr : cat.nameEn}
                         </h2>
-                        <span className="text-xs text-amber-400 font-mono font-bold bg-stone-900/90 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                        <span className="shrink-0 text-xs text-amber-400 font-mono font-bold bg-stone-900/90 px-2 py-0.5 rounded-full border border-amber-500/30">
                           {itemsInThisCat.length}
                         </span>
                       </div>
@@ -588,10 +609,15 @@ export default function App({
         lang={lang}
         onToggleLang={toggleLanguage}
         cartCount={totalCartCount}
+        bump={addedTick}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenQr={() => setIsQrOpen(true)}
         onOpenCalories={() => setIsCaloriesOpen(true)}
       />
+
+      <p className="sr-only" aria-live="polite" data-added-announcement>
+        {addedTick ? (isAr ? 'تمت الإضافة إلى الطلب' : 'Added to your order') : ''}
+      </p>
 
       <main className="flex-1">
         {sectionOrder.map((key) => (
@@ -746,6 +772,13 @@ export default function App({
     </div>
     </SabahDataProvider>
   );
+}
+
+/** The height of the sticky bars (header and category rail) a scroll target must clear, plus a little air. */
+function stickyOffset(): number {
+  const bars = Array.from(document.querySelectorAll<HTMLElement>('[data-sticky-bar]'));
+  const bottom = Math.max(0, ...bars.map((bar) => bar.getBoundingClientRect().height + (parseFloat(getComputedStyle(bar).top) || 0)));
+  return Math.ceil(bottom) + 12;
 }
 
 /** The same threshold the platform used before: below it, scrolling wins. */

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { currencyUnit, formatAmount } from '../money';
 import { X, Trash2, Plus, Minus, MessageCircle, Phone, ShoppingBag, MapPin, Store, Utensils, LocateFixed } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -71,6 +71,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const [locationError, setLocationError] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [wantsOffers, setWantsOffers] = useState(false);
+  // A send is held for a few seconds: a second tap must not open WhatsApp, or
+  // record the order, twice.
+  const [sent, setSent] = useState(false);
+  const sentRef = useRef(false);
+  useEffect(() => {
+    if (!sent) return;
+    const id = setTimeout(() => {
+      sentRef.current = false;
+      setSent(false);
+    }, SEND_HOLD_MS);
+    return () => clearTimeout(id);
+  }, [sent]);
+  // Emptying the whole cart asks first.
+  const [confirmClear, setConfirmClear] = useState(false);
 
   if (!isOpen) return null;
 
@@ -121,11 +135,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   };
 
   const handleSendWhatsAppOrder = () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || sentRef.current) return;
     if (!canSend) {
       setShowErrors(true);
       return;
     }
+    sentRef.current = true;
+    setSent(true);
 
     let orderTypeLabel = 'استلام سفري من المطعم';
     if (orderType === 'dineIn') {
@@ -247,24 +263,55 @@ ${noteInfo}
               </div>
 
               <div className="flex items-center gap-2">
-                {cart.length > 0 && (
+                {cart.length > 0 && !confirmClear && (
                   <button
-                    onClick={onClearCart}
-                    className="text-xs text-stone-400 hover:text-red-400 transition-colors p-1"
+                    type="button"
+                    onClick={() => setConfirmClear(true)}
+                    aria-label={isAr ? 'تفريغ السلة' : 'Clear Cart'}
                     title={isAr ? 'تفريغ السلة' : 'Clear Cart'}
+                    className="w-11 h-11 rounded-lg text-stone-400 hover:text-red-400 hover:bg-stone-900 flex items-center justify-center transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={onClose}
                   aria-label={lang === 'ar' ? 'إغلاق السلة' : 'Close cart'}
-                  className="w-8 h-8 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-11 h-11 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
+
+            {cart.length > 0 && confirmClear ? (
+              <div role="alertdialog" aria-labelledby="sf-clear-cart-q" data-clear-confirm className="px-4 py-3 border-b border-emerald-950 bg-stone-950 flex flex-wrap items-center justify-between gap-2">
+                <p id="sf-clear-cart-q" className="text-sm font-bold text-white">
+                  {isAr ? 'تفريغ السلة من كل الأصناف؟' : 'Remove everything from your order?'}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    autoFocus
+                    onClick={() => setConfirmClear(false)}
+                    className="min-h-11 px-4 rounded-xl bg-stone-900 border border-emerald-950 text-stone-200 text-xs font-bold cursor-pointer"
+                  >
+                    {isAr ? 'إبقاء الطلب' : 'Keep order'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmClear(false);
+                      onClearCart();
+                    }}
+                    className="min-h-11 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black cursor-pointer"
+                  >
+                    {isAr ? 'نعم، تفريغ السلة' : 'Yes, clear it'}
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             {/* Cart Items List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -534,25 +581,31 @@ ${noteInfo}
                         {/* Stepper & Delete */}
                         <div className="flex flex-col items-end gap-2 shrink-0">
                           <button
+                            type="button"
                             onClick={() => onRemoveItem(ci.cartItemId)}
-                            className="text-stone-500 hover:text-red-400 transition-colors p-1"
+                            aria-label={isAr ? `حذف ${ci.item.nameAr}` : `Remove ${ci.item.nameEn}`}
+                            className="w-11 h-11 -m-2 rounded-lg text-stone-400 hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
 
                           <div className="flex items-center bg-stone-900 border border-emerald-950 rounded-lg p-0.5">
                             <button
+                              type="button"
                               onClick={() => onUpdateQuantity(ci.cartItemId, ci.quantity - 1)}
-                              className="w-6 h-6 rounded bg-stone-800 hover:bg-stone-750 text-white flex items-center justify-center text-xs"
+                              aria-label={isAr ? 'إنقاص الكمية' : 'Decrease quantity'}
+                              className="w-11 h-11 rounded-md bg-stone-800 hover:bg-stone-750 text-white flex items-center justify-center text-xs"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="w-7 text-center font-bold text-xs text-white tabular-nums">
+                            <span className="w-8 text-center font-bold text-sm text-white tabular-nums" aria-live="polite">
                               {ci.quantity}
                             </span>
                             <button
+                              type="button"
                               onClick={() => onUpdateQuantity(ci.cartItemId, ci.quantity + 1)}
-                              className="w-6 h-6 rounded bg-stone-800 hover:bg-stone-750 text-white flex items-center justify-center text-xs"
+                              aria-label={isAr ? 'زيادة الكمية' : 'Increase quantity'}
+                              className="w-11 h-11 rounded-md bg-stone-800 hover:bg-stone-750 text-white flex items-center justify-center text-xs"
                             >
                               <Plus className="w-3 h-3" />
                             </button>
@@ -631,10 +684,14 @@ ${noteInfo}
                   whileTap={{ scale: 0.97 }}
                   type="button"
                   onClick={handleSendWhatsAppOrder}
-                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm shadow-xl shadow-emerald-700/30 flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-400/40"
+                  aria-disabled={sent}
+                  data-sent={sent ? '' : undefined}
+                  className="aria-disabled:opacity-60 aria-disabled:cursor-default w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-600 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-sm shadow-xl shadow-emerald-700/30 flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-400/40"
                 >
                   <MessageCircle className="w-5 h-5 fill-white" />
+                  {/* The name stays the same while held, so it is still found by it; the state shows beside it. */}
                   <span>{isAr ? 'إرسال الطلب عبر واتساب الآن' : 'Send Order via WhatsApp'}</span>
+                  {sent ? <span aria-hidden="true" className="text-xs font-bold">· {isAr ? 'تم الإرسال' : 'Sent'}</span> : null}
                 </motion.button>
                 ) : null}
                 {RESTAURANT_INFO.whatsappNumber && publicId ? (
@@ -669,6 +726,9 @@ ${noteInfo}
     </AnimatePresence>
   );
 };
+
+/** How long a sent order holds the send button. */
+const SEND_HOLD_MS = 4000;
 
 /**
  * A labelled field with its error underneath. The error sits outside the label

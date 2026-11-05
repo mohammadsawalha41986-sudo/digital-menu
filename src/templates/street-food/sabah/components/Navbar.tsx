@@ -10,6 +10,8 @@ interface NavbarProps {
   lang: Language;
   onToggleLang: () => void;
   cartCount: number;
+  /** Changes each time a dish is added: the cart badge bumps. */
+  bump?: number;
   onOpenCart: () => void;
   onOpenQr: () => void;
   onOpenCalories: () => void;
@@ -19,6 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang,
   onToggleLang,
   cartCount,
+  bump = 0,
   onOpenCart,
   onOpenQr,
   onOpenCalories,
@@ -27,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isAr = lang === 'ar';
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[var(--sf-ink-080d09)]/95 backdrop-blur-md border-b border-emerald-950/80 transition-colors shadow-lg shadow-black/30">
+    <header data-sticky-bar className="sticky top-0 z-40 w-full bg-[var(--sf-ink-080d09)]/95 backdrop-blur-md border-b border-emerald-950/80 transition-colors shadow-lg shadow-black/30">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-18 flex items-center justify-between gap-3 md:gap-8">
         
         {/* Zone 1: Brand Wordmark & Logo */}
@@ -147,9 +150,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <AnimatePresence>
               {cartCount > 0 && (
                 <motion.span
-                  key="cart-badge"
-                  initial={{ scale: 0 }}
+                  key={`cart-badge-${bump}`}
+                  initial={{ scale: bump ? 1.5 : 0 }}
                   animate={{ scale: 1 }}
+                  data-cart-badge
                   exit={{ scale: 0 }}
                   className="w-5 h-5 rounded-full bg-emerald-900 text-amber-300 border border-amber-400 text-xs flex items-center justify-center font-black tabular-nums shadow"
                 >
