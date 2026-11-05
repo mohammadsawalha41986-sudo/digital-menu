@@ -36,7 +36,20 @@ export function SaleUrgency({ item, isAr }: { item: MenuItem; isAr: boolean }) {
 }
 
 /** The struck-through original price and the saving, beside the sale price. */
-export function SaleWas({ item, isAr, currency, showSaving = true }: { item: MenuItem; isAr: boolean; currency: string; showSaving?: boolean }) {
+export function SaleWas({
+  item,
+  isAr,
+  currency,
+  showSaving = true,
+  savingClassName,
+}: {
+  item: MenuItem;
+  isAr: boolean;
+  currency: string;
+  showSaving?: boolean;
+  /** Lets a card hide the saving by layout (sabah.css) instead of not rendering it. */
+  savingClassName?: string;
+}) {
   if (!item.sale) return null;
   const unit = currencyUnit(currency, isAr);
   return (
@@ -46,7 +59,7 @@ export function SaleWas({ item, isAr, currency, showSaving = true }: { item: Men
         {formatAmount(item.sale.originalPrice, currency)} {unit}
       </s>
       {showSaving ? (
-        <span className="sf-sale-text font-bold" data-sale-saving>
+        <span className={`sf-sale-text font-bold ${savingClassName ?? ''}`} data-sale-saving>
           {isAr ? `وفّر ${formatAmount(item.sale.saving, currency)} ${unit}` : `Save ${formatAmount(item.sale.saving, currency)} ${unit}`}
         </span>
       ) : null}

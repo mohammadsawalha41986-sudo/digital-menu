@@ -187,7 +187,10 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
             <span />
           ) : (
             <div className="flex flex-col min-w-0">
-              {item.sale ? <SaleWas item={item} isAr={isAr} currency={currency} showSaving={!compact} /> : null}
+              {/* Two-up cards have no room for the saving; drawn as a row they do (sabah.css). */}
+              {item.sale ? (
+                <SaleWas item={item} isAr={isAr} currency={currency} savingClassName={compact ? 'sf-card__saving' : undefined} />
+              ) : null}
               {/* "From" changes what the price means, so it always shows. */}
               {hasOptions ? (
                 <span className="text-[11px] leading-tight text-stone-400">{isAr ? 'يبدأ من' : 'From'}</span>

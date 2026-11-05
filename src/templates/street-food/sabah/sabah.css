@@ -291,6 +291,11 @@
   container: sfrow / inline-size;
 }
 
+/* A two-up card leaves the discount's saving out (the row card below shows it). */
+.sf-root .sf-card__saving {
+  display: none;
+}
+
 /* The horizontal card, in any row cell: the photo beside the text, as tall
    as the card, whatever shape the restaurant chose for regular photos. */
 @container sfrow (min-width: 0px) {
@@ -331,6 +336,11 @@
 
   .sf-root .sf-card__label {
     display: none;
+  }
+
+  /* A row has room for the discount's saving, which two-up cards leave out. */
+  .sf-root .sf-card__saving {
+    display: inline;
   }
 
   /* A featured dish stays compact: a little taller than a regular row. */
