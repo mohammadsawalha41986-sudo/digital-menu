@@ -1,15 +1,20 @@
 #!/bin/bash
-# Verified backup (daily by cron, or on redeploy) of the Digital Menu production data, run inside the
-# Railway project over the private network. Writes to /backup (its own volume).
-# Deployed as the start command of the Railway "db-backup" service (image
-# postgres:18, volume at /backup, cron 17 0 * * * UTC), base64-encoded:
-#   bash -c "echo <base64 of this file> | base64 -d > /tmp/backup.sh && bash /tmp/backup.sh"
-# Needs DATABASE_URL (private network) and BASE (the public site, for images).
+# Verified backup v4 (daily by cron, or on deploy) of the Digital Menu production data, run inside the
+# Railway project. Writes to /backup (its own volume).
+# Deployed as the start command of the Railway "db-backup" service (image postgres:18, volume at
+# /backup, cron 17 0 * * * UTC), gzip+base64 encoded:
+#   bash -c "echo <base64 of gzip of this file> | base64 -d | gunzip > /tmp/backup.sh && bash /tmp/backup.sh"
+# Needs DATABASE_URL (private network), BASE (the public site) and the bucket by reference:
+# S3_BUCKET, S3_ENDPOINT, S3_KEY, S3_SECRET, S3_REGION (from the menu-images bucket).
+# Checks: DB dump restores into a private server with equal row counts; the WHOLE bucket (every
+# restaurant, any status) is copied and checked file by file; every file the database points to is
+# in the copy; the public site serves active originals. Data-quality counts come from the restored
+# copy, never from production. Retention keeps the newest 14 complete backups.
 set -uo pipefail
 TS=$(date -u +%Y%m%dT%H%M%SZ)
 OUT=/backup/$TS
 mkdir -p "$OUT/storage"
-echo "BACKUP_START $TS script=v3"
+echo "BACKUP_START $TS script=v4"
 q() { psql -d "$DATABASE_URL" -Atc "$1"; }
 
 # 1. Database: custom-format dump (restorable with pg_restore).
@@ -31,30 +36,59 @@ for t in $(q "select tablename from pg_tables where schemaname='public' order by
   if [[ " $CORE " == *" $t "* ]] && [ "$a" != "$b" ]; then FAIL=1; fi
   if [ "$b" -gt "$a" ]; then FAIL=1; fi
 done
+# 2b. Data-quality audit, read from the RESTORED COPY (never production):
+# counts per restaurant, for review only; nothing is changed anywhere.
+v() { psql -h /tmp -p 5499 -U postgres -d verify -AtF ' ' -c "$1"; }
+v "select 'AUDIT', b.\"publicId\", b.status, 'dishes=' || count(i.id),
+  'no_en=' || count(i.id) filter (where i.\"nameEn\" is null or btrim(i.\"nameEn\")=''),
+  'no_desc=' || count(i.id) filter (where coalesce(btrim(i.\"descriptionAr\"),'')='' and coalesce(btrim(i.\"descriptionEn\"),'')=''),
+  'no_cal=' || count(i.id) filter (where i.calories is null),
+  'odd_cal=' || count(i.id) filter (where i.calories < 20 or i.calories > 2500),
+  'no_price=' || count(i.id) filter (where i.\"priceMinor\" is null),
+  'no_photo=' || count(i.id) filter (where i.\"imageMediaId\" is null)
+  from businesses b left join menu_items i on i.\"businessId\"=b.id group by b.\"publicId\", b.status order by 2" > "$OUT/audit.txt" 2>&1
+v "select 'AUDIT_SHARED_PHOTO', b.\"publicId\", count(*) from (select \"businessId\", \"imageMediaId\" from menu_items where \"imageMediaId\" is not null group by 1,2 having count(*)>1) s join businesses b on b.id=s.\"businessId\" group by 2 order by 2" >> "$OUT/audit.txt" 2>&1
+v "select 'AUDIT_ODD_CAL', b.\"publicId\", i.\"itemCode\", i.calories from menu_items i join businesses b on b.id=i.\"businessId\" where i.calories < 20 or i.calories > 2500 order by 2,3 limit 40" >> "$OUT/audit.txt" 2>&1
+v "select 'AUDIT_OPTIONS', b.\"publicId\", 'empty_ar=' || count(*) filter (where btrim(o.\"nameAr\")=''), 'no_en=' || count(*) filter (where o.\"nameEn\" is null or btrim(o.\"nameEn\")='') from modifier_options o join modifier_groups g on g.id=o.\"groupId\" join businesses b on b.id=g.\"businessId\" group by 2 order by 2" >> "$OUT/audit.txt" 2>&1
+cat "$OUT/audit.txt"
 gosu postgres pg_ctl -D $PGV -m fast stop >/dev/null; rm -rf $PGV
 if [ $FAIL = 0 ]; then echo "DB_VERIFY OK"; else echo "DB_VERIFY MISMATCH"; exit 1; fi
 
-# 3. Stored files. First, are there any this method cannot reach?
-apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq curl ca-certificates >/dev/null 2>&1
-INACTIVE=$(q "select count(*) from media m join businesses b on b.id=m.\"businessId\" where m.\"sourceUrl\" is null and b.status<>'ACTIVE'")
-PDFS=$(q "select count(*) from public_file_versions")
-echo "UNREACHABLE media_of_inactive=$INACTIVE pdf_versions=$PDFS"
-q "select m.\"storageKey\"||'|'||m.\"sizeBytes\"||'|'||array_to_string(m.\"derivativeWidths\",',') from media m join businesses b on b.id=m.\"businessId\" where m.\"sourceUrl\" is null and b.status='ACTIVE' order by 1" > "$OUT/media.txt"
-ok=0; miss=0; der=0
-while IFS='|' read -r key size widths; do
+# 3. Stored files: the WHOLE bucket, every restaurant (active, draft or
+#    inactive), copied and checked file by file against the bucket.
+apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq curl ca-certificates rclone >/dev/null 2>&1
+if ! command -v rclone >/dev/null; then echo "MEDIA_TOOL FAILED"; exit 1; fi
+if [ -z "${S3_BUCKET:-}" ] || [ -z "${S3_ENDPOINT:-}" ]; then echo "MEDIA_CONFIG FAILED"; exit 1; fi
+export RCLONE_CONFIG_B_TYPE=s3 RCLONE_CONFIG_B_PROVIDER=Other RCLONE_CONFIG_B_ENDPOINT="$S3_ENDPOINT" \
+  RCLONE_CONFIG_B_ACCESS_KEY_ID="$S3_KEY" RCLONE_CONFIG_B_SECRET_ACCESS_KEY="$S3_SECRET" \
+  RCLONE_CONFIG_B_REGION="${S3_REGION:-auto}" RCLONE_CONFIG_B_FORCE_PATH_STYLE=false
+rmdir "$OUT/storage" 2>/dev/null
+if ! rclone copy "B:$S3_BUCKET" "$OUT/media" --transfers 8 --checkers 16 --exclude ".probe/**" -q; then echo "MEDIA_COPY FAILED"; exit 1; fi
+if ! rclone check "B:$S3_BUCKET" "$OUT/media" --one-way --exclude ".probe/**" -q; then echo "MEDIA_CHECK FAILED"; exit 1; fi
+echo "MEDIA_COPY OK $(rclone size "B:$S3_BUCKET" --exclude '.probe/**' --json)"
+(cd "$OUT/media" && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$OUT/media.sha256"
+echo "MEDIA_FILES $(wc -l < "$OUT/media.sha256") MEDIA_BYTES $(du -sb "$OUT/media" | cut -f1)"
+
+# Every file the database points to, for every restaurant, is in the copy.
+q "select m.\"storageKey\"||'|'||array_to_string(m.\"derivativeWidths\",',') from media m where m.\"sourceUrl\" is null union all select \"storageKey\"||'|' from public_file_versions" > "$OUT/media-keys.txt"
+keys=0; missing=0
+while IFS='|' read -r key widths; do
   [ -z "$key" ] && continue
-  mkdir -p "$OUT/storage/$(dirname "$key")"
-  code=$(curl -s -o "$OUT/storage/$key" -w '%{http_code}' "$BASE/uploads/$key")
-  got=$(stat -c %s "$OUT/storage/$key" 2>/dev/null || echo 0)
-  if [ "$code" = 200 ] && [ "$got" = "$size" ]; then ok=$((ok+1)); else miss=$((miss+1)); echo "MISS $key http=$code bytes=$got/$size"; rm -f "$OUT/storage/$key"; fi
-  for w in ${widths//,/ }; do
-    stem="${key%.*}"
-    c=$(curl -s -o "$OUT/storage/${stem}@${w}.webp" -w '%{http_code}' "$BASE/uploads/$key?w=$w"); [ "$c" = 200 ] && der=$((der+1)) || rm -f "$OUT/storage/${stem}@${w}.webp"
+  for k in "$key" $(for w in ${widths//,/ }; do echo "${key%.*}@${w}.webp"; done); do
+    keys=$((keys+1))
+    if [ ! -f "$OUT/media/$k" ]; then missing=$((missing+1)); [ $missing -le 20 ] && echo "MEDIA_DB_MISSING $k"; fi
   done
-done < "$OUT/media.txt"
-echo "IMAGES originals_ok=$ok originals_missing=$miss derivatives_ok=$der"
-(cd "$OUT/storage" && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$OUT/storage.sha256"
-echo "STORAGE_FILES $(wc -l < "$OUT/storage.sha256") STORAGE_BYTES $(du -sb "$OUT/storage" | cut -f1)"
+done < "$OUT/media-keys.txt"
+echo "MEDIA_DB keys=$keys missing=$missing"
+
+# And the public site still serves them (active restaurants' originals).
+ok=0; bad=0
+while IFS='|' read -r key size; do
+  [ -z "$key" ] && continue
+  got=$(curl -s -o /dev/null -w '%{http_code} %{size_download}' "$BASE/uploads/$key")
+  if [ "$got" = "200 $size" ]; then ok=$((ok+1)); else bad=$((bad+1)); [ $bad -le 20 ] && echo "SERVE_MISS $key $got/$size"; fi
+done < <(q "select m.\"storageKey\"||'|'||m.\"sizeBytes\" from media m join businesses b on b.id=m.\"businessId\" where m.\"sourceUrl\" is null and b.status='ACTIVE'")
+echo "SERVED originals_ok=$ok originals_missing=$bad"
 echo "BACKUP_DONE $TS"
 
 # 4. Retention, only after a verified backup (every failure above exits first).
