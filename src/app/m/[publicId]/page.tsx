@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getPublicProfile } from '@/server/profile/repository';
 import { renderProfile, type SearchParams } from '@/server/profile/render';
 import { buildProfileMetadata } from '@/server/profile/metadata';
+import { buildRestaurantJsonLd, serializeJsonLd } from '@/server/profile/structured-data';
 
 /**
  * THE PERMANENT PUBLIC PROFILE — `/m/{publicId}`.
@@ -41,5 +42,11 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
   const profile = await getPublicProfile(publicId);
   if (!profile) notFound();
 
-  return renderProfile(profile, await searchParams);
+  return (
+    <>
+      {/* What the restaurant entered, for search engines; never ratings. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildRestaurantJsonLd(profile)) }} />
+      {await renderProfile(profile, await searchParams)}
+    </>
+  );
 }

@@ -67,3 +67,40 @@ test('emptying the cart asks first; one line still goes in one tap', async ({ pa
   await page.getByRole('button', { name: 'نعم، تفريغ السلة' }).click();
   await expect(page.getByText('سلة الطلب فارغة')).toBeVisible();
 });
+test('a double tap on send opens WhatsApp once and records the order once', async ({ page }) => {
+  let posts = 0;
+  await page.route('**/api/orders', async (route) => {
+    if (route.request().method() === 'POST') posts += 1;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+  });
+  await page.goto(`${SABAH}?lang=ar`);
+  await addFirstDish(page);
+
+  await page.evaluate(() => {
+    const opened: string[] = [];
+    (window as unknown as { opened: string[] }).opened = opened;
+    window.open = ((url: string) => {
+      opened.push(url);
+      return null;
+    }) as typeof window.open;
+  });
+  const send = page.getByRole('button', { name: /إرسال الطلب عبر واتساب/ });
+  // Taps as a customer makes them: back to back. `force` skips Playwright's
+  // wait for the button to be enabled again, which would otherwise hold the
+  // later taps until the four-second hold has lifted.
+  await send.scrollIntoViewIfNeeded();
+  await send.dblclick({ force: true });
+  await send.click({ force: true });
+  await send.click({ force: true });
+
+  await expect(send).toHaveAttribute('aria-disabled', 'true');
+  await expect(send).toContainText('تم الإرسال');
+  expect(await page.evaluate(() => (window as unknown as { opened: string[] }).opened.length)).toBe(1);
+  await expect.poll(() => posts).toBe(1);
+  await page.waitForTimeout(500);
+  expect(posts).toBe(1);
+
+  // The hold lifts after a few seconds.
+  await expect(send).not.toHaveAttribute('aria-disabled', 'true', { timeout: 8000 });
+});
+

@@ -35,7 +35,10 @@ export const SectionDishes: React.FC<SectionDishesProps> = ({ layout, dishes, la
       if (!lead) return null;
       return (
         <div className="space-y-3 md:space-y-4 lg:space-y-6" data-section-layout="featured">
-          <MenuItemCard item={lead} lang={lang} size="wide" onSelect={onSelect} priority={eager > 0} />
+          {/* A section's only dish is not stretched across a wide screen. */}
+          <div className={layout.rest ? undefined : 'lg:max-w-3xl'}>
+            <MenuItemCard item={lead} lang={lang} size="wide" onSelect={onSelect} priority={eager > 0} />
+          </div>
           {layout.rest ? (
             <Run run={layout.rest} dishes={rest} lang={lang} onSelect={onSelect} eager={Math.max(0, eager - 1)} />
           ) : null}
