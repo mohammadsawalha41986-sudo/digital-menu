@@ -37,7 +37,7 @@ interface MenuItemCardProps {
 const PHOTO_SIZES = {
   regular: '(min-width: 1280px) 340px, (min-width: 1024px) 33vw, (min-width: 360px) 50vw, 40vw',
   large: '(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw',
-  wide: '(min-width: 1024px) 240px, 40vw',
+  wide: '(min-width: 1024px) 480px, 40vw',
 } as const;
 
 export const MenuItemCard: React.FC<MenuItemCardProps> = ({

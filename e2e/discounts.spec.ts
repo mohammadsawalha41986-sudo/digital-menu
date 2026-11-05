@@ -8,6 +8,11 @@ import { signIn } from './support/admin';
  */
 
 const DISH = 'SHW-003';
+// Its section-mates. With all three on offer the deals section holds three cards, biggest saving
+// first (SHW-003, SHW-002, SHW-001): at the phone's two columns the first two are two-up cards and
+// the last, SHW-001, spans the row (a row card). In the dishes' own section it is the other way
+// round: SHW-001 and SHW-002 are two-up and SHW-003 is the lone last card.
+const SECTION_MATES = ['SHW-001', 'SHW-002'];
 const DISH_NAME_EN = 'Shawarma Sarookh';
 
 // The two tests change the same dish, so they run one after the other.
@@ -29,10 +34,12 @@ test('a discount set in the admin appears in the offers section and on the dish,
   await discountsPage(page);
 
   // Tick the dish, set 20% off, apply.
-  await page.locator(`input[name="itemCodes"][value="${DISH}"]`).check();
+  for (const code of [...SECTION_MATES, DISH]) {
+    await page.locator(`input[name="itemCodes"][value="${code}"]`).check();
+  }
   await page.getByLabel('النسبة % · Percent').fill('20');
-  await page.getByRole('button', { name: /Apply to 1/ }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Saved for 1 dish' })).toBeVisible();
+  await page.getByRole('button', { name: /Apply to 3/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Saved for 3 dishes' })).toBeVisible();
 
   // The public menu: the dish is in the deals section, with the old price struck and the new one.
   await page.goto('/m/SBH001?lang=ar');
@@ -43,7 +50,20 @@ test('a discount set in the admin appears in the offers section and on the dish,
   await expect(inDeals.locator('[data-sale-badge="20"]')).toContainText('خصم 20%');
   await expect(inDeals.locator('[data-sale-was]')).toContainText('13.00');
   await expect(inDeals.locator('[data-price]')).toContainText('10.40');
-  await expect(inDeals.locator('[data-sale-saving]')).toContainText('2.60');
+  // The deals section's last card spans the row: a row card shows the saving, a two-up card leaves it out.
+  await expect(deals.locator('[data-item]')).toHaveCount(3);
+  await expect(deals.locator('[data-item]').last()).toHaveAttribute('data-item', 'SHW-001');
+  const dealsRowCard = deals.locator('[data-item="SHW-001"] [data-sale-saving]');
+  await expect(dealsRowCard).toBeVisible();
+  await expect(dealsRowCard).toContainText('1.80');
+  for (const code of [DISH, 'SHW-002']) {
+    await expect(deals.locator(`[data-item="${code}"] [data-sale-saving]`)).toBeHidden();
+  }
+  // In its own section the dish is the lone last card (a row card); SHW-001 is two-up.
+  const own = page.locator('#menu-items-container > section:not([data-deals-section])');
+  await expect(own.locator(`[data-item="${DISH}"] [data-sale-saving]`)).toBeVisible();
+  await expect(own.locator(`[data-item="${DISH}"] [data-sale-saving]`)).toContainText('2.60');
+  await expect(own.locator('[data-item="SHW-001"] [data-sale-saving]')).toBeHidden();
   // The same dish stays in its own section, once more: no copy, no double discount.
   await expect(page.locator(`#menu-items-container > section:not([data-deals-section]) [data-item="${DISH}"]`)).toHaveCount(1);
   await expect(page.locator(`[data-item="${DISH}"] [data-price]`)).toHaveCount(2);
@@ -51,9 +71,11 @@ test('a discount set in the admin appears in the offers section and on the dish,
 
   // Switch it off from the list: the dish leaves the offers section at once.
   await discountsPage(page);
-  const row = page.locator(`[data-discount-row="${DISH}"]`);
-  await row.getByRole('button', { name: /Turn off/ }).click();
-  await expect(row.getByText('معطل · Off')).toBeVisible();
+  for (const code of [...SECTION_MATES, DISH]) {
+    const row = page.locator(`[data-discount-row="${code}"]`);
+    await row.getByRole('button', { name: /Turn off/ }).click();
+    await expect(row.getByText('معطل · Off')).toBeVisible();
+  }
 
   await page.goto('/m/SBH001?lang=ar');
   await expect(page.locator('[data-deals-section]')).toHaveCount(0);
@@ -62,7 +84,9 @@ test('a discount set in the admin appears in the offers section and on the dish,
 
   // The dish is left switched off, as it was before the test.
   await discountsPage(page);
-  await expect(page.locator(`[data-discount-row="${DISH}"]`).getByText('معطل · Off')).toBeVisible();
+  for (const code of [...SECTION_MATES, DISH]) {
+    await expect(page.locator(`[data-discount-row="${code}"]`).getByText('معطل · Off')).toBeVisible();
+  }
 });
 
 test('a discount set on the dish card itself saves with the dish, shows the final price, and reaches the offers section', async ({

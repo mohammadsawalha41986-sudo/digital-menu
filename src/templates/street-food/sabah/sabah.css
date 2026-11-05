@@ -231,7 +231,7 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-@container sfgrid (max-width: 299.98px) {
+@container sfgrid (width < 300px) {
   .sf-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -241,7 +241,7 @@
   }
 }
 
-@container sfgrid (min-width: 300px) and (max-width: 899.98px) {
+@container sfgrid (300px <= width < 900px) {
   .sf-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -252,7 +252,7 @@
   }
 }
 
-@container sfgrid (min-width: 900px) and (max-width: 1149.98px) {
+@container sfgrid (900px <= width < 1150px) {
   .sf-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -263,7 +263,7 @@
   }
 }
 
-@container sfgrid (min-width: 1150px) {
+@container sfgrid (width >= 1150px) {
   .sf-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -274,13 +274,13 @@
   }
 }
 
-@container sfgrid (min-width: 600px) and (max-width: 899.98px) {
+@container sfgrid (600px <= width < 900px) {
   .sf-grid {
     gap: 1rem;
   }
 }
 
-@container sfgrid (min-width: 900px) {
+@container sfgrid (width >= 900px) {
   .sf-grid {
     gap: 1.5rem;
   }
@@ -319,7 +319,6 @@
   }
 
   .sf-root .sf-card__body {
-    justify-content: center;
     padding: 0.75rem 0.875rem;
   }
 
@@ -770,4 +769,55 @@
 /* Scroll targets clear the sticky header and category bar, measured live (SabahApp sets --sf-sticky). */
 .sf-scroll-target {
   scroll-margin-top: var(--sf-sticky, 9rem);
+}
+
+/* Browsers without container queries (Safari < 16, Chrome < 105) ignore every
+   @container rule above, which would leave two columns at any width. Give
+   them the viewport's version: 1 column on the narrowest phones, then 2, 3
+   and 4 by screen width. No orphan spans (cards stay regular); the featured
+   card is a row from 640px, stacked 16:10 below. */
+@supports not (container-type: inline-size) {
+  .sf-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sf-root .sf-row .sf-card > .sf-card-media {
+    aspect-ratio: 16 / 10;
+  }
+
+  @media (min-width: 360px) {
+    .sf-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 640px) {
+    .sf-grid {
+      gap: 1rem;
+    }
+
+    .sf-row .sf-card {
+      flex-direction: row;
+    }
+
+    .sf-root .sf-row .sf-card > .sf-card-media {
+      aspect-ratio: auto;
+      inline-size: 40%;
+      max-inline-size: 30rem;
+      flex-shrink: 0;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .sf-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .sf-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
 }

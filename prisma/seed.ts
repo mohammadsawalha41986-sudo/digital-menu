@@ -45,6 +45,8 @@ interface SeedCategory {
   nameEn: string | null;
   descriptionAr?: string;
   descriptionEn?: string;
+  /** The MenuCategory.displayStyle ('auto' when left out). */
+  displayStyle?: string;
   items: SeedItem[];
 }
 
@@ -515,7 +517,7 @@ async function main() {
       '  /m/DEM005  burger',
       '  /m/DEM006  bakery',
       '  /m/DEM007  salon (services, durations)',
-      '  /m/DEM008  grid lab (sections of 1-9, 11, 20 dishes)',
+      '  /m/DEM008  grid lab (sections of 1-9, 11, 20 dishes + a featured one)',
       '  /m/DRAFT1  draft — deliberately not public',
       '',
       `  Brand artwork: ${artwork.images} new image(s) across ${artwork.businesses} businesses.`,
@@ -543,6 +545,30 @@ const GRID_LAB_DESC_EN =
   'A long description for layout testing: a dish cooked slowly over a gentle flame with a blend of fresh herbs and spices, served hot with warm bread, the house sauce and a crisp, refreshing green salad.';
 
 function gridLabCategories(): SeedCategory[] {
+  return [...gridLabCountCategories(), gridLabFeaturedCategory()];
+}
+
+/** The last section: a featured lead dish and three more, `GL-F-1..4`. */
+function gridLabFeaturedCategory(): SeedCategory {
+  return {
+    key: 'cf',
+    nameAr: 'قسم مميز',
+    nameEn: 'Featured section',
+    displayStyle: 'featured',
+    items: Array.from({ length: 4 }, (_, index): SeedItem => {
+      const i = index + 1;
+      return {
+        code: `GL-F-${i}`,
+        nameAr: `صنف مميز ${i}`,
+        nameEn: `Featured dish ${i}`,
+        priceMinor: 1500 + i * 100,
+        calories: i % 2 === 1 ? 300 + i * 20 : undefined,
+      };
+    }),
+  };
+}
+
+function gridLabCountCategories(): SeedCategory[] {
   return GRID_LAB_COUNTS.map((count) => ({
     key: `c${count}`,
     nameAr: `قسم من ${count} أصناف`,
@@ -936,6 +962,7 @@ async function seedShowcase(publishedById: string) {
         key: category.key,
         nameAr: category.nameAr,
         nameEn: category.nameEn,
+        displayStyle: 'displayStyle' in category ? (category.displayStyle as string | undefined) : undefined,
         items: category.items.map((item) => ({
           code: item.code,
           nameAr: item.nameAr,
@@ -980,6 +1007,7 @@ async function seedMenu(
         nameEn: category.nameEn,
         descriptionAr: category.descriptionAr ?? null,
         descriptionEn: category.descriptionEn ?? null,
+        ...(category.displayStyle ? { displayStyle: category.displayStyle } : {}),
         sortOrder: categoryIndex,
       },
     });

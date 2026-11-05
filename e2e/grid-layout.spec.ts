@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 
 /**
  * The adaptive dish grid on the Grid Lab menu (`/m/DEM008`), whose sections
- * hold 1, 2, 3, 4, 5, 6, 7, 8, 9, 11 and 20 dishes. Columns follow the
+ * hold 1, 2, 3, 4, 5, 6, 7, 8, 9, 11 and 20 dishes, plus a last featured
+ * section (a horizontal lead card, then its other three dishes in the grid;
+ * the per-section loop below reads those three as a section of 3). Columns follow the
  * menu's content width; no section ends on a lone card beside an empty
  * space — that card spans the row (2 columns) or two columns (3 and 4) as a
  * horizontal card; the dishes keep the restaurant's order.
@@ -22,6 +24,11 @@ const WIDTHS: Array<[width: number, columns: number]> = [
   [1440, 4],
   [1920, 4],
 ];
+
+/** Widths at which the featured lead card is checked. */
+const FEATURED_WIDTHS = [360, 390, 768, 1024, 1440];
+/** The tallest a horizontal (row) card may be, by the width its grid has. */
+const maxRowHeight = (contentWidth: number) => (contentWidth < 900 ? 190 : 230);
 
 type Box = { left: number; right: number; top: number; bottom: number; width: number; height: number };
 type Card = {
@@ -151,6 +158,11 @@ for (const lang of ['ar', 'en'] as const) {
           }
 
           for (const card of section.cards) {
+            if (rowCards.has(card.id)) {
+              expect(card.box.height, `${label}: ${card.id} row card is compact`).toBeLessThanOrEqual(
+                maxRowHeight(section.gridWidth),
+              );
+            }
             expect(card.lead, `${label}: ${card.id} has a photo frame or stripe`).not.toBeNull();
             expect(card.body, `${label}: ${card.id} has a body`).not.toBeNull();
             if (rowCards.has(card.id)) {
@@ -174,6 +186,37 @@ for (const lang of ['ar', 'en'] as const) {
           expect(section.clippedTitles, `${label}: clipped names`).toEqual([]);
         }
       });
+
+      if (FEATURED_WIDTHS.includes(width)) {
+        test('the featured lead is a compact horizontal card', async ({ page }) => {
+          await page.addInitScript(() => sessionStorage.setItem('sf-welcome:DEM008', '1'));
+          await page.goto(`${MENU}?lang=${lang}`);
+          const section = page.locator('#menu-items-container section[data-category]:has([data-section-layout="featured"])');
+          await expect(section).toHaveCount(1);
+          await section.scrollIntoViewIfNeeded();
+
+          const lead = await section.locator('[data-card-size="wide"]').evaluate((card) => {
+            const box = (el: Element | null) => {
+              if (!el) return null;
+              const r = el.getBoundingClientRect();
+              return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+            };
+            return {
+              id: card.getAttribute('data-item'),
+              box: box(card)!,
+              lead: box(card.querySelector(':scope > .sf-card-media, :scope > .sf-card__stripe')),
+              body: box(card.querySelector(':scope > .sf-card__body')),
+              contentWidth: card.closest('[data-section-layout="featured"]')!.getBoundingClientRect().width,
+            };
+          });
+          expect(lead.id).toBe('GL-F-1');
+          expect(lead.lead).not.toBeNull();
+          expect(lead.body).not.toBeNull();
+          // Photo beside the body at every width, never stacked above it.
+          expect(sideBySide(lead.lead!, lead.body!), 'featured lead is horizontal').toBe(true);
+          expect(lead.box.height, 'featured lead is compact').toBeLessThanOrEqual(maxRowHeight(lead.contentWidth));
+        });
+      }
     });
   }
 }
