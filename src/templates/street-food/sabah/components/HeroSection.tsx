@@ -130,7 +130,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       
       {/* 1. Full-Width Panoramic Motion Banner (Edge-to-Edge 100vw) */}
       <div
-        className="relative w-full sm:h-[620px] lg:h-[700px] overflow-hidden bg-[var(--sf-ink-070c08)]"
+        className="relative w-full sm:h-[clamp(400px,62svh,600px)] lg:h-[clamp(440px,64svh,640px)] overflow-hidden bg-[var(--sf-ink-070c08)]"
         data-hero-effect={effect}
         // The phone photo takes the shape of the first banner's photo, kept
         // between a tall and a wide frame, so no band of empty colour shows.
@@ -219,7 +219,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
 
         {/* 2. Hero Content Overlay (Positioned gracefully over the full-width panoramic banner) */}
-        <div className="relative sm:absolute sm:inset-0 z-20 flex flex-col justify-end sm:justify-between gap-4 sm:gap-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-12 pointer-events-none">
+        <div className="relative sm:absolute sm:inset-0 z-20 sf-hero-overlay flex flex-col justify-end sm:justify-between gap-2.5 sm:gap-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2.5 sm:py-8 lg:py-12 pointer-events-none">
           
           {/* Top Live Trust Strip — desktop and tablet; on a phone the same
               facts sit in the action row below the banner. */}
@@ -264,7 +264,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           {/* Main Slide Content in Hero Foreground */}
-          <div className="max-w-2xl space-y-3 sm:space-y-4 pointer-events-auto sm:p-6 sm:rounded-3xl sm:bg-black/55 sm:backdrop-blur-md sm:border sm:border-white/10">
+          <div className="sf-hero-card max-w-2xl space-y-2 sm:space-y-4 pointer-events-auto sm:p-6 sm:rounded-3xl sm:bg-black/55 sm:backdrop-blur-md sm:border sm:border-white/10">
             
             <AnimatePresence mode="wait">
               <motion.div
@@ -273,7 +273,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.4 }}
-                className="space-y-3"
+                className="space-y-2 sm:space-y-3"
               >
                 {/* Tag */}
                 {(isAr ? slide.tagAr : slide.tagEn) ? (
@@ -286,7 +286,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {/* Headline: only when the slide has one. A banner that is only a
                     photo leaves no empty rows under it. */}
                 {(isAr ? slide.headlineAr : slide.headlineEn) ? (
-                <h2 className="text-[1.75rem] leading-tight sm:text-5xl lg:text-6xl font-black text-white tracking-tight sm:leading-[1.12] drop-shadow-lg [text-wrap:balance]">
+                <h2 className="sf-hero-title text-[1.75rem] leading-tight sm:text-5xl lg:text-6xl font-black text-white tracking-tight sm:leading-[1.12] drop-shadow-lg [text-wrap:balance]">
                   {isAr ? slide.headlineAr : slide.headlineEn}
                 </h2>
                 ) : null}
@@ -332,13 +332,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </AnimatePresence>
 
             {/* CTAs */}
-            <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 sm:gap-3 pt-1 sm:pt-2">
+            <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 sm:gap-3 sm:pt-2">
               {slide.ctaUrl ? (
                 <a
                   href={slide.ctaUrl}
                   data-banner-cta=""
                   {...(slide.ctaUrl.startsWith('https://') ? { target: '_blank', rel: 'noreferrer' } : {})}
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 h-12 sm:h-auto px-5 sm:px-7 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-black text-sm border border-amber-200 transition-all"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 h-11 sm:h-auto px-5 sm:px-7 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-stone-950 font-black text-sm border border-amber-200 transition-all"
                 >
                   {(isAr ? slide.ctaLabelAr : slide.ctaLabelEn) || (isAr ? 'اكتشف' : 'Discover')}
                 </a>
@@ -348,7 +348,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={handleOrderCurrent}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 sm:gap-2.5 h-12 sm:h-auto px-5 sm:px-7 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-black text-sm shadow-2xl shadow-amber-500/40 border border-amber-200 transition-all cursor-pointer"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 sm:gap-2.5 h-11 sm:h-auto px-5 sm:px-7 sm:py-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-stone-950 font-black text-sm shadow-2xl shadow-amber-500/40 border border-amber-200 transition-all cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
                 <span className="sm:hidden">{isAr ? 'اطلب الآن' : 'Order now'}</span>
@@ -367,7 +367,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 target="_blank"
                 rel="noreferrer"
                 aria-label={isAr ? 'طلب سريع واتساب' : 'WhatsApp Order'}
-                className={`inline-flex items-center justify-center gap-2 h-12 sm:h-auto ${slideItem ? 'w-12 shrink-0 sm:w-auto' : 'flex-1 sm:flex-initial px-5'} sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-700/40 border border-emerald-400/40 transition-all cursor-pointer backdrop-blur-sm`}
+                className={`inline-flex items-center justify-center gap-2 h-11 sm:h-auto ${slideItem ? 'w-11 shrink-0 sm:w-auto' : 'flex-1 sm:flex-initial px-5'} sm:px-6 sm:py-4 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-700/40 border border-emerald-400/40 transition-all cursor-pointer backdrop-blur-sm`}
               >
                 <MessageCircle className="w-5 h-5 sm:w-4 sm:h-4 fill-white" />
                 <span className={slideItem ? 'hidden sm:inline' : undefined}>{isAr ? 'طلب سريع واتساب' : 'WhatsApp Order'}</span>
@@ -455,32 +455,33 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       </div>
 
       {/* 3b. On a phone: the restaurant's one-line description and the four
-          things a visitor actually does, as big round actions. */}
-      <div className="sm:hidden w-full bg-[var(--sf-ink-070c08)] border-t border-emerald-950/80 px-4 pt-3 pb-4 space-y-3">
+          things a visitor actually does, as one row of pills (icon beside its
+          label, each a full 44px touch target) that wraps if there are many. */}
+      <div className="sm:hidden w-full bg-[var(--sf-ink-070c08)] border-t border-emerald-950/80 px-4 pt-2.5 pb-3 space-y-2.5">
         {(isAr ? RESTAURANT_INFO.sloganAr : RESTAURANT_INFO.sloganEn) ? (
           <p className="text-[13px] text-stone-300 text-center line-clamp-1">
             {isAr ? RESTAURANT_INFO.sloganAr : RESTAURANT_INFO.sloganEn}
           </p>
         ) : null}
-        <nav className="grid grid-cols-4 gap-2" aria-label={isAr ? 'تواصل سريع' : 'Quick actions'}>
+        <nav className="flex flex-wrap gap-2" aria-label={isAr ? 'تواصل سريع' : 'Quick actions'}>
           {RESTAURANT_INFO.phone ? (
-            <a data-event="contact_phone" href={`tel:${RESTAURANT_INFO.phone}`} className="sf-action">
-              <Phone className="w-5 h-5" />
+            <a data-event="contact_phone" href={`tel:${RESTAURANT_INFO.phone}`} className="sf-quick">
+              <Phone className="w-4 h-4 shrink-0" />
               <span>{isAr ? 'اتصال' : 'Call'}</span>
             </a>
           ) : null}
           {RESTAURANT_INFO.whatsappNumber ? (
-            <a data-event="contact_whatsapp" href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}`} target="_blank" rel="noreferrer" className="sf-action">
-              <MessageCircle className="w-5 h-5" />
+            <a data-event="contact_whatsapp" href={`https://wa.me/${RESTAURANT_INFO.whatsappNumber}`} target="_blank" rel="noreferrer" className="sf-quick">
+              <MessageCircle className="w-4 h-4 shrink-0" />
               <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
             </a>
           ) : null}
-          <a href="#google-location" className="sf-action">
-            <MapPin className="w-5 h-5" />
+          <a href="#google-location" className="sf-quick">
+            <MapPin className="w-4 h-4 shrink-0" />
             <span>{isAr ? 'الموقع' : 'Location'}</span>
           </a>
-          <button type="button" onClick={onOpenCalories} className="sf-action">
-            <Activity className="w-5 h-5" />
+          <button type="button" onClick={onOpenCalories} className="sf-quick">
+            <Activity className="w-4 h-4 shrink-0" />
             <span>{isAr ? 'السعرات' : 'Calories'}</span>
           </button>
         </nav>

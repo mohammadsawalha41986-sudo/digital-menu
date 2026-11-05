@@ -461,11 +461,11 @@ export default function App({
           />
 
           {/* 5. Menu Items Display */}
-          <div id="menu-items-container" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 sm:space-y-12">
+          <div id="menu-items-container" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-6 sm:py-10 space-y-8 sm:space-y-12">
             {/* The automatic section: appears only while some dish has a live discount. */}
             {showDeals ? (
-              <section id={DEALS_ID} data-deals-section aria-label={isAr ? 'العروض والتوفير' : 'Deals & savings'} className="space-y-4 sm:space-y-6 sf-scroll-target">
-                <div className="flex items-end justify-between gap-2 pb-3.5 border-b border-amber-500/40">
+              <section id={DEALS_ID} data-deals-section aria-label={isAr ? 'العروض والتوفير' : 'Deals & savings'} className="space-y-3 sm:space-y-6 sf-scroll-target">
+                <div className="flex items-end justify-between gap-2 pb-2.5 sm:pb-3.5 border-b border-amber-500/40">
                   <div className="flex items-center gap-2.5">
                     <span aria-hidden="true" className="text-xl">🔥</span>
                     <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -502,11 +502,11 @@ export default function App({
                 <section
                   id={cat.id}
                   data-category={cat.id}
-                  className="space-y-4 sm:space-y-6 sf-scroll-target"
+                  className="space-y-3 sm:space-y-6 sf-scroll-target"
                 >
                   {/* Category Header with Scroll Reveal */}
                   {/* The title takes the room it needs and wraps; the switch keeps its own size beside it. */}
-                  <div className="flex items-end justify-between gap-x-3 gap-y-2 pb-3.5 border-b border-emerald-950/80">
+                  <div className="flex items-end justify-between gap-x-3 gap-y-2 pb-2.5 sm:pb-3.5 border-b border-emerald-950/80">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-2">
                         <span aria-hidden="true" className="w-2.5 h-2.5 shrink-0 self-center rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50" />

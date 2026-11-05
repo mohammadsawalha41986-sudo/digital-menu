@@ -75,7 +75,7 @@ export const CategoryNav: React.FC<CategoryNavProps> = ({
   };
 
   return (
-    <div data-sticky-bar className="sticky top-14 sm:top-18 z-30 bg-[var(--sf-ink-0d120e)]/95 backdrop-blur-md border-b border-emerald-950/80 py-2 sm:py-3 shadow-md">
+    <div data-sticky-bar className="sticky top-14 sm:top-18 z-30 bg-[var(--sf-ink-0d120e)]/95 backdrop-blur-md border-b border-emerald-950/80 py-1.5 sm:py-3 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={railRef} data-category-rail className="flex items-center gap-2 overflow-x-auto p-1 scrollbar-none hide-scrollbar">
           

@@ -37,10 +37,10 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
   const isAr = lang === 'ar';
 
   return (
-    <div className="py-5 border-b border-emerald-950/80 bg-[var(--sf-ink-0e140f)]/70 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+    <div className="py-2.5 sm:py-5 border-b border-emerald-950/80 bg-[var(--sf-ink-0e140f)]/70 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2.5 sm:space-y-4">
         
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 sm:gap-3">
           
           {/* Search Input Box — offered only when the menu is long enough to need it */}
           {showSearch ? (
@@ -66,11 +66,13 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
             )}
           </div>
           ) : (
-            <div className="flex-1" />
+            // Holds the filters to the end of the row on wide screens; below
+            // that the row stacks, and an empty item would only add a gap.
+            <div className="hidden lg:block flex-1" />
           )}
 
           {/* Quick Filter Buttons & View Mode Controls */}
-          <div className="flex flex-wrap items-center gap-2 justify-between lg:justify-end">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-y-2 justify-between lg:justify-end">
             
             {/* Filter buttons */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
@@ -182,7 +184,7 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
         </div>
 
         {/* Results Count Line */}
-        <div className="flex items-center justify-between text-xs text-stone-400 pt-1">
+        <div className="flex items-center justify-between text-xs text-stone-400 sm:pt-1">
           <span className="text-emerald-300/80 font-medium" role="status">
             {isAr ? `${resultCount} نتيجة` : `${resultCount} ${resultCount === 1 ? 'result' : 'results'}`}
           </span>
