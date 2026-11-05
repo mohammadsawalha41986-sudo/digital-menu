@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { MenuItemCard } from './MenuItemCard';
 import { MenuItemRow } from './MenuItemRow';
@@ -14,10 +13,12 @@ interface SectionDishesProps {
   dishes: MenuItem[];
   lang: Language;
   onSelect: (item: MenuItem) => void;
+  /** How many of the first dishes are above the fold: their photos load first. */
+  eager?: number;
 }
 
 /** One section's dishes, drawn the way its layout says. */
-export const SectionDishes: React.FC<SectionDishesProps> = ({ layout, dishes, lang, onSelect }) => {
+export const SectionDishes: React.FC<SectionDishesProps> = ({ layout, dishes, lang, onSelect, eager = 0 }) => {
   switch (layout.kind) {
     case 'list':
       return (
@@ -28,51 +29,46 @@ export const SectionDishes: React.FC<SectionDishesProps> = ({ layout, dishes, la
         </div>
       );
     case 'carousel':
-      return <Carousel dishes={dishes} lang={lang} onSelect={onSelect} />;
+      return <Carousel dishes={dishes} lang={lang} onSelect={onSelect} eager={eager} />;
     case 'featured': {
       const [lead, ...rest] = dishes;
       if (!lead) return null;
       return (
-        <div className="space-y-3 sm:space-y-6" data-section-layout="featured">
-          <MenuItemCard item={lead} lang={lang} size="wide" onSelect={onSelect} />
-          {layout.rest ? <Run run={layout.rest} dishes={rest} lang={lang} onSelect={onSelect} /> : null}
+        <div className="space-y-3 md:space-y-4 lg:space-y-6" data-section-layout="featured">
+          <MenuItemCard item={lead} lang={lang} size="wide" onSelect={onSelect} priority={eager > 0} />
+          {layout.rest ? (
+            <Run run={layout.rest} dishes={rest} lang={lang} onSelect={onSelect} eager={Math.max(0, eager - 1)} />
+          ) : null}
         </div>
       );
     }
     default:
-      return <Run run={layout} dishes={dishes} lang={lang} onSelect={onSelect} />;
+      return <Run run={layout} dishes={dishes} lang={lang} onSelect={onSelect} eager={eager} />;
   }
 };
 
-function Run({ run, dishes, lang, onSelect }: { run: CardRun } & Omit<SectionDishesProps, 'layout'>) {
+function Run({ run, dishes, lang, onSelect, eager = 0 }: { run: CardRun } & Omit<SectionDishesProps, 'layout'>) {
   const large = run.kind === 'large';
   return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
-      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.06 } } }}
+    <div
       data-section-layout={run.kind}
-      className={
-        large
-          ? 'grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8'
-          : `grid ${run.columns} gap-3 sm:gap-6 ${run.columns === 'grid-cols-2' ? 'sf-pair' : ''}`
-      }
+      className={`grid ${large ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : run.columns} gap-3 md:gap-4 lg:gap-6`}
     >
-      {dishes.map((dish) => (
+      {dishes.map((dish, index) => (
         <MenuItemCard
           key={dish.id}
           item={dish}
           lang={lang}
           size={large ? 'large' : 'regular'}
           onSelect={onSelect}
+          priority={index < eager}
         />
       ))}
-    </motion.div>
+    </div>
   );
 }
 
-function Carousel({ dishes, lang, onSelect }: Omit<SectionDishesProps, 'layout'>) {
+function Carousel({ dishes, lang, onSelect, eager = 0 }: Omit<SectionDishesProps, 'layout'>) {
   const track = useRef<HTMLDivElement>(null);
   const isAr = lang === 'ar';
 
@@ -90,9 +86,17 @@ function Carousel({ dishes, lang, onSelect }: Omit<SectionDishesProps, 'layout'>
   return (
     <div className="relative" data-section-layout="carousel">
       <div ref={track} className="sf-carousel" role="list">
-        {dishes.map((dish) => (
+        {dishes.map((dish, index) => (
           <div key={dish.id} role="listitem" className="flex [&>*]:flex-1">
-            <MenuItemCard item={dish} lang={lang} size="regular" onSelect={onSelect} />
+            <MenuItemCard
+              item={dish}
+              lang={lang}
+              size="regular"
+              onSelect={onSelect}
+              priority={index < eager}
+              // The slide widths in sabah.css (.sf-carousel > *).
+              sizes="(min-width: 1024px) 30vw, (min-width: 640px) 42vw, 75vw"
+            />
           </div>
         ))}
       </div>

@@ -1,8 +1,8 @@
 /**
  * How one section of the menu lays out its dishes. The restaurant picks a
- * style per section; `auto` (the default) arranges the dishes so the row is
- * filled, whatever their number: a section of two juices should not sit in
- * one corner of a four-column grid with the rest of the width empty.
+ * style per section; `auto` (the default) follows the restaurant-wide layout,
+ * in the same columns as every other section; a lone dish gets a compact
+ * wide card.
  */
 export const SECTION_STYLES = ['auto', 'grid', 'large', 'list', 'carousel', 'featured'] as const;
 export type SectionStyle = (typeof SECTION_STYLES)[number];
@@ -23,23 +23,19 @@ export type SectionLayout =
   | { kind: 'featured'; rest: CardRun | null };
 
 /**
- * Grid columns that fit `count` cards: never more columns than cards, so a
- * short section spans the width instead of leaving a gap at the end.
+ * The one column system every grid section uses, whatever its dish count:
+ * one column below 360px, two up to `lg` (phones and tablets), three to `xl`,
+ * four above. A short section keeps normal-sized cards and leaves the rest of
+ * its row empty rather than stretching two dishes across the screen.
  */
-export function gridColumns(count: number): string {
-  if (count <= 1) return 'grid-cols-1';
-  if (count === 2) return 'grid-cols-2';
-  if (count === 3) return 'grid-cols-2 lg:grid-cols-3';
-  if (count === 4) return 'grid-cols-2 lg:grid-cols-4';
-  return 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-}
+export const GRID_COLUMNS = 'grid-cols-2 max-[359px]:grid-cols-1 lg:grid-cols-3 xl:grid-cols-4';
 
-const grid = (count: number): CardRun => ({ kind: 'grid', columns: gridColumns(count) });
+const grid: CardRun = { kind: 'grid', columns: GRID_COLUMNS };
 
-/** One wide dish, then `rest` for the others (nothing when it was the only one). */
-const featured = (count: number, rest: (n: number) => CardRun): SectionLayout => ({
+/** One wide dish, then the grid for the others (nothing when it was the only one). */
+const featured = (count: number): SectionLayout => ({
   kind: 'featured',
-  rest: count > 1 ? rest(count - 1) : null,
+  rest: count > 1 ? grid : null,
 });
 
 /**
@@ -54,25 +50,23 @@ export function resolveSectionLayout(
 ): SectionLayout {
   switch (style) {
     case 'grid':
-      return grid(count);
+      return grid;
     case 'large':
-      return count === 1 ? featured(1, grid) : { kind: 'large' };
+      return count === 1 ? featured(1) : { kind: 'large' };
     case 'list':
       return { kind: 'list' };
     case 'carousel':
       // Too few dishes to scroll: show them whole instead.
-      return count < 3 ? grid(count) : { kind: 'carousel' };
+      return count < 3 ? grid : { kind: 'carousel' };
     case 'featured':
-      return featured(count, grid);
+      return featured(count);
     case 'auto':
-      if (count === 1) return featured(1, grid);
+      // A lone dish gets one compact card with its photo beside the text
+      // (stacked on a phone). Otherwise the restaurant-wide layout, at any
+      // count: no dish is singled out.
+      if (count === 1) return featured(1);
       if (fallback === 'list') return { kind: 'list' };
-      if (fallback === 'large') {
-        // Two-up rows: an odd count leads with one wide dish.
-        return count % 2 === 1 ? featured(count, () => ({ kind: 'large' })) : { kind: 'large' };
-      }
-      // Two-up on a phone too: an odd count would leave a hole in the last
-      // row, so the first dish goes wide and the rest pair up.
-      return count % 2 === 1 ? featured(count, grid) : grid(count);
+      if (fallback === 'large') return { kind: 'large' };
+      return grid;
   }
 }

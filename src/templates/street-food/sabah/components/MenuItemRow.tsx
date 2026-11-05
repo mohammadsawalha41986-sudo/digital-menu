@@ -29,9 +29,6 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
       // calories as rendered.
       data-item={item.id}
       data-unavailable={item.isUnavailable ? '' : undefined}
-      initial={{ opacity: 0, y: 10 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
       whileHover={{ x: isAr ? -4 : 4 }}
       className="sf-card sf-card--row p-3.5 sm:p-4 rounded-2xl bg-stone-950/80 border border-emerald-950/90 hover:border-emerald-500/50 flex items-center justify-between gap-3 sm:gap-4 transition-all shadow-sm group"
     >
@@ -55,7 +52,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
       {/* Item info */}
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+          <h3 className="text-base font-bold text-white group-hover:text-amber-300 transition-colors truncate">
             {isAr ? item.nameAr : item.nameEn}
           </h3>
           {item.isNew ? (
@@ -123,7 +120,7 @@ export const MenuItemRow: React.FC<MenuItemRowProps> = ({
           whileTap={{ scale: 0.92 }}
           onClick={() => onSelect(item)}
           aria-label={item.options || item.choices?.length ? (isAr ? 'اختيار' : 'Choose') : (isAr ? 'إضافة' : 'Add')}
-          className="p-2 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-emerald-950 cursor-pointer"
+          className="min-w-11 h-11 px-2.5 sm:px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold text-xs flex shrink-0 items-center justify-center gap-1 shadow-md shadow-emerald-950 cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span className="hidden sm:inline">

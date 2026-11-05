@@ -46,6 +46,9 @@ import { Footer } from './components/Footer';
 import { ShoppingBag, MessageCircle, Phone, ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/** Dishes whose photos load first: the first row or two of the first section. */
+const FIRST_PHOTOS = 4;
+
 export interface SabahAppProps {
   restaurantInfo?: RestaurantInfo;
   menuCategories?: MenuCategory[];
@@ -367,6 +370,13 @@ export default function App({
     return MENU_CATEGORIES;
   }, [selectedCategory, MENU_CATEGORIES]);
 
+  // The first section on screen: its first photos are above the fold, so
+  // they load at once instead of waiting their turn.
+  const showDeals = selectedCategory === 'all' && activeFilter === 'all' && searchQuery.trim() === '' && deals.length > 0;
+  const firstSectionId = showDeals
+    ? DEALS_ID
+    : categoriesToDisplay.find((cat) => filteredItems.some((item) => item.categoryId === cat.id))?.id;
+
   const isAr = lang === 'ar';
 
 
@@ -417,10 +427,10 @@ export default function App({
             offerCount={MENU_ITEMS.filter((item) => item.isOffer && !item.isUnavailable).length}
           />
 
-          {/* 5. Menu Items Display with framer-motion Scroll Reveal Entrance */}
+          {/* 5. Menu Items Display */}
           <div id="menu-items-container" className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 sm:space-y-12">
             {/* The automatic section: appears only while some dish has a live discount. */}
-            {selectedCategory === 'all' && activeFilter === 'all' && searchQuery.trim() === '' && deals.length > 0 ? (
+            {showDeals ? (
               <section id={DEALS_ID} data-deals-section aria-label={isAr ? 'العروض والتوفير' : 'Deals & savings'} className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36">
                 <div className="flex items-end justify-between gap-2 pb-3.5 border-b border-amber-500/40">
                   <div className="flex items-center gap-2.5">
@@ -438,6 +448,7 @@ export default function App({
                   dishes={deals}
                   lang={lang}
                   onSelect={(item) => openDish(item)}
+                  eager={FIRST_PHOTOS}
                 />
               </section>
             ) : null}
@@ -455,13 +466,9 @@ export default function App({
 
               return (
                 <React.Fragment key={cat.id}>
-                <motion.section 
+                <section
                   id={cat.id}
                   data-category={cat.id}
-                  initial={{ opacity: 0, y: 35 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.15 }}
-                  transition={{ duration: 0.55, delay: catIndex * 0.05, ease: [0.22, 1, 0.36, 1] }}
                   className="space-y-4 sm:space-y-6 scroll-mt-28 sm:scroll-mt-36"
                 >
                   {/* Category Header with Scroll Reveal */}
@@ -496,8 +503,9 @@ export default function App({
                     dishes={itemsInThisCat}
                     lang={lang}
                     onSelect={(item) => openDish(item)}
+                    eager={cat.id === firstSectionId ? FIRST_PHOTOS : 0}
                   />
-                </motion.section>
+                </section>
                 {showOffersAfter ? <OffersStrip lang={lang} /> : null}
                 </React.Fragment>
               );

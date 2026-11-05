@@ -20,7 +20,7 @@ test('each section of the menu takes the layout the restaurant chose for it', as
   const select = first.locator('select[name^="style:"]');
   await expect(select).toHaveValue('auto');
 
-  // A two-dish section on auto fills its row two-up instead of leaving a gap.
+  // A two-dish section on auto sits in the same grid as every section: two-up on a phone.
   await page.goto('/m/DEM006?lang=ar');
   const sections = page.locator('#menu-items-container section[data-category]');
   await expect(sections.first().locator('[data-section-layout="grid"]')).toHaveClass(/(^|\s)grid-cols-2(\s|$)/);

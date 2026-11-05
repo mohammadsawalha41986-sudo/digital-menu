@@ -213,14 +213,6 @@
   }
 }
 
-/* Two dishes across a wide screen: each card is half the page wide, so its
-   photo gets a wider, lower frame instead of filling the screen's height. */
-@media (min-width: 1024px) {
-  .sf-root .sf-pair .sf-card-media {
-    aspect-ratio: 21 / 9;
-  }
-}
-
 /* A section shown as a slider: cards side by side, swiped or scrolled, each
    stopping at the start edge. */
 .sf-carousel {
