@@ -59,7 +59,7 @@ export const MenuSearchAndFilter: React.FC<MenuSearchAndFilterProps> = ({
                 type="button"
                 aria-label={isAr ? 'مسح' : 'Clear'}
                 onClick={() => onSearchChange('')}
-                className="absolute left-0.5 rtl:left-0.5 ltr:right-0.5 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center text-stone-400 hover:text-white rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                className="absolute end-0.5 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center text-stone-400 hover:text-white rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
               >
                 <X className="w-4 h-4" aria-hidden="true" />
               </button>

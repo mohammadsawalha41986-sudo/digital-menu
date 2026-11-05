@@ -55,7 +55,7 @@ function Run({ run, dishes, lang, onSelect, eager = 0 }: { run: CardRun } & Omit
   return (
     <div
       data-section-layout={run.kind}
-      className={`grid ${large ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : run.columns} gap-3 md:gap-4 lg:gap-6`}
+      className={`grid ${large ? 'grid-cols-1 lg:grid-cols-2' : run.columns} gap-3 md:gap-4 lg:gap-6`}
     >
       {dishes.map((dish, index) => (
         <MenuItemCard

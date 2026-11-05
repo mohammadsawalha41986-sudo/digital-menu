@@ -272,6 +272,7 @@ export default function App({
       openDish(dish);
       return;
     }
+    announceAdded(dish, 1);
     setCart((prev) => {
       const existing = prev.find(
         (line) => line.item.id === dish.id && !line.selectedOption && !line.choices?.length && !line.notes && !line.spiceLevel,
@@ -289,15 +290,27 @@ export default function App({
   };
 
   // A brief, polite "added" for screen readers and a bump on the cart badge.
-  const [addedTick, setAddedTick] = useState(0);
+  // `addedCount` only grows (it drives the badge); the announcement names the
+  // dish and the new total, so a second add is announced too.
+  const [addedCount, setAddedCount] = useState(0);
+  const [addedNotice, setAddedNotice] = useState('');
+  const announceAdded = (dish: MenuItem, quantity: number) => {
+    setAddedCount((count) => count + 1);
+    const total = cart.reduce((sum, line) => sum + line.quantity, 0) + quantity;
+    setAddedNotice(
+      lang === 'ar'
+        ? `تمت إضافة ${dish.nameAr} — في الطلب ${total}`
+        : `Added ${dish.nameEn} — ${total} in your order`,
+    );
+  };
   useEffect(() => {
-    if (!addedTick) return;
-    const id = setTimeout(() => setAddedTick(0), 2500);
+    if (!addedNotice) return;
+    const id = setTimeout(() => setAddedNotice(''), 2500);
     return () => clearTimeout(id);
-  }, [addedTick]);
+  }, [addedNotice]);
 
   const handleAddToCart = (newItem: CartItem) => {
-    setAddedTick((tick) => tick + 1);
+    announceAdded(newItem.item, newItem.quantity);
     setCart((prev) => {
       const existingIndex = prev.findIndex(
         (ci) =>
@@ -609,14 +622,14 @@ export default function App({
         lang={lang}
         onToggleLang={toggleLanguage}
         cartCount={totalCartCount}
-        bump={addedTick}
+        bump={addedCount}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenQr={() => setIsQrOpen(true)}
         onOpenCalories={() => setIsCaloriesOpen(true)}
       />
 
       <p className="sr-only" aria-live="polite" data-added-announcement>
-        {addedTick ? (isAr ? 'تمت الإضافة إلى الطلب' : 'Added to your order') : ''}
+        {addedNotice}
       </p>
 
       <main className="flex-1">

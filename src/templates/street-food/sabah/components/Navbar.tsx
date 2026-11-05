@@ -150,14 +150,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             <AnimatePresence>
               {cartCount > 0 && (
                 <motion.span
-                  key={`cart-badge-${bump}`}
-                  initial={{ scale: bump ? 1.5 : 0 }}
+                  key="cart-badge"
+                  initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   data-cart-badge
                   exit={{ scale: 0 }}
                   className="w-5 h-5 rounded-full bg-emerald-900 text-amber-300 border border-amber-400 text-xs flex items-center justify-center font-black tabular-nums shadow"
                 >
-                  {cartCount}
+                  {/* One badge; only the number pops when a dish is added. */}
+                  <motion.span key={bump} initial={bump ? { scale: 1.6 } : false} animate={{ scale: 1 }} className="inline-block">
+                    {cartCount}
+                  </motion.span>
                 </motion.span>
               )}
             </AnimatePresence>

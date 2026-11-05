@@ -85,6 +85,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   }, [sent]);
   // Emptying the whole cart asks first.
   const [confirmClear, setConfirmClear] = useState(false);
+  // The question does not outlive the cart it was about, or the open drawer.
+  const [askedForLength, setAskedForLength] = useState(cart.length);
+  if (askedForLength !== cart.length) {
+    setAskedForLength(cart.length);
+    if (cart.length === 0 && confirmClear) setConfirmClear(false);
+  }
+  const close = () => {
+    setConfirmClear(false);
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -233,7 +243,7 @@ ${noteInfo}
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 overflow-hidden bg-stone-950/80 backdrop-blur-sm">
-        <div className="absolute inset-0" onClick={onClose} />
+        <div className="absolute inset-0" onClick={close} />
 
         <div className="absolute inset-y-0 right-0 rtl:right-0 ltr:right-auto ltr:left-0 max-w-full flex">
           <motion.div 
@@ -276,7 +286,7 @@ ${noteInfo}
                 )}
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={close}
                   aria-label={lang === 'ar' ? 'إغلاق السلة' : 'Close cart'}
                   className="w-11 h-11 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                 >
@@ -329,7 +339,7 @@ ${noteInfo}
                       : 'Explore the menu and add your favorite dishes.'}
                   </p>
                   <button
-                    onClick={onClose}
+                    onClick={close}
                     className="mt-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs shadow-md transition-colors cursor-pointer"
                   >
                     {isAr ? 'تصفح المنيو الآن' : 'Browse Menu Now'}

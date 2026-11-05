@@ -104,3 +104,28 @@ test('a double tap on send opens WhatsApp once and records the order once', asyn
   await expect(send).not.toHaveAttribute('aria-disabled', 'true', { timeout: 8000 });
 });
 
+
+test('adding a dish pops one cart badge, not two', async ({ page }) => {
+  await page.goto(`${SABAH}?lang=ar`);
+  await addFirstDish(page);
+  await expect(page.locator('[data-cart-badge]')).toHaveCount(1);
+  await page.waitForTimeout(600);
+  await expect(page.locator('[data-cart-badge]')).toHaveCount(1);
+  await expect(page.locator('[data-added-announcement]')).toContainText('تمت إضافة');
+});
+
+test('the search clear button sits at the end of the field in English and in Arabic', async ({ page }) => {
+  for (const lang of ['en', 'ar'] as const) {
+    await page.goto(`${SABAH}?lang=${lang}`);
+    const field = page.locator('[data-menu-search] input');
+    await field.fill('a');
+    const clear = page.locator('[data-menu-search]').getByRole('button', { name: lang === 'ar' ? 'مسح' : 'Clear' });
+    const [f, c] = [await field.boundingBox(), await clear.boundingBox()];
+    expect(f && c).toBeTruthy();
+    const fieldMiddle = f!.x + f!.width / 2;
+    // End of the field: right in English, left in Arabic.
+    if (lang === 'en') expect(c!.x).toBeGreaterThan(fieldMiddle);
+    else expect(c!.x + c!.width).toBeLessThan(fieldMiddle);
+    expect(Math.min(c!.width, c!.height)).toBeGreaterThanOrEqual(44);
+  }
+});
