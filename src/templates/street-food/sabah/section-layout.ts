@@ -1,8 +1,7 @@
 /**
  * How one section of the menu lays out its dishes. The restaurant picks a
  * style per section; `auto` (the default) follows the restaurant-wide layout,
- * in the same columns as every other section; a lone dish gets a compact
- * wide card.
+ * in the same adaptive grid as every other section.
  */
 export const SECTION_STYLES = ['auto', 'grid', 'large', 'list', 'carousel', 'featured'] as const;
 export type SectionStyle = (typeof SECTION_STYLES)[number];
@@ -11,8 +10,16 @@ export function isSectionStyle(value: unknown): value is SectionStyle {
   return typeof value === 'string' && (SECTION_STYLES as readonly string[]).includes(value);
 }
 
-/** A run of cards: a grid with its columns, or the two-up large photos. */
-export type CardRun = { kind: 'grid'; columns: string } | { kind: 'large' };
+/**
+ * A run of cards: the adaptive grid, or the two-up large photos.
+ *
+ * The grid's columns follow the width of the menu's content, not the screen
+ * (sabah.css, `.sf-grid`): one below 300px, two to 900px (phones and portrait
+ * tablets), three to 1150px, then four. A card left alone on the last row is
+ * drawn as one horizontal card across two columns (the whole row on a phone),
+ * so no section ends on a half-empty row; the dishes keep their order.
+ */
+export type CardRun = { kind: 'grid' } | { kind: 'large' };
 
 /** What the section is drawn as, once the style meets the dish count. */
 export type SectionLayout =
@@ -22,15 +29,7 @@ export type SectionLayout =
   /** The first dish drawn wide (photo beside the text), the rest below it. */
   | { kind: 'featured'; rest: CardRun | null };
 
-/**
- * The one column system every grid section uses, whatever its dish count:
- * one column below 360px, two up to `lg` (phones and tablets), three to `xl`,
- * four above. A short section keeps normal-sized cards and leaves the rest of
- * its row empty rather than stretching two dishes across the screen.
- */
-export const GRID_COLUMNS = 'grid-cols-2 max-[359px]:grid-cols-1 lg:grid-cols-3 xl:grid-cols-4';
-
-const grid: CardRun = { kind: 'grid', columns: GRID_COLUMNS };
+const grid: CardRun = { kind: 'grid' };
 
 /** One wide dish, then the grid for the others (nothing when it was the only one). */
 const featured = (count: number): SectionLayout => ({
@@ -61,10 +60,10 @@ export function resolveSectionLayout(
     case 'featured':
       return featured(count);
     case 'auto':
-      // A lone dish gets one compact card with its photo beside the text
-      // (stacked on a phone). Otherwise the restaurant-wide layout, at any
-      // count: no dish is singled out.
-      if (count === 1) return featured(1);
+      // The restaurant-wide layout, at any count: no dish is singled out. A
+      // lone dish in the grid is its last card, so it is drawn as one compact
+      // horizontal card.
+      if (count === 1) return grid;
       if (fallback === 'list') return { kind: 'list' };
       if (fallback === 'large') return { kind: 'large' };
       return grid;

@@ -37,7 +37,10 @@ export const SectionDishes: React.FC<SectionDishesProps> = ({ layout, dishes, la
         <div className="space-y-3 md:space-y-4 lg:space-y-6" data-section-layout="featured">
           {/* A section's only dish is not stretched across a wide screen. */}
           <div className={layout.rest ? undefined : 'lg:max-w-3xl'}>
-            <MenuItemCard item={lead} lang={lang} size="wide" onSelect={onSelect} priority={eager > 0} />
+            {/* Always the horizontal card, photo beside the text (sabah.css, `.sf-row`). */}
+            <div className="sf-row">
+              <MenuItemCard item={lead} lang={lang} size="wide" onSelect={onSelect} priority={eager > 0} />
+            </div>
           </div>
           {layout.rest ? (
             <Run run={layout.rest} dishes={rest} lang={lang} onSelect={onSelect} eager={Math.max(0, eager - 1)} />
@@ -51,22 +54,27 @@ export const SectionDishes: React.FC<SectionDishesProps> = ({ layout, dishes, la
 };
 
 function Run({ run, dishes, lang, onSelect, eager = 0 }: { run: CardRun } & Omit<SectionDishesProps, 'layout'>) {
-  const large = run.kind === 'large';
+  if (run.kind === 'large') {
+    return (
+      <div data-section-layout="large" className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-6">
+        {dishes.map((dish, index) => (
+          <MenuItemCard key={dish.id} item={dish} lang={lang} size="large" onSelect={onSelect} priority={index < eager} />
+        ))}
+      </div>
+    );
+  }
+  // The adaptive grid (sabah.css, `.sf-grid`): its columns follow the width
+  // this wrapper is given, and each card sits in its own cell so a last
+  // card left alone on its row can span it as one horizontal card.
   return (
-    <div
-      data-section-layout={run.kind}
-      className={`grid ${large ? 'grid-cols-1 lg:grid-cols-2' : run.columns} gap-3 md:gap-4 lg:gap-6`}
-    >
-      {dishes.map((dish, index) => (
-        <MenuItemCard
-          key={dish.id}
-          item={dish}
-          lang={lang}
-          size={large ? 'large' : 'regular'}
-          onSelect={onSelect}
-          priority={index < eager}
-        />
-      ))}
+    <div className="sf-grid-wrap">
+      <div data-section-layout="grid" className="sf-grid">
+        {dishes.map((dish, index) => (
+          <div key={dish.id} className="sf-grid__cell">
+            <MenuItemCard item={dish} lang={lang} size="regular" onSelect={onSelect} priority={index < eager} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

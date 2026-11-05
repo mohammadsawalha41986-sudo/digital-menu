@@ -23,7 +23,9 @@ test('each section of the menu takes the layout the restaurant chose for it', as
   // A two-dish section on auto sits in the same grid as every section: two-up on a phone.
   await page.goto('/m/DEM006?lang=ar');
   const sections = page.locator('#menu-items-container section[data-category]');
-  await expect(sections.first().locator('[data-section-layout="grid"]')).toHaveClass(/(^|\s)grid-cols-2(\s|$)/);
+  const grid = sections.first().locator('[data-section-layout="grid"]');
+  await expect(grid).toBeVisible();
+  expect(await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(2);
 
   await sectionsPage(page);
   await select.selectOption('list');

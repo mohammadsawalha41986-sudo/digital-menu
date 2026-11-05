@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { GRID_COLUMNS, resolveSectionLayout } from '@/templates/street-food/sabah/section-layout';
+import { resolveSectionLayout } from '@/templates/street-food/sabah/section-layout';
 
-const grid = { kind: 'grid', columns: GRID_COLUMNS };
+// The grid's columns are drawn by sabah.css from the width the menu gives it
+// (e2e/grid-layout.spec.ts pins them); here only the choice of layout.
+const grid = { kind: 'grid' };
 
 describe('section layout', () => {
-  it('one column system: 1 below 360px, 2 on phones and tablets, 3 from lg, 4 from xl', () => {
-    expect(GRID_COLUMNS.split(' ').sort()).toEqual(
-      ['grid-cols-2', 'max-[359px]:grid-cols-1', 'lg:grid-cols-3', 'xl:grid-cols-4'].sort(),
-    );
-  });
-
-  it('every grid section takes the same columns, whatever its dish count', () => {
-    for (let count = 2; count <= 9; count += 1) {
+  it('every grid section is the same adaptive grid, whatever its dish count', () => {
+    for (let count = 1; count <= 9; count += 1) {
       expect(resolveSectionLayout('auto', 'grid', count)).toEqual(grid);
     }
     for (let count = 1; count <= 9; count += 1) {
@@ -19,10 +15,10 @@ describe('section layout', () => {
     }
   });
 
-  it('auto: a lone dish gets one compact wide card', () => {
-    expect(resolveSectionLayout('auto', 'grid', 1)).toEqual({ kind: 'featured', rest: null });
-    expect(resolveSectionLayout('auto', 'large', 1)).toEqual({ kind: 'featured', rest: null });
-    expect(resolveSectionLayout('auto', 'list', 1)).toEqual({ kind: 'featured', rest: null });
+  it('auto: a lone dish is a grid of one, whose last-card rule draws it as one compact horizontal card', () => {
+    expect(resolveSectionLayout('auto', 'grid', 1)).toEqual(grid);
+    expect(resolveSectionLayout('auto', 'large', 1)).toEqual(grid);
+    expect(resolveSectionLayout('auto', 'list', 1)).toEqual(grid);
   });
 
   it('auto never leads with a wide dish: it follows the restaurant-wide layout, odd counts included', () => {

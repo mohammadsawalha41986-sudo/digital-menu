@@ -205,11 +205,161 @@
   aspect-ratio: 4 / 5;
 }
 
-/* A wide card sets its photo beside the text: the photo takes the card's
-   height, whatever shape regular cards use. */
-@media (min-width: 640px) {
-  .sf-root .sf-card--wide .sf-card-media {
+/* The dish grid. Its columns follow the width the menu gives it, not the
+   screen: the wrapper is the container, the grid inside it is styled by its
+   width. 1 column below 300px, 2 to 900px (every phone, portrait tablets),
+   3 to 1150px, 4 above. Each card sits in its own cell, in the order the
+   restaurant set.
+
+   No section ends on a lone card beside an empty space: the last cell, when
+   it starts a row by itself, spans that row (2 columns) or two columns
+   (3 and 4 columns) and draws its card horizontally. A last row of two or
+   three cards keeps normal cards. Nothing is reordered. */
+.sf-grid-wrap {
+  container: sfgrid / inline-size;
+}
+
+.sf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+/* The card fills its cell, so the cards of a row share one height. */
+.sf-grid__cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container sfgrid (max-width: 299.98px) {
+  .sf-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sf-grid__cell {
+    container: sfrow / inline-size;
+  }
+}
+
+@container sfgrid (min-width: 300px) and (max-width: 899.98px) {
+  .sf-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sf-grid__cell:last-child:nth-child(2n + 1) {
+    grid-column: 1 / -1;
+    container: sfrow / inline-size;
+  }
+}
+
+@container sfgrid (min-width: 900px) and (max-width: 1149.98px) {
+  .sf-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sf-grid__cell:last-child:nth-child(3n + 1) {
+    grid-column: span 2;
+    container: sfrow / inline-size;
+  }
+}
+
+@container sfgrid (min-width: 1150px) {
+  .sf-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .sf-grid__cell:last-child:nth-child(4n + 1) {
+    grid-column: span 2;
+    container: sfrow / inline-size;
+  }
+}
+
+@container sfgrid (min-width: 600px) and (max-width: 899.98px) {
+  .sf-grid {
+    gap: 1rem;
+  }
+}
+
+@container sfgrid (min-width: 900px) {
+  .sf-grid {
+    gap: 1.5rem;
+  }
+}
+
+/* A cell that always draws its card horizontally (a featured dish). */
+.sf-row {
+  container: sfrow / inline-size;
+}
+
+/* The horizontal card, in any row cell: the photo beside the text, as tall
+   as the card, whatever shape the restaurant chose for regular photos. */
+@container sfrow (min-width: 0px) {
+  .sf-root .sf-card {
+    flex-direction: row;
+  }
+
+  .sf-root .sf-card > .sf-card-media {
     aspect-ratio: auto;
+    inline-size: clamp(6.5rem, 36%, 15rem);
+    min-block-size: 7rem;
+    flex-shrink: 0;
+  }
+
+  /* Without a photo the brand stripe runs down the start edge instead. */
+  .sf-root .sf-card > .sf-card__stripe {
+    inline-size: 0.375rem;
+    block-size: auto;
+    flex-shrink: 0;
+    --tw-gradient-position: to bottom in oklab;
+  }
+
+  .sf-root .sf-card__body {
+    justify-content: center;
+    padding: 0.75rem 0.875rem;
+  }
+
+  .sf-root .sf-card__desc {
+    -webkit-line-clamp: 2;
+  }
+
+  /* Too narrow for a label: the round 44px button. */
+  .sf-root .sf-card__action {
+    inline-size: 2.75rem;
+    padding-inline: 0;
+    border-radius: 9999px;
+  }
+
+  .sf-root .sf-card__label {
+    display: none;
+  }
+
+  /* A featured dish stays compact: a little taller than a regular row. */
+  .sf-root .sf-card[data-card-size='wide'] {
+    min-block-size: 9rem;
+  }
+}
+
+@container sfrow (min-width: 26rem) {
+  .sf-root .sf-card__body {
+    padding: 1rem 1.25rem;
+  }
+
+  .sf-root .sf-card__action {
+    inline-size: auto;
+    padding-inline: 1rem;
+    border-radius: 0.75rem;
+  }
+
+  .sf-root .sf-card__label {
+    display: inline;
+  }
+}
+
+@media (min-width: 1024px) {
+  @container sfrow (min-width: 0px) {
+    .sf-root .sf-card[data-card-size='wide'] {
+      min-block-size: 12rem;
+    }
   }
 }
 
@@ -404,7 +554,8 @@
   animation: sf-dish-float 5s ease-in-out infinite;
 }
 
-.sf-root[data-dish-effect='float'] .sf-card:nth-child(2n) {
+.sf-root[data-dish-effect='float'] .sf-card:nth-child(2n),
+.sf-root[data-dish-effect='float'] .sf-grid__cell:nth-child(2n) > .sf-card {
   animation-delay: -2.5s;
 }
 
@@ -419,7 +570,8 @@
   animation: sf-dish-tilt 7s ease-in-out infinite;
 }
 
-.sf-root[data-dish-effect='tilt'] .sf-card:nth-child(2n) {
+.sf-root[data-dish-effect='tilt'] .sf-card:nth-child(2n),
+.sf-root[data-dish-effect='tilt'] .sf-grid__cell:nth-child(2n) > .sf-card {
   animation-delay: -3.5s;
 }
 

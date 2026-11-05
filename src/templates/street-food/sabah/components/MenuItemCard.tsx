@@ -14,7 +14,11 @@ interface MenuItemCardProps {
   onSelect: (item: MenuItem) => void;
   /**
    * `large` gives the photograph a taller frame for photo-led menus; `wide`
-   * spans a whole row, with the photograph beside the text from `sm` up.
+   * is a featured dish, drawn as a horizontal card at every width.
+   *
+   * Any card becomes horizontal (photo beside the text) when it sits in a
+   * row cell (sabah.css, `.sf-row` and the grid's last lone card); the
+   * `sf-card__*` classes are the hooks those styles use.
    */
   size?: 'regular' | 'large' | 'wide';
   /** Above the fold: load the photo at once and ahead of the others. */
@@ -25,13 +29,15 @@ interface MenuItemCardProps {
 
 /**
  * The width a card's photo is drawn at, matching the section grid
- * (section-layout.ts): one column below 360px, two to `lg`, three to `xl`,
- * then four inside the 1400px menu.
+ * (sabah.css, `.sf-grid`): four columns of the 1400px menu on a wide screen,
+ * three on a laptop, two on phones and tablets; below 360px every card is
+ * horizontal, its photo beside the text. A wide card's photo is the side
+ * frame of a horizontal card.
  */
 const PHOTO_SIZES = {
-  regular: '(min-width: 1280px) 340px, (min-width: 1024px) 33vw, (min-width: 360px) 50vw, 100vw',
+  regular: '(min-width: 1280px) 340px, (min-width: 1024px) 33vw, (min-width: 360px) 50vw, 40vw',
   large: '(min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw',
-  wide: '(min-width: 1280px) 480px, (min-width: 640px) 40vw, 100vw',
+  wide: '(min-width: 1024px) 240px, 40vw',
 } as const;
 
 export const MenuItemCard: React.FC<MenuItemCardProps> = ({
@@ -49,8 +55,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   // Regular cards sit two-up on a phone, so below `sm` they keep to one
   // line of description and an icon-only button.
   const compact = size === 'regular';
-  // Without a photo there is nothing to set beside the text.
-  const wide = size === 'wide' && Boolean(item.image);
+  const wide = size === 'wide';
   const hasOptions = Boolean(item.options && item.options.length > 0);
   const chooses = Boolean(item.options || item.isSpicyOption || item.choices?.length);
   const actionLabel = chooses ? (isAr ? 'اختيار' : 'Choose') : isAr ? 'إضافة' : 'Add';
@@ -63,16 +68,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       data-item={item.id}
       data-unavailable={item.isUnavailable ? '' : undefined}
       data-card-size={size}
-      className={`sf-card ${wide ? 'sf-card--wide sm:flex-row' : ''} group flex flex-col bg-stone-950/95 rounded-2xl border border-emerald-950/90 hover:border-emerald-500/60 overflow-hidden shadow-lg hover:shadow-xl hover:shadow-emerald-950/50 transition-[translate,box-shadow,border-color] duration-300 motion-safe:hover:-translate-y-1`}
+      className={`sf-card group flex flex-col bg-stone-950/95 rounded-2xl border border-emerald-950/90 hover:border-emerald-500/60 overflow-hidden shadow-lg hover:shadow-xl hover:shadow-emerald-950/50 transition-[translate,box-shadow,border-color] duration-300 motion-safe:hover:-translate-y-1`}
     >
       {item.image ? (
         <div
           className={`sf-card-media relative w-full overflow-hidden bg-gradient-to-br from-emerald-950 to-stone-900 ${
-            wide
-              ? 'aspect-[16/10] sm:aspect-auto sm:w-2/5 xl:max-w-[30rem] sm:min-h-52 lg:min-h-60 shrink-0'
-              : size === 'large'
-                ? 'aspect-[4/3]'
-                : 'aspect-[16/10]'
+            size === 'large' ? 'aspect-[4/3]' : 'aspect-[16/10]'
           }`}
         >
           {photoFailed ? (
@@ -89,7 +90,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
               src={item.image}
               // WebP widths from the upload; the browser picks the one the card needs.
               srcSet={item.imageSrcSet}
-              sizes={sizes ?? PHOTO_SIZES[wide ? 'wide' : size === 'large' ? 'large' : 'regular']}
+              sizes={sizes ?? PHOTO_SIZES[size]}
               style={{ objectPosition: item.imagePosition }}
               loading={priority ? 'eager' : 'lazy'}
               fetchPriority={priority ? 'high' : undefined}
@@ -133,18 +134,14 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
           )}
         </div>
       ) : (
-        <div className="h-1.5 bg-gradient-to-r from-emerald-600 to-amber-500" />
+        <div className="sf-card__stripe h-1.5 bg-gradient-to-r from-emerald-600 to-amber-500" />
       )}
 
       {/* Body: name, description, calories, then the price row at the foot. */}
-      <div
-        className={`flex-1 flex flex-col gap-1.5 ${compact ? 'p-3 sm:p-4' : 'p-4'} ${
-          wide ? 'sm:justify-center sm:gap-2 sm:p-5 lg:px-7' : ''
-        }`}
-      >
+      <div className={`sf-card__body flex-1 min-w-0 flex flex-col gap-1.5 ${compact ? 'p-3 sm:p-4' : 'p-4'}`}>
         <div className="flex items-start justify-between gap-2">
           <h3
-            className={`${wide ? 'text-lg sm:text-xl lg:text-2xl' : 'text-base sm:text-lg'} font-bold text-white group-hover:text-amber-300 transition-colors leading-snug line-clamp-2`}
+            className={`${wide ? 'text-lg sm:text-xl' : 'text-base sm:text-lg'} min-w-0 break-words font-bold text-white group-hover:text-amber-300 transition-colors leading-snug line-clamp-2`}
           >
             {name}
           </h3>
@@ -155,8 +152,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
         {item.descriptionAr || item.descriptionEn ? (
           <p
-            className={`text-stone-300 leading-snug ${
-              wide ? 'text-sm sm:text-base line-clamp-2 sm:line-clamp-3' : compact ? 'text-xs sm:text-sm line-clamp-1 sm:line-clamp-2' : 'text-sm line-clamp-2'
+            className={`sf-card__desc text-stone-300 leading-snug ${
+              wide ? 'text-sm sm:text-base line-clamp-2' : compact ? 'text-xs sm:text-sm line-clamp-1 sm:line-clamp-2' : 'text-sm line-clamp-2'
             }`}
           >
             {isAr ? item.descriptionAr : item.descriptionEn}
@@ -184,9 +181,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
           </div>
         ) : null}
 
-        {/* Price & action. `mt-auto` keeps the rows of a grid line aligned;
-            a wide card centres its text instead. */}
-        <div className={`flex items-center justify-between gap-2 pt-1 ${wide ? 'mt-auto sm:mt-1' : 'mt-auto'}`}>
+        {/* Price & action. `mt-auto` keeps the rows of a grid line aligned. */}
+        <div className="sf-card__foot flex items-center justify-between gap-2 pt-1 mt-auto">
           {item.noPrice ? (
             <span />
           ) : (
@@ -217,12 +213,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
               type="button"
               onClick={() => onSelect(item)}
               aria-label={actionLabel}
-              className={`inline-flex shrink-0 items-center justify-center gap-1.5 h-11 ${
+              className={`sf-card__action inline-flex shrink-0 items-center justify-center gap-1.5 h-11 ${
                 compact ? 'w-11 rounded-full sm:w-auto sm:rounded-xl sm:px-4' : 'px-4 rounded-xl'
               } bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-sm shadow-md shadow-emerald-950/60 border border-emerald-400/30 transition-[transform,background-color] active:scale-95 cursor-pointer`}
             >
               <Plus className={`${compact ? 'w-5 h-5 sm:w-4 sm:h-4' : 'w-4 h-4'} stroke-[2.5]`} />
-              <span className={compact ? 'hidden sm:inline' : undefined}>{actionLabel}</span>
+              <span className={`sf-card__label ${compact ? 'hidden sm:inline' : ''}`}>{actionLabel}</span>
             </button>
           )}
         </div>
