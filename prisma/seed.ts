@@ -515,6 +515,7 @@ async function main() {
       '  /m/DEM005  burger',
       '  /m/DEM006  bakery',
       '  /m/DEM007  salon (services, durations)',
+      '  /m/DEM008  grid lab (sections of 1-9, 11, 20 dishes)',
       '  /m/DRAFT1  draft — deliberately not public',
       '',
       `  Brand artwork: ${artwork.images} new image(s) across ${artwork.businesses} businesses.`,
@@ -522,6 +523,56 @@ async function main() {
   );
 }
 
+
+/**
+ * DEM008 "Grid Lab": sections of exactly 1-9, 11 and 20 dishes, for testing the
+ * product grid at every row remainder. Deterministic: codes `GL-<n>-<i>`, price
+ * 1500 + i*100. A few dishes carry deliberate edge cases (very long names, one
+ * long description, one unavailable, one featured); the no-photo dish GL-7-3 is
+ * excluded in seed-artwork.ts.
+ */
+const GRID_LAB_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 20] as const;
+
+const GRID_LAB_LONG_AR =
+  'طبق الشيف الكبير المحشو بالأرز والمكسرات واللحم المتبل على الطريقة التقليدية القديمة';
+const GRID_LAB_LONG_EN =
+  'The Chef\u2019s Grand Slow-Roasted Stuffed Platter with Spiced Rice, Toasted Nuts and Herbs';
+const GRID_LAB_DESC_AR =
+  'وصف طويل لاختبار التخطيط: طبق يُحضَّر ببطء على نار هادئة مع خليط من الأعشاب والتوابل الطازجة، ويُقدَّم ساخناً مع الخبز الطازج والصلصة الخاصة للمطعم وسلطة خضراء منعشة.';
+const GRID_LAB_DESC_EN =
+  'A long description for layout testing: a dish cooked slowly over a gentle flame with a blend of fresh herbs and spices, served hot with warm bread, the house sauce and a crisp, refreshing green salad.';
+
+function gridLabCategories(): SeedCategory[] {
+  return GRID_LAB_COUNTS.map((count) => ({
+    key: `c${count}`,
+    nameAr: `قسم من ${count} أصناف`,
+    nameEn: `Section of ${count} dishes`,
+    items: Array.from({ length: count }, (_, index): SeedItem => {
+      const i = index + 1;
+      const item: SeedItem = {
+        code: `GL-${count}-${i}`,
+        nameAr: `صنف ${count}-${i}`,
+        nameEn: `Dish ${count}-${i}`,
+        priceMinor: 1500 + i * 100,
+        // Roughly half the dishes show calories.
+        calories: i % 2 === 1 ? 300 + i * 20 : undefined,
+      };
+
+      if (count === 3 && i === 1) {
+        item.nameAr = GRID_LAB_LONG_AR;
+        item.nameEn = GRID_LAB_LONG_EN;
+      }
+      if (count === 5 && i === 2) {
+        item.descriptionAr = GRID_LAB_DESC_AR;
+        item.descriptionEn = GRID_LAB_DESC_EN;
+      }
+      if (count === 9 && i === 4) item.availability = 'UNAVAILABLE';
+      if (count === 11 && i === 1) item.featured = true;
+
+      return item;
+    }),
+  }));
+}
 
 /**
  * The six demo businesses the specification requires (§92, §141).
@@ -804,6 +855,45 @@ async function seedShowcase(publishedById: string) {
         },
       ],
     },
+    {
+      publicId: 'DEM008',
+      hours: CAFE_HOURS,
+      slug: 'demo-grid-lab',
+      type: 'RESTAURANT' as const,
+      template: 'street-food',
+      variant: 'a',
+      nameAr: 'مختبر الشبكة',
+      nameEn: 'Grid Lab',
+      descriptionAr: 'مطعم تجريبي لاختبار تخطيط الأقسام بأعداد مختلفة من الأصناف. بيانات تجريبية.',
+      descriptionEn: 'A demo restaurant for testing menu layout with sections of different sizes. Demo layout-test data.',
+      brand: {
+        colorPrimary: '#C2410C',
+        colorSecondary: '#FDBA74',
+        colorAccent: '#FACC15',
+        colorBackground: '#140C08',
+        colorSurface: '#1F140E',
+        colorText: '#FBEFE6',
+        colorMuted: '#B8A596',
+        colorBorder: '#3A271B',
+        fontHeading: 'system-display',
+        fontBody: 'system-sans',
+        radiusScale: 'md',
+      },
+      categories: gridLabCategories().map((category) => ({
+        ...category,
+        items: category.items.map((item) => ({
+          code: item.code,
+          nameAr: item.nameAr,
+          nameEn: item.nameEn,
+          price: item.priceMinor,
+          calories: item.calories,
+          featured: item.featured,
+          availability: item.availability,
+          descriptionAr: item.descriptionAr,
+          descriptionEn: item.descriptionEn,
+        })),
+      })),
+    },
   ];
 
   for (const business of showcase) {
@@ -854,6 +944,9 @@ async function seedShowcase(publishedById: string) {
           calories: 'calories' in item ? (item.calories as number) : undefined,
           servingSize: 'serving' in item ? (item.serving as string) : undefined,
           featured: 'featured' in item ? (item.featured as boolean) : undefined,
+          descriptionAr: 'descriptionAr' in item ? (item.descriptionAr as string | undefined) : undefined,
+          descriptionEn: 'descriptionEn' in item ? (item.descriptionEn as string | undefined) : undefined,
+          availability: 'availability' in item ? (item.availability as SeedItem['availability']) : undefined,
         })),
       })),
       publishedById,

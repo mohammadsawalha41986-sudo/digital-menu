@@ -70,8 +70,15 @@ const PROFILES: Record<string, DemoProfile> = {
     motif: 'salon',
     categoryMotifs: { hair: 'salon', care: 'pastry' },
   },
+  DEM008: { initials: 'GL', motif: 'grill' },
   DRAFT1: { initials: 'DB', motif: 'bakery' },
 };
+
+/**
+ * Items deliberately left without a photo, to exercise the no-image card.
+ * Keyed by item code (unique per business).
+ */
+const NO_PHOTO = new Set(['GL-7-3']);
 
 const FALLBACK_PALETTE: ArtworkPalette = {
   primary: '#20303A',
@@ -264,6 +271,8 @@ export async function seedArtwork(prisma: PrismaClient): Promise<ArtworkSummary>
         });
 
         for (const item of category.items) {
+          if (NO_PHOTO.has(item.itemCode)) continue;
+
           const itemMedia = await put(
             'ITEM_IMAGE',
             await renderArtwork({
